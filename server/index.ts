@@ -818,6 +818,17 @@ app.get('/api/incidents/:id/report', (req, res) => {
   res.json({ report: incident.report });
 });
 
+// Serve compiled Vite React application
+const distDir = path.join(rootDir, 'dist');
+app.use(express.static(distDir));
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  res.sendFile(path.join(distDir, 'index.html'));
+});
+
 // Start Express server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 OpsPilot AI Server listening on http://0.0.0.0:${PORT}`);
