@@ -9,7 +9,7 @@ export async function getRepository(req: Request, res: Response) {
       name: 'company/production-backend-api',
       url: 'https://github.com/company/production-backend-api',
       defaultBranch: 'main',
-      lastScannedAt: latestScan.completedAt,
+      lastScannedAt: latestScan?.completedAt,
       latestScan
     }
   });

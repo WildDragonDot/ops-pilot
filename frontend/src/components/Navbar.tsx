@@ -8,9 +8,12 @@ import {
   GitBranch, 
   Zap,
   RefreshCw,
-  Cpu
+  Cpu,
+  LogOut,
+  User as UserIcon
 } from 'lucide-react';
 import { Project } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   activeTab: string;
@@ -29,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onScanRepo,
   isScanning
 }) => {
+  const { user, logout } = useAuth();
   const status = project?.environmentStatus.overall || 'HEALTHY';
   
   const statusColor = 
@@ -63,7 +67,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   OpenAI Agent
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Production Failure Commander & GitHub Auditor</p>
+              <p className="text-xs text-slate-400">
+                {user ? `${user.organizationName} • ${user.name}` : 'Production Commander'}
+              </p>
             </div>
           </div>
 
@@ -103,13 +109,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{isScanning ? 'Scanning...' : 'Scan Repo'}</span>
             </button>
 
-            <button
-              onClick={onResetEnv}
-              title="Reset environment health"
-              className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-lg transition border border-transparent hover:border-slate-700"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+            {user && (
+              <div className="flex items-center gap-2 border-l border-slate-800 pl-3">
+                <button
+                  onClick={logout}
+                  title="Logout"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 rounded-lg text-xs font-medium transition"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </div>
+            )}
           </div>
 
         </div>

@@ -12,20 +12,20 @@ export async function createIncident(req: Request, res: Response) {
   res.json({ incident });
 }
 
-export function getIncidents(req: Request, res: Response) {
-  const incidents = getAllIncidents();
+export async function getIncidents(req: Request, res: Response) {
+  const incidents = await getAllIncidents();
   res.json({ incidents });
 }
 
-export function getIncident(req: Request, res: Response) {
-  const incident = getIncidentById(String(req.params.id));
+export async function getIncident(req: Request, res: Response) {
+  const incident = await getIncidentById(String(req.params.id));
   if (!incident) {
     return res.status(404).json({ error: 'Incident not found' });
   }
   res.json({ incident });
 }
 
-export function streamIncident(req: Request, res: Response) {
+export async function streamIncident(req: Request, res: Response) {
   const incidentId = String(req.params.id);
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -38,7 +38,7 @@ export function streamIncident(req: Request, res: Response) {
 
   incidentEmitter.on(`incident_update_${incidentId}`, onUpdate);
 
-  const incident = getIncidentById(incidentId);
+  const incident = await getIncidentById(incidentId);
   if (incident) {
     res.write(`data: ${JSON.stringify(incident)}\n\n`);
   }
@@ -48,8 +48,8 @@ export function streamIncident(req: Request, res: Response) {
   });
 }
 
-export function getReport(req: Request, res: Response) {
-  const incident = getIncidentById(String(req.params.id));
+export async function getReport(req: Request, res: Response) {
+  const incident = await getIncidentById(String(req.params.id));
   if (!incident || !incident.report) {
     return res.status(404).json({ error: 'Report not available yet' });
   }

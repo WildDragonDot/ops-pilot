@@ -3,8 +3,30 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  users     User[]
+  projects  Project[]
+}
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  password       String
+  name           String
+  role           String       @default("DEVELOPER") // ADMIN, DEVELOPER, APPROVER
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Project {
@@ -16,8 +38,10 @@ model Project {
   composeFile    String?
   testCommand    String?
   restartCommand String?
+  organizationId String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   incidents      Incident[]
   repositories   Repository[]
 }
@@ -27,6 +51,7 @@ model Incident {
   projectId       String
   title           String
   userPrompt      String
+  scenarioKey     String?
   status          String
   severity        String?
   affectedService String?
@@ -45,7 +70,7 @@ model IncidentEvent {
   incidentId String
   type       String
   title      String
-  details    Json?
+  details    String?  // Stored as JSON string
   status     String?
   createdAt  DateTime @default(now())
   incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
@@ -55,9 +80,13 @@ model Approval {
   id         String    @id
   incidentId String
   actionType String
-  payload    Json
+  title      String?
+  description String?
+  commands   String?   // Stored as JSON string
   riskLevel  String
   status     String
+  diff       String?
+  rollbackPlan String?
   decidedAt  DateTime?
   createdAt  DateTime  @default(now())
   incident   Incident  @relation(fields: [incidentId], references: [id], onDelete: Cascade)

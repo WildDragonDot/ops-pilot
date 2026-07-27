@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Download, FileText, Printer } from 'lucide-react';
 import { Incident } from '../types';
 
 interface IncidentReportsProps {
@@ -23,18 +23,51 @@ export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) =
     }
   };
 
+  const handleDownloadMarkdown = () => {
+    if (selectedIncident?.report) {
+      const blob = new Blob([selectedIncident.report], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Post-Mortem-${selectedIncident.id}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-            Post-Mortem Intelligence
-          </span>
+      <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
+              Executive Post-Mortem Exporter
+            </span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-white mt-1">Incident Post-Mortem Reports</h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Automated post-incident reports documenting executive summaries, evidence traces, approved recovery actions, verification checklists, and preventive rules.
+          </p>
         </div>
-        <h1 className="text-2xl font-extrabold text-white mt-1">Incident Post-Mortem Reports</h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Automated post-incident reports documenting executive summaries, evidence traces, approved recovery actions, verification checklists, and preventive architectural rules.
-        </p>
+
+        {selectedIncident?.report && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadMarkdown}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download .md</span>
+            </button>
+            <button
+              onClick={handleCopyReport}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'Copied' : 'Copy Markdown'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -77,14 +110,6 @@ export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) =
                   <span className="text-xs font-mono text-emerald-400">Report ID: {selectedIncident.id}</span>
                   <h2 className="text-lg font-bold text-white mt-0.5">Post-Mortem: {selectedIncident.title}</h2>
                 </div>
-
-                <button
-                  onClick={handleCopyReport}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-700 transition"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Copied Markdown' : 'Copy Markdown'}</span>
-                </button>
               </div>
 
               <div className="prose prose-invert max-w-none text-xs text-slate-300 space-y-4 leading-relaxed font-sans">

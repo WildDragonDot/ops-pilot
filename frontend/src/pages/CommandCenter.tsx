@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Terminal, 
+  Terminal as TerminalIcon, 
   Send, 
   ShieldAlert, 
   Activity,
@@ -10,6 +10,7 @@ import {
 import { Incident } from '../types';
 import { startIncident, approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
+import { TerminalConsole } from '../components/TerminalConsole';
 
 interface CommandCenterProps {
   incidents: Incident[];
@@ -63,6 +64,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
 
   return (
     <div className="space-y-6">
+      
+      {/* Header Banner */}
       <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -103,7 +106,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
         </div>
 
         <div className="flex items-center gap-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
-          <Terminal className="w-5 h-5 text-blue-400 ml-2" />
+          <TerminalIcon className="w-5 h-5 text-blue-400 ml-2" />
           <input
             type="text"
             value={promptText}
@@ -123,6 +126,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column: Incidents List */}
         <div className="space-y-4">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active & Historical Incidents</h2>
           <div className="space-y-2">
@@ -162,6 +167,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
           </div>
         </div>
 
+        {/* Right Column: Active Incident Details & Terminal Console */}
         <div className="lg:col-span-2 space-y-6">
           {activeIncident ? (
             <>
@@ -185,6 +191,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                 </div>
               </div>
 
+              {/* Approval Modal */}
               {activeIncident.status === 'AWAITING_APPROVAL' && activeIncident.activeApproval && (
                 <div className="glass-panel p-6 rounded-2xl border-2 border-amber-500/80 bg-slate-950/95 space-y-4 shadow-2xl shadow-amber-500/10">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -229,6 +236,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                 </div>
               )}
 
+              {/* Root Cause Card */}
               {activeIncident.rootCause && (
                 <div className="glass-panel p-5 rounded-2xl border border-blue-500/40 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950/30 space-y-2">
                   <div className="flex items-center justify-between text-xs text-blue-400 font-semibold">
@@ -243,72 +251,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                 </div>
               )}
 
-              <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-                <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-3">
-                  <Activity className="w-4 h-4 text-blue-400" />
-                  <span>Agent Investigation Timeline & Tool Execution Log</span>
-                </h3>
-
-                <div className="space-y-4 relative before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-800">
-                  {activeIncident.events.map((evt, idx) => (
-                    <div key={evt.id || idx} className="flex items-start gap-4 relative pl-8">
-                      <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-blue-500 flex items-center justify-center text-[9px] text-blue-400 font-mono">
-                        {idx + 1}
-                      </div>
-
-                      <div className="glass-panel p-4 rounded-xl border border-slate-800/80 flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-200">{evt.title}</span>
-                          <span className="text-[10px] font-mono text-slate-500">
-                            {new Date(evt.createdAt).toLocaleTimeString()}
-                          </span>
-                        </div>
-
-                        {evt.details && (
-                          <div className="text-xs text-slate-300 font-mono space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800/60">
-                            {evt.type === 'TOOL_CALL' && (
-                              <div>
-                                <div className="text-blue-400">$ {evt.details.command}</div>
-                                <div className="text-slate-400 text-[11px] whitespace-pre-wrap mt-1">{evt.details.output}</div>
-                              </div>
-                            )}
-
-                            {evt.type === 'EVIDENCE' && evt.details.evidence && (
-                              <div className="space-y-1">
-                                {evt.details.evidence.map((ev: any, i: number) => (
-                                  <div key={i} className="flex items-start gap-2">
-                                    <span className="text-emerald-400 font-bold">✓</span>
-                                    <span><b className="text-slate-200">{ev.source}:</b> {ev.detail}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {evt.type === 'VERIFICATION' && evt.details.checks && (
-                              <div className="space-y-1">
-                                {evt.details.checks.map((chk: any, i: number) => (
-                                  <div key={i} className="flex items-center justify-between text-xs py-0.5 border-b border-slate-900">
-                                    <span className="text-slate-300">{chk.check}</span>
-                                    <span className="text-emerald-400 font-bold">{chk.result}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {evt.type === 'PLAN' && evt.details.steps && (
-                              <ul className="list-disc list-inside space-y-1 text-slate-300 font-sans text-xs">
-                                {evt.details.steps.map((st: string, i: number) => (
-                                  <li key={i}>{st}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Live OpenAI Agent Terminal Console */}
+              <TerminalConsole
+                events={activeIncident.events}
+                incidentId={activeIncident.id}
+              />
             </>
           ) : (
             <div className="glass-panel p-12 rounded-2xl border border-slate-800 text-center text-slate-400 text-xs">

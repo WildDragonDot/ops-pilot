@@ -3,14 +3,18 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { router as apiRouter } from './routes/api.routes.js';
 import { hasOpenAIKey } from './config/openai.js';
+import { initDatabase } from './services/db.service.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.PORT || 5000);
+const PORT = Number(process.env.PORT || 5080);
 
 app.use(cors());
 app.use(express.json());
+
+// Initialize SQLite/Prisma file database seed
+initDatabase();
 
 // API Routes
 app.use('/api', apiRouter);
@@ -27,5 +31,5 @@ app.get('/health', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
-  console.log(`🤖 OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED (GPT-4o / Codex)' : 'FALLBACK MODE (Set OPENAI_API_KEY in .env)'}`);
+  console.log(`🤖 OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED (GPT-4o / Codex)' : 'FALLBACK MODE'}`);
 });
