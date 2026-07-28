@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ShieldCheck, 
@@ -12,7 +12,10 @@ import {
   Radio,
   FileCode,
   Sliders,
-  Play
+  Play,
+  Loader2,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
@@ -32,12 +35,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateTab,
   onInjectFailure
 }) => {
-  const env = project?.environmentStatus || {
+  const [loadingScenario, setLoadingScenario] = useState<string | null>(null);
+  const [lastTriggered, setLastTriggered] = useState<string | null>(null);
+
+  const handleLaunchScenario = async (key: string) => {
+    try {
+      setLoadingScenario(key);
+      await onInjectFailure(key);
+      setLastTriggered(key);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingScenario(null);
+    }
+  };
+
+  const rawEnv = project?.environmentStatus || {
     overall: 'HEALTHY',
     postgres: 'RUNNING',
     redis: 'RUNNING',
     api: 'RUNNING',
     nginx: 'HEALTHY'
+  };
+
+  const allNodesHealthy = rawEnv.postgres === 'RUNNING' && rawEnv.redis === 'RUNNING' && rawEnv.api === 'RUNNING' && rawEnv.nginx === 'HEALTHY';
+
+  const env = {
+    ...rawEnv,
+    overall: (allNodesHealthy ? 'HEALTHY' : rawEnv.overall) as 'HEALTHY' | 'DEGRADED' | 'DOWN'
   };
 
   const score = scan?.overallScore || 84;
@@ -49,25 +74,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
       id: 'evt-1',
       time: '10 mins ago',
       title: 'Resolved Login API 500 Code Bug',
-      type: 'CODE_PATCH',
-      status: 'SUCCESS',
-      detail: 'Applied req.params.id integer validation patch in auth.controller.ts'
+      detail: 'Applied req.params.id integer validation patch in auth.controller.ts',
+      status: 'SUCCESS'
     },
     {
       id: 'evt-2',
       time: '45 mins ago',
-      title: 'Completed GitHub Security Audit',
-      type: 'SCAN',
-      status: 'SUCCESS',
-      detail: 'Audited 2,025 modules across company/production-backend-api'
+      title: 'Completed Security & Code Audit',
+      detail: 'Audited modules across repository codebase',
+      status: 'CLEAN'
     },
     {
       id: 'evt-3',
       time: '2 hours ago',
-      title: 'PostgreSQL Container Health Restored',
-      type: 'RECOVERY',
-      status: 'SUCCESS',
-      detail: 'Restarted postgres container & verified 200 OK health check'
+      title: 'PostgreSQL Container Health Check',
+      detail: 'Verified port 5432 tcp connection & 200 OK state',
+      status: 'HEALTHY'
     }
   ];
 
@@ -77,7 +99,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 max-w-7xl mx-auto font-sans pb-12"
     >
-      
       {/* Top Welcome Header */}
       <div className="glass-panel p-6 rounded-2xl theme-border border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
@@ -86,7 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Live Operations Control
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-title tracking-tight">Production Overview</h1>
+          <h1 className="text-2xl font-bold text-title tracking-tight font-display">Production Overview</h1>
           <p className="text-xs text-subtitle max-w-2xl leading-relaxed">
             Real-time cluster topology status, security audit health metrics, and autonomous AI incident commander.
           </p>
@@ -115,68 +136,67 @@ export const Dashboard: React.FC<DashboardProps> = ({
         
         {/* Card 1: Overall Cluster Health */}
         <div className="glass-panel p-5 rounded-2xl theme-border border space-y-3 shadow-sm hover:shadow-md transition">
-          <div className="flex items-center justify-between text-slate-750 dark:text-slate-250">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-650 dark:text-slate-350 font-mono">Overall Health</span>
-            <Activity className={`w-5 h-5 ${env.overall === 'HEALTHY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`} />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-subtitle font-mono">Overall Health</span>
+            <Activity className={`w-5 h-5 ${env.overall === 'HEALTHY' ? 'text-emerald-600' : 'text-rose-600'}`} />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-extrabold ${env.overall === 'HEALTHY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+            <span className={`text-3xl font-extrabold ${env.overall === 'HEALTHY' ? 'text-emerald-600 font-mono' : 'text-rose-600 font-mono'}`}>
               {env.overall}
             </span>
           </div>
-          <div className="pt-2 border-t theme-border flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 font-mono">
-            <span>Uptime: <b className="text-slate-800 dark:text-slate-200">99.98%</b></span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">4/4 Nodes</span>
+          <div className="pt-2 border-t theme-border flex items-center justify-between text-[11px] text-subtitle font-mono">
+            <span>Uptime: <b className="text-title">99.98%</b></span>
+            <span className="text-emerald-600 font-bold">4/4 Nodes</span>
           </div>
         </div>
 
         {/* Card 2: Security & Quality Score */}
         <div className="glass-panel p-5 rounded-2xl theme-border border space-y-3 shadow-sm hover:shadow-md transition cursor-pointer" onClick={() => onNavigateTab('auditor')}>
-          <div className="flex items-center justify-between text-slate-750 dark:text-slate-250">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-655 dark:text-slate-345 font-mono">Audit Score</span>
-            <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-subtitle font-mono">Audit Score</span>
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-extrabold text-title">{score}</span>
-            <span className="text-xs text-slate-500 font-bold">/ 100</span>
+            <span className="text-xs text-subtitle font-bold">/ 100</span>
           </div>
           <div className="w-full card-bg-subtle h-2 rounded-full overflow-hidden border theme-border">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500" style={{ width: `${score}%` }} />
           </div>
-          <p className="text-[11px] text-slate-650 dark:text-slate-350 font-mono truncate">Security 72% | Quality 88% | Testing 65%</p>
+          <p className="text-[11px] text-subtitle font-mono truncate">Security 72% | Quality 88% | Testing 65%</p>
         </div>
 
         {/* Card 3: Critical Code Risks */}
         <div className="glass-panel p-5 rounded-2xl theme-border border space-y-3 shadow-sm hover:shadow-md transition cursor-pointer" onClick={() => onNavigateTab('auditor')}>
-          <div className="flex items-center justify-between text-slate-750 dark:text-slate-250">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-655 dark:text-slate-345 font-mono">Critical Code Risks</span>
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-subtitle font-mono">Critical Code Risks</span>
+            <AlertTriangle className="w-5 h-5 text-amber-600" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{criticalFindings}</span>
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Issues Detected</span>
+            <span className="text-3xl font-extrabold text-amber-600">{criticalFindings}</span>
+            <span className="text-xs font-bold text-subtitle">Issues Detected</span>
           </div>
-          <p className="text-[11px] text-slate-650 dark:text-slate-350 font-mono truncate">Hardcoded JWT key & string ID query</p>
+          <p className="text-[11px] text-subtitle font-mono truncate">Hardcoded JWT key & string ID query</p>
         </div>
 
         {/* Card 4: Pending Approvals */}
         <div className="glass-panel p-5 rounded-2xl theme-border border space-y-3 shadow-sm hover:shadow-md transition cursor-pointer" onClick={() => onNavigateTab('approvals')}>
-          <div className="flex items-center justify-between text-slate-750 dark:text-slate-250">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-655 dark:text-slate-345 font-mono">Pending Approvals</span>
-            <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-subtitle font-mono">Pending Approvals</span>
+            <CheckCircle2 className="w-5 h-5 text-blue-600" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">{pendingApprovals}</span>
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Requests</span>
+            <span className="text-3xl font-extrabold text-blue-600">{pendingApprovals}</span>
+            <span className="text-xs font-bold text-subtitle">Requests</span>
           </div>
-          <p className="text-[11px] text-slate-650 dark:text-slate-350 font-mono truncate">Operator safety guardrails active</p>
+          <p className="text-[11px] text-subtitle font-mono truncate">Operator safety guardrails active</p>
         </div>
 
       </div>
 
-      {/* Main 2-Column Section: Topology Map + Incident Simulator */}
+      {/* Main Grid: Topology & Chaos Scenarios */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Left Column: Interactive Topology Graph */}
         <div className="lg:col-span-2">
           <TopologyGraph environmentStatus={env} />
@@ -194,74 +214,126 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Zap className="w-4 h-4 text-amber-500 shrink-0" />
               <span>Simulate Incident Scenarios</span>
             </h2>
-            <p className="text-xs text-slate-650 dark:text-slate-350 leading-relaxed mt-0.5">
-              Test OpsPilot AI's automated reasoning, tool execution, and recovery approval loop.
+            <p className="text-xs text-subtitle leading-relaxed mt-0.5">
+              Click a scenario to trigger live failure state in the topology map.
             </p>
           </div>
 
           <div className="space-y-3">
             {/* Scenario 1 */}
             <button
-              onClick={() => {
-                onInjectFailure('DATABASE_STOPPED');
-                onNavigateTab('command');
-              }}
-              className="w-full text-left p-3.5 rounded-xl glass-panel border border-l-4 border-l-rose-500 theme-border hover:border-rose-500 hover:shadow-md text-xs flex items-center justify-between group transition-all"
+              disabled={loadingScenario !== null}
+              onClick={() => handleLaunchScenario('DATABASE_STOPPED')}
+              className={`w-full text-left p-3.5 rounded-xl glass-panel border border-l-4 border-l-rose-500 theme-border text-xs flex items-center justify-between group transition-all ${
+                loadingScenario === 'DATABASE_STOPPED'
+                  ? 'ring-2 ring-rose-500 opacity-80'
+                  : 'hover:border-rose-500 hover:shadow-md'
+              }`}
             >
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-extrabold status-danger uppercase">Critical</span>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                    loadingScenario === 'DATABASE_STOPPED' ? 'bg-rose-500 text-white animate-pulse' : 'status-danger'
+                  }`}>
+                    {loadingScenario === 'DATABASE_STOPPED' ? 'Injecting...' : 'Critical'}
+                  </span>
                   <span className="font-extrabold text-title">1. 502 Bad Gateway Outage</span>
                 </div>
                 <span className="text-[11px] text-subtitle block">PostgreSQL container down & API crash</span>
               </div>
-              <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white transition shrink-0">
-                <Play className="w-3.5 h-3.5 fill-current" />
+              <div className="p-2 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white transition shrink-0">
+                {loadingScenario === 'DATABASE_STOPPED' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-600 dark:text-rose-400" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                )}
               </div>
             </button>
 
             {/* Scenario 2 */}
             <button
-              onClick={() => {
-                onInjectFailure('CONFIG_MISMATCH');
-                onNavigateTab('command');
-              }}
-              className="w-full text-left p-3.5 rounded-xl glass-panel border border-l-4 border-l-amber-500 theme-border hover:border-amber-500 hover:shadow-md text-xs flex items-center justify-between group transition-all"
+              disabled={loadingScenario !== null}
+              onClick={() => handleLaunchScenario('CONFIG_MISMATCH')}
+              className={`w-full text-left p-3.5 rounded-xl glass-panel border border-l-4 border-l-amber-500 theme-border text-xs flex items-center justify-between group transition-all ${
+                loadingScenario === 'CONFIG_MISMATCH'
+                  ? 'ring-2 ring-amber-500 opacity-80'
+                  : 'hover:border-amber-500 hover:shadow-md'
+              }`}
             >
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-extrabold status-warning uppercase">High</span>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                    loadingScenario === 'CONFIG_MISMATCH' ? 'bg-amber-500 text-white animate-pulse' : 'status-warning'
+                  }`}>
+                    {loadingScenario === 'CONFIG_MISMATCH' ? 'Injecting...' : 'High'}
+                  </span>
                   <span className="font-extrabold text-title">2. Config Host Mismatch</span>
                 </div>
                 <span className="text-[11px] text-subtitle block">DATABASE_URL host name misconfigured</span>
               </div>
-              <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition shrink-0">
-                <Play className="w-3.5 h-3.5 fill-current" />
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition shrink-0">
+                {loadingScenario === 'CONFIG_MISMATCH' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                )}
               </div>
             </button>
 
             {/* Scenario 3 */}
             <button
-              onClick={() => {
-                onInjectFailure('CODE_BUG');
-                onNavigateTab('command');
-              }}
-              className="w-full text-left p-3.5 rounded-xl glass-panel border border-l-4 border-l-blue-500 theme-border hover:border-blue-500 hover:shadow-md text-xs flex items-center justify-between group transition-all"
+              disabled={loadingScenario !== null}
+              onClick={() => handleLaunchScenario('CODE_BUG')}
+              className={`w-full text-left p-3.5 rounded-xl glass-panel border border-l-4 border-l-blue-500 theme-border text-xs flex items-center justify-between group transition-all ${
+                loadingScenario === 'CODE_BUG'
+                  ? 'ring-2 ring-blue-500 opacity-80'
+                  : 'hover:border-blue-500 hover:shadow-md'
+              }`}
             >
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[9px] font-extrabold status-healthy uppercase">Code Bug</span>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                    loadingScenario === 'CODE_BUG' ? 'bg-blue-500 text-white animate-pulse' : 'status-healthy'
+                  }`}>
+                    {loadingScenario === 'CODE_BUG' ? 'Injecting...' : 'Code Bug'}
+                  </span>
                   <span className="font-extrabold text-title">3. Login API 500 Code Bug</span>
                 </div>
                 <span className="text-[11px] text-subtitle block">String passed to Integer Prisma query</span>
               </div>
-              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition shrink-0">
-                <Play className="w-3.5 h-3.5 fill-current" />
+              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition shrink-0">
+                {loadingScenario === 'CODE_BUG' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                )}
               </div>
             </button>
           </div>
-        </div>
 
+          {/* Feedback & AI Agent Fix CTA */}
+          {lastTriggered && (
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-2 animate-fadeIn mt-2">
+              <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Incident Injected Live!
+                </span>
+                <span className="text-[10px] font-mono font-normal">Topology Updated</span>
+              </div>
+              <p className="text-[11px] text-subtitle">
+                System failure is active on the topology graph. Click below to launch AI Agent resolution loop.
+              </p>
+              <button
+                onClick={() => onNavigateTab('command')}
+                className="w-full py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Fix Incident in AI Chat →</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom Section: Recent Operations Stream */}
@@ -272,7 +344,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <h2 className="text-sm font-bold text-title">Recent Operational Activity & Automated Audit</h2>
           </div>
           <button
-            onClick={() => onNavigateTab('audit-logs')}
+            onClick={() => onNavigateTab('auditor')}
             className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
           >
             <span>View Full Audit Log</span>

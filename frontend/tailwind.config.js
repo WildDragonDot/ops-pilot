@@ -24,9 +24,10 @@ export default {
           purple: "#8b5cf6"
         }
       },
-      fontFamily: {
+       fontFamily: {
         mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       }
     },
   },

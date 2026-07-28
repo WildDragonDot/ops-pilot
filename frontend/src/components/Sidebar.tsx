@@ -44,41 +44,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
   ];
 
   return (
-    <aside className={`sticky top-0 h-screen sidebar-bg backdrop-blur-2xl border-r flex flex-col justify-between transition-all duration-300 z-50 ${
+    <aside className={`sticky top-0 h-screen sidebar-bg backdrop-blur-2xl border-r flex flex-col justify-between transition-all duration-300 z-50 relative ${
       collapsed ? 'w-20' : 'w-64'
     }`}>
       
+      {/* Floating Expand/Collapse Toggle Button on Sidebar Border */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
+        className="absolute -right-3 top-6 w-6 h-6 rounded-full card-bg-subtle border theme-border shadow-md text-title hover:bg-blue-600 hover:text-white hover:scale-110 flex items-center justify-center transition z-50 cursor-pointer"
+      >
+        {collapsed ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" /> : <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />}
+      </button>
+
       {/* Top Section */}
-      <div className="p-4 space-y-5">
+      <div className={`space-y-5 ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
         
         {/* Brand Logo */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg glow-blue shrink-0 flex items-center justify-center">
-              <Cpu className="w-5 h-5 animate-pulse" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-base tracking-tight text-title">
-                    OpsPilot
-                  </span>
-                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30">
-                    AI
-                  </span>
-                </div>
-                <p className="text-[10px] text-subtitle font-mono">DevOps Agent</p>
-              </div>
-            )}
+        <div className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-3'}`}>
+          <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg glow-blue shrink-0 flex items-center justify-center">
+            <Cpu className="w-5 h-5 animate-pulse" />
           </div>
-
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
-            className="p-1.5 rounded-lg card-bg-subtle text-subtitle hover:text-title transition"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
+          {!collapsed && (
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-base tracking-tight text-title">
+                  OpsPilot
+                </span>
+                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30">
+                  AI
+                </span>
+              </div>
+              <p className="text-[10px] text-subtitle font-mono">DevOps Agent</p>
+            </div>
+          )}
         </div>
 
         {/* Organization Glass Card */}
@@ -102,25 +101,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
               <NavLink
                 key={item.path}
                 to={item.path}
+                title={collapsed ? item.label : undefined}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  `flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-3'} py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg glow-blue'
-                      : 'text-subtitle hover:text-title card-bg-subtle'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                      : 'text-subtitle hover:text-title hover:bg-slate-500/10'
                   }`
                 }
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </div>
+                {({ isActive }) => (
+                  <>
+                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </div>
 
-                {!collapsed && item.badge && (
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${
-                    item.badgeColor || 'card-bg-subtle text-subtitle'
-                  }`}>
-                    {item.badge}
-                  </span>
+                    {!collapsed && item.badge && (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-all ${
+                        isActive
+                          ? 'bg-white/25 text-white border-white/40 shadow-sm font-extrabold'
+                          : (item.badgeColor || 'card-bg-subtle text-subtitle')
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
                 )}
               </NavLink>
             );
@@ -131,9 +137,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
       {/* Glass User Profile Footer */}
       <div className="p-3 border-t sidebar-bg">
         {user && (
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md">
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
+            <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md" title={user.name}>
                 {user.name.charAt(0)}
               </div>
               {!collapsed && (

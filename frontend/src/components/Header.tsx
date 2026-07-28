@@ -28,7 +28,9 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState<boolean>(false);
   const { theme, toggleTheme } = useTheme();
-  const status = project?.environmentStatus.overall || 'HEALTHY';
+  const rawEnv = project?.environmentStatus;
+  const allNodesHealthy = rawEnv && rawEnv.postgres === 'RUNNING' && rawEnv.redis === 'RUNNING' && rawEnv.api === 'RUNNING' && rawEnv.nginx === 'HEALTHY';
+  const status = allNodesHealthy ? 'HEALTHY' : (rawEnv?.overall || 'HEALTHY');
 
   const statusColor = 
     status === 'HEALTHY' ? 'status-healthy glow-emerald' :

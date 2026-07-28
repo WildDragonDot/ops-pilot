@@ -189,6 +189,13 @@ body {
   border-color: var(--border-color);
 }
 
+/* Theme pill capsule */
+.theme-pill {
+  background-color: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-title);
+}
+
 /* Theme input */
 .theme-input {
   background-color: var(--bg-input);

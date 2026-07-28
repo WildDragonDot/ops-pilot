@@ -92,7 +92,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleReject(approval.id)}
-                    className="px-4 py-2 card-bg-subtle hover:opacity-80 text-subtitle text-xs font-bold rounded-xl border theme-border transition"
+                    className="px-4 py-2 card-bg-subtle hover:bg-rose-500 hover:text-white text-title text-xs font-bold rounded-xl border theme-border transition cursor-pointer"
                   >
                     Reject
                   </motion.button>

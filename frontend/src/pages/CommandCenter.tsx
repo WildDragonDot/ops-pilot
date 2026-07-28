@@ -21,7 +21,11 @@ import {
   Activity,
   Trash2,
   Share2,
-  FileCode
+  FileCode,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { Incident } from '../types';
 import { startIncident, approveFix, rejectFix } from '../services/api';
@@ -40,11 +44,92 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
   const [showTerminalModal, setShowTerminalModal] = useState<boolean>(false);
   const [isInvestigating, setIsInvestigating] = useState<boolean>(false);
   const [showReasoningTimeline, setShowReasoningTimeline] = useState<boolean>(false);
-  const [showDiffDetails, setShowDiffDetails] = useState<boolean>(false);
+  const [showDiffDetails, setShowDiffDetails] = useState<boolean>(true);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [copiedSlackReport, setCopiedSlackReport] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [voiceStatus, setVoiceStatus] = useState<string>('');
+  const [isSpeakingResponse, setIsSpeakingResponse] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleVoiceRecognition = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice input is not supported in this browser environment. Please try Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
+      setIsListening(false);
+      setVoiceStatus('');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setVoiceStatus('🎙️ Listening... Speak your command in English or Hinglish');
+      };
+
+      recognition.onresult = (event: any) => {
+        let currentTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        setPromptText(currentTranscript);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error !== 'no-speech') {
+          setVoiceStatus(`Voice Error: ${event.error}`);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        setVoiceStatus('');
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error(err);
+      setIsListening(false);
+    }
+  };
+
+  const handleSpeakResponse = () => {
+    if (!('speechSynthesis' in window)) return;
+    if (isSpeakingResponse) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingResponse(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const textToSpeak = activeIncident 
+      ? `OpsPilot AI Incident Report. ${activeIncident.title}. Status: ${activeIncident.status}. ${activeIncident.rootCause || 'Investigation in progress.'}`
+      : 'OpsPilot AI Agent ready.';
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.rate = 1.0;
+    utterance.onend = () => setIsSpeakingResponse(false);
+    utterance.onerror = () => setIsSpeakingResponse(false);
+    setIsSpeakingResponse(true);
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     if (incidents.length > 0 && !activeIncidentId) {
@@ -63,10 +148,25 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
   const durationSec = Math.max(0.8, ((lastEventTime - startTime) / 1000)).toFixed(1);
 
   const handleLaunchInvestigation = async () => {
-    const textToSend = promptText.trim() || 'Meri production API down hai, 502 Bad Gateway aa raha hai. Root cause trace karke fix karo.';
+    const rawText = promptText.trim();
+    const textToSend = rawText || 'Meri production API down hai, 502 Bad Gateway aa raha hai. Root cause trace karke fix karo.';
+    
+    // Auto-detect scenario key from natural language intent if custom prompt entered
+    let targetScenarioKey = selectedScenarioKey;
+    if (rawText) {
+      const lower = rawText.toLowerCase();
+      if (lower.includes('config') || lower.includes('mismatch') || lower.includes('host') || lower.includes('env') || lower.includes('url')) {
+        targetScenarioKey = 'CONFIG_MISMATCH';
+      } else if (lower.includes('login') || lower.includes('500') || lower.includes('bug') || lower.includes('prisma') || lower.includes('code') || lower.includes('error')) {
+        targetScenarioKey = 'CODE_BUG';
+      } else if (lower.includes('502') || lower.includes('down') || lower.includes('stopped') || lower.includes('gateway') || lower.includes('postgres') || lower.includes('db')) {
+        targetScenarioKey = 'DATABASE_STOPPED';
+      }
+    }
+
     try {
       setIsInvestigating(true);
-      const newInc = await startIncident(textToSend, selectedScenarioKey);
+      const newInc = await startIncident(textToSend, targetScenarioKey);
       setActiveIncidentId(newInc.id);
       setPromptText('');
       onRefreshIncidents();
@@ -80,7 +180,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleLaunchInvestigation();
+      if (promptText.trim()) {
+        handleLaunchInvestigation();
+      }
     }
   };
 
@@ -169,6 +271,21 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
+              onClick={handleSpeakResponse}
+              title={isSpeakingResponse ? 'Stop Voice Output' : 'Read Incident Summary Out Loud'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl border theme-border transition shrink-0 ${
+                isSpeakingResponse
+                  ? 'bg-purple-600 text-white shadow-md animate-pulse border-purple-500'
+                  : 'card-bg-subtle text-subtitle hover:text-title'
+              }`}
+            >
+              {isSpeakingResponse ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-purple-400" />}
+              <span className="hidden sm:inline">{isSpeakingResponse ? 'Stop Audio' : 'Listen'}</span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={handleCopySlackReport}
               title="Copy Slack Report"
               className="flex items-center gap-1.5 px-2.5 py-1.5 card-bg-subtle hover:opacity-80 text-subtitle text-xs font-semibold rounded-xl border theme-border transition shrink-0"
@@ -229,7 +346,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
               transition={{ duration: 0.45, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-row items-start gap-3 mr-auto max-w-2xl"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md glow-blue">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                 <Bot className="w-4 h-4 animate-pulse" />
               </div>
 
@@ -294,14 +411,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="theme-alert-amber border border-amber-500/50 p-5 rounded-2xl space-y-4 shadow-md glow-amber"
+                    className="glass-panel p-5 rounded-2xl border-2 border-amber-500/40 space-y-4 shadow-xl relative overflow-hidden"
                   >
                     <div className="flex items-center justify-between border-b theme-border pb-3">
                       <div className="flex items-center gap-2">
-                        <ShieldAlert className="w-5 h-5 text-amber-400 animate-bounce" />
-                        <h3 className="text-sm font-extrabold text-title">Step 2: {activeIncident.activeApproval.title}</h3>
+                        <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500">
+                          <ShieldAlert className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <h3 className="text-sm font-extrabold text-title font-display">Step 2: {activeIncident.activeApproval.title}</h3>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-500/20 text-amber-600 border border-amber-500/40">
+                      <span className="px-3 py-1 rounded-full text-xs font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                         Risk: {activeIncident.activeApproval.riskLevel}
                       </span>
                     </div>
@@ -314,10 +433,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                     <div className="flex items-center justify-between gap-3 pt-2">
                       <button
                         onClick={() => setShowDiffDetails(!showDiffDetails)}
-                        className="flex items-center gap-1.5 px-3 py-2 card-bg-subtle hover:opacity-80 text-subtitle text-xs font-semibold rounded-xl border theme-border transition"
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl card-bg-subtle text-title border theme-border hover:bg-slate-500/10 transition whitespace-nowrap shrink-0"
                       >
-                        <FileCode className="w-3.5 h-3.5 text-blue-400" />
-                        <span>{showDiffDetails ? 'Hide Diff & Commands' : 'View Diff & Commands'}</span>
+                        <FileCode className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="whitespace-nowrap">{showDiffDetails ? 'Hide Code Patch' : 'View Code Patch'}</span>
                       </button>
 
                       <div className="flex items-center gap-2">
@@ -325,7 +444,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => handleReject(activeIncident.activeApproval!.id)}
-                          className="px-3.5 py-2 card-bg-subtle hover:opacity-80 text-subtitle text-xs font-bold rounded-xl border theme-border transition"
+                          className="px-4 py-2 card-bg-subtle text-title border theme-border hover:bg-rose-500 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                         >
                           Reject
                         </motion.button>
@@ -333,7 +452,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                           whileHover={{ scale: 1.03 }}
                           whileTap={{ scale: 0.97 }}
                           onClick={() => handleApprove(activeIncident.activeApproval!.id)}
-                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-lg glow-emerald transition"
+                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-xl shadow-lg glow-emerald transition cursor-pointer"
                         >
                           <Check className="w-4 h-4" />
                           <span>Approve & Execute Fix</span>
@@ -341,7 +460,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                       </div>
                     </div>
 
-                    {/* Optional Collapsible Diff Viewer */}
+                    {/* Auto-expanded Code Diff & Terminal Commands Viewer */}
                     <AnimatePresence>
                       {showDiffDetails && (
                         <motion.div
@@ -349,12 +468,21 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.3 }}
-                          className="overflow-hidden pt-2"
+                          className="overflow-hidden pt-3 space-y-2"
                         >
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-[11px] font-mono font-extrabold text-title flex items-center gap-1.5 uppercase tracking-wide">
+                              <FileCode className="w-3.5 h-3.5 text-blue-500" />
+                              AI Proposed Git Code & Config Diff
+                            </span>
+                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+                              Verified Safe Patch
+                            </span>
+                          </div>
                           <DiffViewer
                             diffText={activeIncident.activeApproval.diff}
                             commands={activeIncident.activeApproval.commands}
-                            title="Proposed Recovery Commands & Git Patch"
+                            title="Proposed Code Patch & Terminal Execution Plan"
                           />
                         </motion.div>
                       )}
@@ -402,12 +530,31 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
       {/* CLEAN IN-FLOW CHAT EDITOR */}
       <div>
         <div className="glass-panel p-3.5 rounded-2xl border theme-border shadow-2xl backdrop-blur-2xl space-y-2.5 focus-within:border-blue-500/80 transition-all">
+          {isListening && (
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-mono font-bold animate-pulse">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
+                </span>
+                <span>{voiceStatus || '🎙️ Listening... Speak your command in English/Hinglish now'}</span>
+              </div>
+              <button 
+                type="button"
+                onClick={toggleVoiceRecognition}
+                className="text-[10px] underline hover:text-rose-400 cursor-pointer"
+              >
+                Stop Recording
+              </button>
+            </div>
+          )}
+
           <textarea
             rows={2}
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask OpsPilot to investigate an outage or fix code risks... (Press Enter to send)"
+            placeholder="Type anything in Hinglish, Hindi or English (e.g. 'Bhai 502 error check karo', 'Fix login API bug', 'DB status status dekho')... (Press Enter to send)"
             className="w-full bg-transparent border-none text-title text-xs focus:outline-none placeholder:text-subtitle font-mono resize-none leading-relaxed px-1"
           />
 
@@ -424,10 +571,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                     setSelectedScenarioKey(sc.key);
                     setPromptText(sc.prompt);
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 transition ${
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 transition-all ${
                     selectedScenarioKey === sc.key
-                      ? 'bg-blue-600/30 text-blue-400 border border-blue-500/50'
-                      : 'card-bg-subtle text-subtitle border theme-border hover:text-title'
+                      ? 'bg-blue-600 text-white font-extrabold shadow-sm'
+                      : 'card-bg-subtle text-title border theme-border hover:bg-slate-500/10'
                   }`}
                 >
                   {sc.label}
@@ -435,15 +582,44 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
               ))}
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleLaunchInvestigation}
-              disabled={isInvestigating}
-              className="w-8 h-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white flex items-center justify-center shadow-md glow-blue transition-all cursor-pointer shrink-0"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </motion.button>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Voice Command Dictation Mic Button */}
+              <button
+                type="button"
+                onClick={toggleVoiceRecognition}
+                title={isListening ? 'Listening... Click to stop voice input' : 'Voice Command (Speak to OpsPilot AI)'}
+                className={`relative w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                  isListening
+                    ? 'bg-rose-500 text-white shadow-lg ring-4 ring-rose-500/30 animate-pulse'
+                    : 'card-bg-subtle text-subtitle border theme-border hover:text-blue-500 hover:border-blue-500/40'
+                }`}
+              >
+                {isListening ? (
+                  <MicOff className="w-3.5 h-3.5 animate-bounce text-white" />
+                ) : (
+                  <Mic className="w-3.5 h-3.5" />
+                )}
+              </button>
+
+              {/* Send Button (Highlighted ONLY when text is present) */}
+              <motion.button
+                whileHover={{ scale: promptText.trim() && !isInvestigating ? 1.05 : 1 }}
+                whileTap={{ scale: promptText.trim() && !isInvestigating ? 0.95 : 1 }}
+                onClick={handleLaunchInvestigation}
+                disabled={!promptText.trim() || isInvestigating}
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+                  promptText.trim() && !isInvestigating
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md glow-blue cursor-pointer'
+                    : 'card-bg-subtle text-subtitle border theme-border cursor-not-allowed opacity-50'
+                }`}
+              >
+                {isInvestigating ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+              </motion.button>
+            </div>
           </div>
         </div>
       </div>
