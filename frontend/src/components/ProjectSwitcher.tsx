@@ -32,7 +32,7 @@ export const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({
           <Server className="w-3.5 h-3.5 text-blue-500" />
         </div>
 
-        <span className="max-w-[150px] truncate font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+        <span className="max-w-[180px] sm:max-w-[220px] truncate font-extrabold text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap">
           {activeProject?.name || 'Select Project'}
         </span>
 

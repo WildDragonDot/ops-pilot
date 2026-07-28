@@ -1,7 +1,9 @@
-import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
+import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal';
+import { useTheme } from '../context/ThemeContext';
 import { Project, Scan, Incident } from '../types';
 
 interface DashboardLayoutProps {
@@ -27,7 +29,33 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onScanRepo,
   isScanning
 }) => {
-  // If no project is selected or setup, redirect user to /projects setup page
+  const navigate = useNavigate();
+  const { toggleTheme } = useTheme();
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Toggle shortcuts with '?' (Shift + /) or 'Cmd + /'
+      if ((e.key === '?' || (e.key === '/' && (e.metaKey || e.ctrlKey))) && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setShortcutsModalOpen(prev => !prev);
+      }
+      // Toggle theme with Cmd/Ctrl + Shift + T
+      if (e.key.toLowerCase() === 't' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        toggleTheme();
+      }
+      // Trigger scan with Cmd/Ctrl + S
+      if (e.key.toLowerCase() === 's' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        onScanRepo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleTheme, onScanRepo]);
+
   if (!project) {
     return <Navigate to="/projects" replace />;
   }
@@ -47,6 +75,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           projects={projects}
           onSelectProject={onSelectProject}
           onOpenSetupModal={onOpenSetupModal}
+          onOpenShortcuts={() => setShortcutsModalOpen(true)}
           onResetEnv={onResetEnv}
           onScanRepo={onScanRepo}
           isScanning={isScanning}
@@ -66,6 +95,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </main>
 
       </div>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={shortcutsModalOpen}
+        onClose={() => setShortcutsModalOpen(false)}
+        onNavigate={(path) => navigate(path)}
+        onScanRepo={onScanRepo}
+        onToggleTheme={toggleTheme}
+      />
 
     </div>
   );

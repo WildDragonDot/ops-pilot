@@ -559,11 +559,13 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
           />
 
           <div className="flex items-center justify-between border-t theme-border pt-2 font-mono text-xs">
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
               {[
                 { key: 'DATABASE_STOPPED', label: '⚡ 502 Outage', prompt: 'Production API down with 502 Bad Gateway. Trace root cause and execute recovery patch.' },
                 { key: 'CONFIG_MISMATCH', label: '🛠 Config Mismatch', prompt: 'API DB connection failed after deployment. Inspect environment configuration and fix host URL.' },
                 { key: 'CODE_BUG', label: '🐞 Login 500 Bug', prompt: 'User login API returns 500 Internal Server Error. Inspect Prisma query types and apply safe patch.' },
+                { key: 'SECURITY_AUDIT', label: '🛡️ Security Audit', prompt: 'Perform automated repository security audit to scan for leaked credentials and vulnerable dependencies.' },
+                { key: 'PERF_DIAGNOSTIC', label: '📊 Check Latency', prompt: 'Run deep diagnostic on API response latency, memory consumption, and database query index usage.' },
               ].map(sc => (
                 <button
                   key={sc.key}
@@ -571,10 +573,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                     setSelectedScenarioKey(sc.key);
                     setPromptText(sc.prompt);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 transition-all ${
-                    selectedScenarioKey === sc.key
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold shrink-0 transition-all cursor-pointer ${
+                    selectedScenarioKey === sc.key && promptText === sc.prompt
                       ? 'bg-blue-600 text-white font-extrabold shadow-sm'
-                      : 'card-bg-subtle text-title border theme-border hover:bg-slate-500/10'
+                      : 'card-bg-subtle text-title border theme-border hover:bg-slate-500/10 hover:border-blue-500/30'
                   }`}
                 >
                   {sc.label}
