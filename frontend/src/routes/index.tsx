@@ -45,10 +45,11 @@ export function AppRoutes() {
         fetchIncidents()
       ]);
       setProjects(allProjects);
-      if (!project && allProjects.length > 0) {
-        const savedId = localStorage.getItem('opspilot_selected_project_id');
-        const found = allProjects.find(p => p.id === savedId) || allProjects[0];
-        setProject(found);
+      
+      const savedId = localStorage.getItem('opspilot_selected_project_id');
+      const found = allProjects.find(p => p.id === (project?.id || savedId)) || allProjects[0];
+      if (found) {
+        setProject({ ...found });
       }
       setScan(scanData);
       setIncidents(incData);
@@ -64,10 +65,10 @@ export function AppRoutes() {
         if (document.visibilityState === 'visible') {
           loadData();
         }
-      }, 5000);
+      }, 1500);
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, project?.id]);
 
   const handleSelectProject = (selectedP: Project) => {
     setProject(selectedP);

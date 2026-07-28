@@ -4,6 +4,8 @@ import { getProjectState, injectFailureScenario, resetEnvironmentState, createAn
 import { testSSHConnection } from '../services/ssh.service.js';
 import { fetchLiveGitHubAudit } from '../services/github-audit.service.js';
 
+import { broadcastEvent } from './stream.controller.js';
+
 const getHeaderString = (val: string | string[] | undefined): string | undefined => {
   if (!val) return undefined;
   return Array.isArray(val) ? val[0] : val;
@@ -151,10 +153,12 @@ export async function injectFailure(req: Request, res: Response) {
   const key = scenarioKey || 'DATABASE_STOPPED';
   const state = injectFailureScenario(key);
   const incident = await createAndRunIncident('', key);
+  broadcastEvent({ type: 'danger', title: 'Failure Injected', message: `Scenario '${key}' triggered container degradation` });
   res.json({ success: true, services: state.environmentStatus, incident });
 }
 
 export function resetEnv(req: Request, res: Response) {
   const state = resetEnvironmentState();
+  broadcastEvent({ type: 'success', title: 'Environment Restored', message: 'All container services reset to HEALTHY status' });
   res.json({ success: true, services: state.environmentStatus });
 }

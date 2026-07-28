@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { prisma } from './db.service.js';
 import { runOpenAIIncidentReasoning } from './openai.service.js';
+import { broadcastEvent } from '../controllers/stream.controller.js';
 
 export const incidentEmitter = new EventEmitter();
 
@@ -312,6 +313,7 @@ export async function approveIncidentFix(approvalId: string) {
   });
 
   projectState.environmentStatus = { overall: 'HEALTHY', postgres: 'RUNNING', redis: 'RUNNING', api: 'RUNNING', nginx: 'HEALTHY' };
+  broadcastEvent({ type: 'success', title: 'Fix Approved & Executed', message: 'All container services restored to HEALTHY status' });
 
   await new Promise(r => setTimeout(r, 1200));
 

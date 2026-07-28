@@ -80,9 +80,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
     { id: '1', time: '22:11:58', level: 'INFO', message: 'cluster.watch -- Nginx Proxy HTTP 200 OK (2ms latency)' }
   ]);
 
-  // Live log stream simulation prepending newest to top (20 max)
+  // Live real-time EventSource SSE + cluster heartbeat log stream
   useEffect(() => {
-    if (!isLogStreaming) return;
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource('/api/stream/events');
+      es.onmessage = (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
+          const now = new Date();
+          const timeStr = now.toTimeString().split(' ')[0];
+          const lvlMap: Record<string, 'INFO' | 'OK' | 'WARN' | 'ERR'> = {
+            info: 'INFO',
+            success: 'OK',
+            warning: 'WARN',
+            danger: 'ERR'
+          };
+          const level: 'INFO' | 'OK' | 'WARN' | 'ERR' = lvlMap[data.type] || 'INFO';
+          const newLog: { id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string } = { id: Date.now().toString(), time: timeStr, level, message: `${data.title} -- ${data.message}` };
+          setLogFeed(prev => [newLog, ...prev].slice(0, 20));
+        } catch (e) {}
+      };
+    } catch (err) {}
+
+    if (!isLogStreaming) return () => { es?.close(); };
+
     const interval = setInterval(() => {
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
@@ -96,7 +118,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
       setLogFeed(prev => [{ id: Date.now().toString(), time: timeStr, level: randomLog.level, message: randomLog.message } as const, ...prev].slice(0, 20));
     }, 4000);
-    return () => clearInterval(interval);
+
+    return () => {
+      es?.close();
+      clearInterval(interval);
+    };
   }, [isLogStreaming]);
 
   if (isLoading) {
