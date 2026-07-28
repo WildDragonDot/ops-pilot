@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building, 
@@ -17,7 +17,6 @@ import {
   Copy,
   Check,
   RefreshCw,
-  Zap,
   Bell,
   Download,
   FileJson,
@@ -29,7 +28,10 @@ import {
   Palette,
   ChevronRight,
   Activity,
-  Sparkles
+  Sparkles,
+  Upload,
+  X,
+  Edit2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchProjects, removeProject } from '../services/api';
@@ -43,6 +45,7 @@ interface SettingsPageProps {
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'projects' | 'ai' | 'webhooks' | 'guardrails' | 'team' | 'vault'>('projects');
   const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -50,6 +53,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   // Infrastructure settings
   const [pollingInterval, setPollingInterval] = useState<string>(() => localStorage.getItem('opspilot_polling_interval') || '5s');
   const [dockerTimeout, setDockerTimeout] = useState<string>(() => localStorage.getItem('opspilot_docker_timeout') || '60s');
+
+  // Editing Project Modal state
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editHost, setEditHost] = useState<string>('');
+  const [editPort, setEditPort] = useState<string>('22');
 
   // AI Model & API Parameters
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('opspilot_openai_key') || 'sk-proj-78a9f2bc31948e9102ab0541');
@@ -118,12 +126,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [orgName, setOrgName] = useState<string>(() => localStorage.getItem('opspilot_org_name') || user?.organizationName || 'Acme Operations Corp');
   const [isVerifyingVault, setIsVerifyingVault] = useState<boolean>(false);
 
-  // Team Roster State
-  const [teamMembers] = useState([
+  // Team Roster & Invite Modal State
+  const [teamMembers, setTeamMembers] = useState([
     { name: 'Chandan Vishwakarma', email: 'chandan@opspilot.ai', role: 'ADMIN', status: 'ACTIVE' },
     { name: 'DevOps Lead Engineer', email: 'sre@opspilot.ai', role: 'OPERATOR', status: 'ACTIVE' },
     { name: 'Security Auditor', email: 'security@opspilot.ai', role: 'AUDITOR', status: 'ACTIVE' },
   ]);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState<boolean>(false);
+  const [inviteName, setInviteName] = useState<string>('');
+  const [inviteEmail, setInviteEmail] = useState<string>('');
+  const [inviteRole, setInviteRole] = useState<string>('OPERATOR');
 
   useEffect(() => {
     setIsLoading(true);
@@ -151,6 +163,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
         });
       }
     }
+  };
+
+  const handleOpenEditProject = (proj: Project) => {
+    setEditingProject(proj);
+    setEditHost(proj.serverHost || '34.224.80.31');
+    setEditPort(proj.serverPort ? String(proj.serverPort) : '22');
+  };
+
+  const handleSaveProjectEdit = () => {
+    if (!editingProject) return;
+    setProjectsList(prev => prev.map(p => {
+      if (p.id === editingProject.id) {
+        return { ...p, serverHost: editHost, serverPort: parseInt(editPort, 10) || 22 };
+      }
+      return p;
+    }));
+    setEditingProject(null);
+    addNotification({
+      type: 'success',
+      title: 'Project Connection Updated',
+      message: `Updated SSH server host to ${editHost}:${editPort}.`
+    });
   };
 
   const handleToggleGuardrail = (id: string) => {
@@ -299,6 +333,58 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     });
   };
 
+  const handleImportBackupJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.aiConfig) {
+          if (parsed.aiConfig.model) setSelectedModel(parsed.aiConfig.model);
+          if (parsed.aiConfig.temperature) setReasoningTemperature(parsed.aiConfig.temperature);
+          if (parsed.aiConfig.systemPrompt) setSystemPrompt(parsed.aiConfig.systemPrompt);
+        }
+        if (parsed.webhook?.url) setWebhookUrl(parsed.webhook.url);
+        if (parsed.guardrails) setGuardrails(parsed.guardrails);
+        if (parsed.forbiddenCommands) setForbiddenCmds(parsed.forbiddenCommands);
+        if (parsed.organization) setOrgName(parsed.organization);
+        if (parsed.operator) setOperatorName(parsed.operator);
+
+        addNotification({
+          type: 'success',
+          title: 'Configuration Imported',
+          message: 'Workspace settings successfully restored from JSON backup file.'
+        });
+      } catch (err) {
+        addNotification({
+          type: 'danger',
+          title: 'Import Error',
+          message: 'Invalid JSON backup file format.'
+        });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleAddTeamMember = () => {
+    if (!inviteName.trim() || !inviteEmail.trim()) {
+      addNotification({ type: 'warning', title: 'Missing Information', message: 'Please enter both name and email.' });
+      return;
+    }
+    setTeamMembers(prev => [...prev, { name: inviteName, email: inviteEmail, role: inviteRole, status: 'ACTIVE' }]);
+    setInviteName('');
+    setInviteEmail('');
+    setIsInviteModalOpen(false);
+    addNotification({
+      type: 'success',
+      title: 'Member Invited',
+      message: `Added "${inviteName}" as ${inviteRole} to the organization.`
+    });
+  };
+
   const handleTestVaultEncryption = async () => {
     setIsVerifyingVault(true);
     try {
@@ -343,7 +429,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
       transition={{ duration: 0.3 }}
       className="space-y-4 max-w-7xl mx-auto font-sans pb-10"
     >
-      
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportBackupJson}
+        accept=".json"
+        className="hidden"
+      />
+
       {/* Top Header Banner with Subtle Glow */}
       <div className="glass-panel px-5 py-4 rounded-xl theme-border border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-blue-500/10 via-indigo-500/5 to-transparent pointer-events-none" />
@@ -361,6 +454,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
         </div>
 
         <div className="flex items-center gap-2 shrink-0 relative z-10">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => fileInputRef.current?.click()}
+            title="Import configuration JSON file"
+            className="flex items-center gap-1.5 px-3 py-1.5 card-bg-subtle hover:bg-slate-500/10 text-title border theme-border text-[11px] font-bold rounded-lg transition cursor-pointer"
+          >
+            <Upload className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Import JSON</span>
+          </motion.button>
+
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -487,7 +591,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
           </div>
         </div>
 
-        {/* RIGHT SETTINGS MAIN CANVAS WITH FRAMER MOTION ANIMATEPRESENCE */}
+        {/* RIGHT SETTINGS MAIN CANVAS */}
         <div className="flex-1 min-w-0">
           <AnimatePresence mode="wait">
             
@@ -554,14 +658,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                                 <span className="text-[9px] text-subtitle font-mono">ID: #{proj.id}</span>
                               </div>
                             </div>
-                            <button
-                              onClick={() => handleDeleteProject(proj.id, proj.name)}
-                              title="Remove Project"
-                              aria-label={`Remove project ${proj.name}`}
-                              className="p-1 rounded text-subtitle hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleOpenEditProject(proj)}
+                                title="Edit Connection"
+                                className="p-1 rounded text-subtitle hover:text-blue-500 hover:bg-blue-500/10 transition cursor-pointer"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProject(proj.id, proj.name)}
+                                title="Remove Project"
+                                aria-label={`Remove project ${proj.name}`}
+                                className="p-1 rounded text-subtitle hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           <div className="space-y-2 text-[11px] font-mono">
@@ -1093,8 +1206,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => addNotification({ type: 'info', title: 'Invite Link', message: 'Team invite link copied to clipboard.' })}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer"
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer shadow-sm"
                     >
                       <UserPlus className="w-3 h-3" />
                       <span>Invite Member</span>
@@ -1234,6 +1347,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                   <div className="space-y-3 text-[11px]">
                     <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
                       <div>
+                        <span className="font-bold text-title block">Import Workspace Backup JSON</span>
+                        <span className="text-[10px] text-subtitle">Restore full settings from JSON file</span>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm cursor-pointer"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>Import JSON</span>
+                      </motion.button>
+                    </div>
+
+                    <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
+                      <div>
                         <span className="font-bold text-title block">Export Workspace JSON</span>
                         <span className="text-[10px] text-subtitle">Download full settings backup file</span>
                       </div>
@@ -1247,22 +1376,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                         <span>Download JSON</span>
                       </motion.button>
                     </div>
-
-                    <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
-                      <div>
-                        <span className="font-bold text-title block">Purge Local Cache</span>
-                        <span className="text-[10px] text-subtitle">Reset local storage incident cache</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          localStorage.removeItem('opspilot_resolved_patches');
-                          addNotification({ type: 'info', title: 'Cache Purged', message: 'Local diagnostic cache successfully cleared.' });
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 font-bold text-[11px] cursor-pointer"
-                      >
-                        Purge Cache
-                      </button>
-                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -1272,6 +1385,159 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
         </div>
 
       </div>
+
+      {/* EDIT PROJECT MODAL DIALOG */}
+      <AnimatePresence>
+        {editingProject && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-panel max-w-md w-full p-5 rounded-2xl theme-border border space-y-4 shadow-xl font-sans"
+            >
+              <div className="flex items-center justify-between border-b theme-border pb-3">
+                <h3 className="text-xs font-bold text-title flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-blue-500" />
+                  <span>Edit Server Host - {editingProject.name}</span>
+                </h3>
+                <button
+                  onClick={() => setEditingProject(null)}
+                  className="text-subtitle hover:text-title p-1 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="space-y-1">
+                  <label className="text-subtitle font-bold block">SSH Server Host IP / Domain</label>
+                  <input
+                    type="text"
+                    value={editHost}
+                    onChange={(e) => setEditHost(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-subtitle font-bold block">SSH Server Port</label>
+                  <input
+                    type="text"
+                    value={editPort}
+                    onChange={(e) => setEditPort(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setEditingProject(null)}
+                  className="px-3.5 py-1.5 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProjectEdit}
+                  className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Save Connection
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* INVITE TEAM MEMBER MODAL DIALOG */}
+      <AnimatePresence>
+        {isInviteModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-panel max-w-md w-full p-5 rounded-2xl theme-border border space-y-4 shadow-xl font-sans"
+            >
+              <div className="flex items-center justify-between border-b theme-border pb-3">
+                <h3 className="text-xs font-bold text-title flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-blue-500" />
+                  <span>Invite New Team Member</span>
+                </h3>
+                <button
+                  onClick={() => setIsInviteModalOpen(false)}
+                  className="text-subtitle hover:text-title p-1 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="space-y-1">
+                  <label className="text-subtitle font-bold block">Member Full Name</label>
+                  <input
+                    type="text"
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    placeholder="e.g. Alex Rivera"
+                    className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-subtitle font-bold block">Email Address</label>
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="alex@opspilot.ai"
+                    className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-subtitle font-bold block">Assign Access Role</label>
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="OPERATOR">OPERATOR (Full Patch Execution)</option>
+                    <option value="AUDITOR">AUDITOR (Read-Only Logs)</option>
+                    <option value="ADMIN">ADMIN (Superuser Access)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setIsInviteModalOpen(false)}
+                  className="px-3.5 py-1.5 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddTeamMember}
+                  className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Send Invitation
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );
