@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building, 
   Cpu, 
@@ -28,7 +28,8 @@ import {
   UserPlus,
   Palette,
   ChevronRight,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchProjects, removeProject } from '../services/api';
@@ -343,12 +344,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
       className="space-y-4 max-w-7xl mx-auto font-sans pb-10"
     >
       
-      {/* Compact Top Header Banner */}
-      <div className="glass-panel px-5 py-4 rounded-xl theme-border border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
-        <div className="space-y-0.5">
+      {/* Top Header Banner with Subtle Glow */}
+      <div className="glass-panel px-5 py-4 rounded-xl theme-border border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-blue-500/10 via-indigo-500/5 to-transparent pointer-events-none" />
+        
+        <div className="space-y-0.5 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-bold font-mono">
-              Control Center
+            <span className="px-2 py-0.2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-bold font-mono flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-blue-400" /> Control Center
             </span>
           </div>
           <h1 className="text-lg font-bold text-title tracking-tight font-display">Workspace Settings</h1>
@@ -357,24 +360,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
+        <div className="flex items-center gap-2 shrink-0 relative z-10">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleExportBackupJson}
             title="Export workspace backup JSON"
             className="flex items-center gap-1.5 px-3 py-1.5 card-bg-subtle hover:bg-slate-500/10 text-title border theme-border text-[11px] font-bold rounded-lg transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-blue-500" />
             <span>Export Backup</span>
-          </button>
+          </motion.button>
 
           {onOpenSetupModal && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={onOpenSetupModal}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold rounded-lg shadow-sm glow-blue transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Setup Project</span>
-            </button>
+            </motion.button>
           )}
         </div>
       </div>
@@ -396,14 +403,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
           </div>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={handleTestVaultEncryption}
           disabled={isVerifyingVault}
           className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] font-extrabold border border-emerald-500/30 hover:bg-emerald-500/30 transition shrink-0 cursor-pointer"
         >
           <RefreshCw className={`w-3 h-3 ${isVerifyingVault ? 'animate-spin' : ''}`} />
           <span>{isVerifyingVault ? 'Verifying...' : 'Test WebCrypto'}</span>
-        </button>
+        </motion.button>
       </div>
 
       {/* 2-COLUMN COMPACT LAYOUT */}
@@ -419,17 +428,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as any)}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all cursor-pointer relative overflow-hidden ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-sm glow-blue font-bold'
+                      ? 'border-l-3 border-blue-500 bg-gradient-to-r from-blue-600/15 via-blue-600/5 to-transparent text-blue-500 font-bold'
                       : 'card-bg-subtle text-subtitle hover:text-title hover:bg-slate-500/10'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-blue-500'}`} />
+                    <div className={`p-1 rounded-md ${isActive ? 'bg-blue-500/20 text-blue-500' : 'bg-slate-500/10 text-subtitle'}`}>
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                    </div>
                     <div className="min-w-0">
                       <span className="text-[11px] font-bold block truncate leading-tight">{item.title}</span>
-                      <span className={`text-[9px] block truncate ${isActive ? 'text-blue-100' : 'text-subtitle'}`}>
+                      <span className={`text-[9px] block truncate ${isActive ? 'text-blue-400' : 'text-subtitle'}`}>
                         {item.desc}
                       </span>
                     </div>
@@ -438,12 +449,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     {item.badge && (
                       <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono max-w-[55px] truncate ${
-                        isActive ? 'bg-white/20 text-white font-extrabold' : 'bg-slate-500/10 text-subtitle font-bold'
+                        isActive ? 'bg-blue-500/20 text-blue-400 font-extrabold border border-blue-500/30' : 'bg-slate-500/10 text-subtitle font-bold'
                       }`}>
                         {item.badge}
                       </span>
                     )}
-                    <ChevronRight className={`w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <ChevronRight className={`w-3 h-3 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
                   </div>
                 </button>
               );
@@ -460,7 +471,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
             <div className="space-y-1.5 text-[10px] font-mono">
               <div className="flex justify-between items-center p-1.5 rounded-lg card-bg-subtle border theme-border">
                 <span className="text-subtitle">Vault Status</span>
-                <span className="text-emerald-500 font-extrabold">AES-256</span>
+                <span className="text-emerald-500 font-extrabold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> AES-256
+                </span>
               </div>
               <div className="flex justify-between items-center p-1.5 rounded-lg card-bg-subtle border theme-border">
                 <span className="text-subtitle">AI Model</span>
@@ -474,728 +487,788 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
           </div>
         </div>
 
-        {/* RIGHT SETTINGS MAIN CANVAS */}
-        <div className="flex-1 min-w-0 space-y-5">
-
-          {/* TAB 1: PROJECTS & INFRASTRUCTURE */}
-          {activeTab === 'projects' && (
-            <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Connected Infrastructure Projects ({projectsList.length})</span>
-                </h2>
-                {onOpenSetupModal && (
-                  <button
-                    onClick={onOpenSetupModal}
-                    className="text-[11px] text-blue-500 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Add Project</span>
-                  </button>
-                )}
-              </div>
-
-              {isLoading ? (
-                <div className="p-6 text-center text-subtitle text-[11px] font-mono">Loading connected projects...</div>
-              ) : projectsList.length === 0 ? (
-                <div className="glass-panel p-6 rounded-xl theme-border border text-center space-y-2.5">
-                  <Server className="w-6 h-6 text-subtitle mx-auto" />
-                  <h3 className="text-xs font-bold text-title">No Connected Projects</h3>
-                  <p className="text-[11px] text-subtitle max-w-xs mx-auto">Set up your first project to connect OpsPilot AI with a repository and server host.</p>
+        {/* RIGHT SETTINGS MAIN CANVAS WITH FRAMER MOTION ANIMATEPRESENCE */}
+        <div className="flex-1 min-w-0">
+          <AnimatePresence mode="wait">
+            
+            {/* TAB 1: PROJECTS & INFRASTRUCTURE */}
+            {activeTab === 'projects' && (
+              <motion.div 
+                key="tab-projects"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="space-y-5"
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <Server className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Connected Infrastructure Projects ({projectsList.length})</span>
+                  </h2>
                   {onOpenSetupModal && (
                     <button
                       onClick={onOpenSetupModal}
-                      className="px-3.5 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg shadow-sm cursor-pointer"
+                      className="text-[11px] text-blue-500 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      Setup First Project
+                      <Plus className="w-3 h-3" />
+                      <span>Add Project</span>
                     </button>
                   )}
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {projectsList.map((proj, idx) => {
-                    const sshString = proj.serverHost ? `${proj.serverUser || 'root'}@${proj.serverHost}:${proj.serverPort || 22}` : 'Local Sandbox Engine';
-                    return (
-                      <div
-                        key={proj.id}
-                        className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 glass-panel-hover"
+
+                {isLoading ? (
+                  <div className="p-6 text-center text-subtitle text-[11px] font-mono">Loading connected projects...</div>
+                ) : projectsList.length === 0 ? (
+                  <div className="glass-panel p-6 rounded-xl theme-border border text-center space-y-2.5">
+                    <Server className="w-6 h-6 text-subtitle mx-auto" />
+                    <h3 className="text-xs font-bold text-title">No Connected Projects</h3>
+                    <p className="text-[11px] text-subtitle max-w-xs mx-auto">Set up your first project to connect OpsPilot AI with a repository and server host.</p>
+                    {onOpenSetupModal && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={onOpenSetupModal}
+                        className="px-3.5 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg shadow-sm cursor-pointer"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20">
-                              <Terminal className="w-3.5 h-3.5" />
+                        Setup First Project
+                      </motion.button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {projectsList.map((proj, idx) => {
+                      const sshString = proj.serverHost ? `${proj.serverUser || 'root'}@${proj.serverHost}:${proj.serverPort || 22}` : 'Local Sandbox Engine';
+                      return (
+                        <div
+                          key={proj.id}
+                          className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 glass-panel-hover"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                                <Terminal className="w-3.5 h-3.5" />
+                              </div>
+                              <div>
+                                <h3 className="text-xs font-bold text-title">{proj.name}</h3>
+                                <span className="text-[9px] text-subtitle font-mono">ID: #{proj.id}</span>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="text-xs font-bold text-title">{proj.name}</h3>
-                              <span className="text-[9px] text-subtitle font-mono">ID: #{proj.id}</span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleDeleteProject(proj.id, proj.name)}
-                            title="Remove Project"
-                            aria-label={`Remove project ${proj.name}`}
-                            className="p-1 rounded text-subtitle hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-2 text-[11px] font-mono">
-                          <div className="p-2 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
-                            <div className="truncate">
-                              <span className="text-[9px] text-subtitle block">SSH Host</span>
-                              <span className="text-title font-bold truncate block">{sshString}</span>
-                            </div>
-                            {proj.serverHost && (
-                              <button
-                                onClick={() => handleCopyText(sshString, idx)}
-                                title="Copy SSH String"
-                                className="p-1 rounded hover:bg-slate-500/10 text-subtitle hover:text-title transition shrink-0 cursor-pointer"
-                              >
-                                {copiedIndex === idx ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleDeleteProject(proj.id, proj.name)}
+                              title="Remove Project"
+                              aria-label={`Remove project ${proj.name}`}
+                              className="p-1 rounded text-subtitle hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="p-1.5 rounded-lg card-bg-subtle border theme-border">
-                              <span className="text-[9px] text-subtitle block">Environment</span>
-                              <span className="text-title font-bold text-[10px]">{proj.environmentType || 'Docker Compose'}</span>
+                          <div className="space-y-2 text-[11px] font-mono">
+                            <div className="p-2 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
+                              <div className="truncate">
+                                <span className="text-[9px] text-subtitle block">SSH Host</span>
+                                <span className="text-title font-bold truncate block">{sshString}</span>
+                              </div>
+                              {proj.serverHost && (
+                                <button
+                                  onClick={() => handleCopyText(sshString, idx)}
+                                  title="Copy SSH String"
+                                  className="p-1 rounded hover:bg-slate-500/10 text-subtitle hover:text-title transition shrink-0 cursor-pointer"
+                                >
+                                  {copiedIndex === idx ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                </button>
+                              )}
                             </div>
-                            <div className="p-1.5 rounded-lg card-bg-subtle border theme-border">
-                              <span className="text-[9px] text-subtitle block">Vault Status</span>
-                              <span className="text-emerald-500 font-bold text-[10px] flex items-center gap-1">
-                                <CheckCircle2 className="w-2.5 h-2.5" /> Encrypted
-                              </span>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="p-1.5 rounded-lg card-bg-subtle border theme-border">
+                                <span className="text-[9px] text-subtitle block">Environment</span>
+                                <span className="text-title font-bold text-[10px]">{proj.environmentType || 'Docker Compose'}</span>
+                              </div>
+                              <div className="p-1.5 rounded-lg card-bg-subtle border theme-border">
+                                <span className="text-[9px] text-subtitle block">Vault Status</span>
+                                <span className="text-emerald-500 font-bold text-[10px] flex items-center gap-1">
+                                  <CheckCircle2 className="w-2.5 h-2.5" /> Encrypted
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Infrastructure Polling & Timeout Config */}
+                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                    <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Infrastructure Polling & Timeouts</span>
+                    </h3>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleSaveInfraSettings}
+                      className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
+                    >
+                      <Save className="w-3 h-3" /> Save
+                    </motion.button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
+                    <div className="space-y-1">
+                      <label className="text-subtitle font-bold block">Cluster Auto-Refresh Rate</label>
+                      <select
+                        value={pollingInterval}
+                        onChange={(e) => setPollingInterval(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                      >
+                        <option value="5s">Every 5 Seconds (High Realtime)</option>
+                        <option value="10s">Every 10 Seconds (Balanced)</option>
+                        <option value="30s">Every 30 Seconds (Low Overhead)</option>
+                        <option value="disabled">Disabled (Manual Refresh Only)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-subtitle font-bold block">Docker Command Execution Timeout</label>
+                      <select
+                        value={dockerTimeout}
+                        onChange={(e) => setDockerTimeout(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                      >
+                        <option value="30s">30 Seconds Timeout</option>
+                        <option value="60s">60 Seconds Timeout (Recommended)</option>
+                        <option value="120s">120 Seconds Timeout (Long Builds)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </motion.div>
+            )}
 
-              {/* Infrastructure Polling & Timeout Config */}
-              <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                  <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Infrastructure Polling & Timeouts</span>
-                  </h3>
-                  <button
-                    onClick={handleSaveInfraSettings}
-                    className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
+            {/* TAB 2: AI ENGINE & PERSONAS */}
+            {activeTab === 'ai' && (
+              <motion.div 
+                key="tab-ai"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="glass-panel p-5 rounded-xl theme-border border space-y-5"
+              >
+                <div className="flex items-center justify-between border-b theme-border pb-3">
+                  <div>
+                    <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-blue-500" />
+                      <span>OpenAI API & System Personas</span>
+                    </h2>
+                    <p className="text-[11px] text-subtitle">Configure system prompt parameters, model choice, token limits, and API keys.</p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSaveAISettings}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition cursor-pointer"
                   >
-                    <Save className="w-3 h-3" /> Save
-                  </button>
+                    <Save className="w-3 h-3" />
+                    <span>Save AI Config</span>
+                  </motion.button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
-                  <div className="space-y-1">
-                    <label className="text-subtitle font-bold block">Cluster Auto-Refresh Rate</label>
-                    <select
-                      value={pollingInterval}
-                      onChange={(e) => setPollingInterval(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
-                    >
-                      <option value="5s">Every 5 Seconds (High Realtime)</option>
-                      <option value="10s">Every 10 Seconds (Balanced)</option>
-                      <option value="30s">Every 30 Seconds (Low Overhead)</option>
-                      <option value="disabled">Disabled (Manual Refresh Only)</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-subtitle font-bold block">Docker Command Execution Timeout</label>
-                    <select
-                      value={dockerTimeout}
-                      onChange={(e) => setDockerTimeout(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
-                    >
-                      <option value="30s">30 Seconds Timeout</option>
-                      <option value="60s">60 Seconds Timeout (Recommended)</option>
-                      <option value="120s">120 Seconds Timeout (Long Builds)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* TAB 2: AI ENGINE & PERSONAS */}
-          {activeTab === 'ai' && (
-            <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="glass-panel p-5 rounded-xl theme-border border space-y-5">
-              <div className="flex items-center justify-between border-b theme-border pb-3">
-                <div>
-                  <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
-                    <Cpu className="w-3.5 h-3.5 text-blue-500" />
-                    <span>OpenAI API & System Personas</span>
-                  </h2>
-                  <p className="text-[11px] text-subtitle">Configure system prompt parameters, model choice, token limits, and API keys.</p>
-                </div>
-                <button
-                  onClick={handleSaveAISettings}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition cursor-pointer"
-                >
-                  <Save className="w-3 h-3" />
-                  <span>Save AI Config</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-3.5">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-title block">Primary Reasoning Model</label>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="gpt-4o">gpt-4o (High-Precision SRE Reasoning)</option>
-                      <option value="gpt-4o-mini">gpt-4o-mini (Fast Log Inspection)</option>
-                      <option value="o1-mini">o1-mini (Deep Static Code Audit)</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <label className="font-bold text-title">Reasoning Temperature</label>
-                      <span className="font-mono text-blue-500 font-bold">{reasoningTemperature}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.0"
-                      max="1.0"
-                      step="0.05"
-                      value={reasoningTemperature}
-                      onChange={(e) => setReasoningTemperature(parseFloat(e.target.value))}
-                      className="w-full accent-blue-500 cursor-pointer h-1"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <label className="font-bold text-title">Max Output Token Limit</label>
-                      <span className="font-mono text-blue-500 font-bold">{maxTokens} Tokens</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="2048"
-                      max="16384"
-                      step="1024"
-                      value={maxTokens}
-                      onChange={(e) => setMaxTokens(parseInt(e.target.value, 10))}
-                      className="w-full accent-blue-500 cursor-pointer h-1"
-                    />
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    <label className="text-[11px] font-bold text-title block">OpenAI API Key Token</label>
-                    <div className="relative flex items-center">
-                      <input
-                        type={showApiKey ? 'text' : 'password'}
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full px-3 py-1.5 pr-8 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="absolute right-2 text-subtitle hover:text-title p-1 transition cursor-pointer"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-3.5">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-title block">Primary Reasoning Model</label>
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
                       >
-                        {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        <option value="gpt-4o">gpt-4o (High-Precision SRE Reasoning)</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini (Fast Log Inspection)</option>
+                        <option value="o1-mini">o1-mini (Deep Static Code Audit)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <label className="font-bold text-title">Reasoning Temperature</label>
+                        <span className="font-mono text-blue-500 font-bold">{reasoningTemperature}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.0"
+                        max="1.0"
+                        step="0.05"
+                        value={reasoningTemperature}
+                        onChange={(e) => setReasoningTemperature(parseFloat(e.target.value))}
+                        className="w-full accent-blue-500 cursor-pointer h-1"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <label className="font-bold text-title">Max Output Token Limit</label>
+                        <span className="font-mono text-blue-500 font-bold">{maxTokens} Tokens</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="2048"
+                        max="16384"
+                        step="1024"
+                        value={maxTokens}
+                        onChange={(e) => setMaxTokens(parseInt(e.target.value, 10))}
+                        className="w-full accent-blue-500 cursor-pointer h-1"
+                      />
+                    </div>
+
+                    <div className="space-y-1 pt-1">
+                      <label className="text-[11px] font-bold text-title block">OpenAI API Key Token</label>
+                      <div className="relative flex items-center">
+                        <input
+                          type={showApiKey ? 'text' : 'password'}
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          className="w-full px-3 py-1.5 pr-8 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                          className="absolute right-2 text-subtitle hover:text-title p-1 transition cursor-pointer"
+                        >
+                          {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI System Persona Instructions */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-title block">AI System Persona Prompt</label>
+                      <button
+                        onClick={() => setSystemPrompt(defaultSystemPrompt)}
+                        className="text-[9px] text-blue-500 hover:underline font-mono font-bold cursor-pointer"
+                      >
+                        Reset Default
                       </button>
                     </div>
+
+                    <textarea
+                      rows={5}
+                      value={systemPrompt}
+                      onChange={(e) => setSystemPrompt(e.target.value)}
+                      className="w-full p-2.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500 leading-normal resize-none"
+                      placeholder="Enter system prompt guidelines..."
+                    />
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] text-subtitle font-mono uppercase block">Preset Personas:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { label: 'Strict SRE', prompt: 'You are OpsPilot AI, a Strict SRE. Prioritize system uptime, minimal code changes, and immediate rollback on errors.' },
+                          { label: 'Security Auditor', prompt: 'You are OpsPilot AI, a Security Auditor. Focus strictly on credential leaks, CVE vulnerabilities, and IAM permissions.' },
+                          { label: 'Speed Operator', prompt: 'You are OpsPilot AI, a Speed-First Operator. Resolve incidents rapidly using automated container restarts and quick patches.' },
+                          { label: 'Compliance', prompt: 'You are OpsPilot AI, a Compliance Officer. Require explicit audit logging and operator sign-off before executing commands.' },
+                        ].map((preset, pIdx) => (
+                          <button
+                            key={pIdx}
+                            onClick={() => setSystemPrompt(preset.prompt)}
+                            className="px-2 py-0.5 rounded text-[9px] font-bold card-bg-subtle border theme-border text-title hover:border-blue-500/40 cursor-pointer"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+            )}
 
-                {/* AI System Persona Instructions */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-title block">AI System Persona Prompt</label>
-                    <button
-                      onClick={() => setSystemPrompt(defaultSystemPrompt)}
-                      className="text-[9px] text-blue-500 hover:underline font-mono font-bold cursor-pointer"
-                    >
-                      Reset Default
-                    </button>
+            {/* TAB 3: WEBHOOKS & INTEGRATIONS */}
+            {activeTab === 'webhooks' && (
+              <motion.div 
+                key="tab-webhooks"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="glass-panel p-5 rounded-xl theme-border border space-y-5"
+              >
+                <div className="flex items-center justify-between border-b theme-border pb-3">
+                  <div>
+                    <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Slack & Webhook Incident Alerts</span>
+                    </h2>
+                    <p className="text-[11px] text-subtitle">Send automated incident reports to Slack, Microsoft Teams, or custom HTTP webhooks.</p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSaveWebhooks}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition cursor-pointer"
+                  >
+                    <Save className="w-3 h-3" />
+                    <span>Save Webhooks</span>
+                  </motion.button>
+                </div>
+
+                <div className="space-y-3.5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2 space-y-1">
+                      <label className="text-[11px] font-bold text-title block">Incoming Webhook URL</label>
+                      <input
+                        type="url"
+                        value={webhookUrl}
+                        onChange={(e) => setWebhookUrl(e.target.value)}
+                        placeholder="https://hooks.slack.com/services/..."
+                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-title block">Payload Format</label>
+                      <select
+                        value={payloadFormat}
+                        onChange={(e) => setPayloadFormat(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="Slack Block Kit">Slack Block Kit</option>
+                        <option value="Discord Embed">Discord Rich Embed</option>
+                        <option value="Raw JSON">Standard Raw JSON</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <textarea
-                    rows={5}
-                    value={systemPrompt}
-                    onChange={(e) => setSystemPrompt(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500 leading-normal resize-none"
-                    placeholder="Enter system prompt guidelines..."
-                  />
+                  <div className="flex justify-end">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={handleTestWebhook}
+                      disabled={isTestingWebhook}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition shrink-0 cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className={`w-3 h-3 ${isTestingWebhook ? 'animate-bounce' : ''}`} />
+                      <span>{isTestingWebhook ? 'Sending...' : 'Test Webhook Payload'}</span>
+                    </motion.button>
+                  </div>
 
-                  <div className="space-y-1">
-                    <span className="text-[9px] text-subtitle font-mono uppercase block">Preset Personas:</span>
-                    <div className="flex flex-wrap gap-1">
+                  <div className="space-y-2 pt-1">
+                    <label className="text-[10px] font-bold text-title block font-mono uppercase tracking-wider">Trigger Notification Events</label>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {[
-                        { label: 'Strict SRE', prompt: 'You are OpsPilot AI, a Strict SRE. Prioritize system uptime, minimal code changes, and immediate rollback on errors.' },
-                        { label: 'Security Auditor', prompt: 'You are OpsPilot AI, a Security Auditor. Focus strictly on credential leaks, CVE vulnerabilities, and IAM permissions.' },
-                        { label: 'Speed Operator', prompt: 'You are OpsPilot AI, a Speed-First Operator. Resolve incidents rapidly using automated container restarts and quick patches.' },
-                        { label: 'Compliance', prompt: 'You are OpsPilot AI, a Compliance Officer. Require explicit audit logging and operator sign-off before executing commands.' },
-                      ].map((preset, pIdx) => (
-                        <button
-                          key={pIdx}
-                          onClick={() => setSystemPrompt(preset.prompt)}
-                          className="px-2 py-0.5 rounded text-[9px] font-bold card-bg-subtle border theme-border text-title hover:border-blue-500/40 cursor-pointer"
+                        { id: 'onOutage', label: 'Outage / Service Degraded Event', desc: 'Trigger when container stops or health check returns 502' },
+                        { id: 'onApprovalNeeded', label: 'Fix Patch Awaiting Approval', desc: 'Trigger when AI proposes code fix requiring sign-off' },
+                        { id: 'onAutoRecovery', label: 'Service Auto-Recovery Completed', desc: 'Trigger when HTTP 200 health check confirms resolution' },
+                        { id: 'onSecurityScan', label: 'Security Vulnerability Found', desc: 'Trigger when GitHub audit detects HIGH severity CVE' },
+                      ].map((ev) => (
+                        <div
+                          key={ev.id}
+                          onClick={() => setWebhookEvents(prev => ({ ...prev, [ev.id]: !prev[ev.id as keyof typeof prev] }))}
+                          className="p-3 rounded-lg card-bg-subtle border theme-border flex items-start gap-2.5 cursor-pointer hover:border-blue-500/40 transition"
                         >
-                          {preset.label}
-                        </button>
+                          <input
+                            type="checkbox"
+                            checked={webhookEvents[ev.id as keyof typeof webhookEvents]}
+                            onChange={() => {}}
+                            className="mt-0.5 accent-blue-600 rounded cursor-pointer"
+                          />
+                          <div>
+                            <span className="text-[11px] font-bold text-title block">{ev.label}</span>
+                            <span className="text-[10px] text-subtitle block leading-tight">{ev.desc}</span>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {/* TAB 3: WEBHOOKS & INTEGRATIONS */}
-          {activeTab === 'webhooks' && (
-            <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="glass-panel p-5 rounded-xl theme-border border space-y-5">
-              <div className="flex items-center justify-between border-b theme-border pb-3">
-                <div>
-                  <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
-                    <Bell className="w-3.5 h-3.5 text-blue-500" />
-                    <span>Slack & Webhook Incident Alerts</span>
-                  </h2>
-                  <p className="text-[11px] text-subtitle">Send automated incident reports to Slack, Microsoft Teams, or custom HTTP webhooks.</p>
-                </div>
-                <button
-                  onClick={handleSaveWebhooks}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg shadow-sm transition cursor-pointer"
-                >
-                  <Save className="w-3 h-3" />
-                  <span>Save Webhooks</span>
-                </button>
-              </div>
-
-              <div className="space-y-3.5">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="md:col-span-2 space-y-1">
-                    <label className="text-[11px] font-bold text-title block">Incoming Webhook URL</label>
-                    <input
-                      type="url"
-                      value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder="https://hooks.slack.com/services/..."
-                      className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
-                    />
+            {/* TAB 4: SAFETY GUARDRAILS & FORBIDDEN COMMANDS */}
+            {activeTab === 'guardrails' && (
+              <motion.div 
+                key="tab-guardrails"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
+              >
+                <div className="glass-panel p-5 rounded-xl theme-border border space-y-4">
+                  <div className="border-b theme-border pb-3">
+                    <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>AI Automated Safety Guardrails & Policies</span>
+                    </h2>
+                    <p className="text-[11px] text-subtitle">Toggle automated guardrails to strictly control what actions OpsPilot AI can perform autonomously.</p>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-title block">Payload Format</label>
-                    <select
-                      value={payloadFormat}
-                      onChange={(e) => setPayloadFormat(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="Slack Block Kit">Slack Block Kit</option>
-                      <option value="Discord Embed">Discord Rich Embed</option>
-                      <option value="Raw JSON">Standard Raw JSON</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleTestWebhook}
-                    disabled={isTestingWebhook}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-sm transition shrink-0 cursor-pointer disabled:opacity-50"
-                  >
-                    <Send className={`w-3 h-3 ${isTestingWebhook ? 'animate-bounce' : ''}`} />
-                    <span>{isTestingWebhook ? 'Sending...' : 'Test Webhook Payload'}</span>
-                  </button>
-                </div>
-
-                <div className="space-y-2 pt-1">
-                  <label className="text-[10px] font-bold text-title block font-mono uppercase tracking-wider">Trigger Notification Events</label>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {[
-                      { id: 'onOutage', label: 'Outage / Service Degraded Event', desc: 'Trigger when container stops or health check returns 502' },
-                      { id: 'onApprovalNeeded', label: 'Fix Patch Awaiting Approval', desc: 'Trigger when AI proposes code fix requiring sign-off' },
-                      { id: 'onAutoRecovery', label: 'Service Auto-Recovery Completed', desc: 'Trigger when HTTP 200 health check confirms resolution' },
-                      { id: 'onSecurityScan', label: 'Security Vulnerability Found', desc: 'Trigger when GitHub audit detects HIGH severity CVE' },
-                    ].map((ev) => (
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {guardrails.map((policy: any) => (
                       <div
-                        key={ev.id}
-                        onClick={() => setWebhookEvents(prev => ({ ...prev, [ev.id]: !prev[ev.id as keyof typeof prev] }))}
-                        className="p-3 rounded-lg card-bg-subtle border theme-border flex items-start gap-2.5 cursor-pointer hover:border-blue-500/40 transition"
+                        key={policy.id}
+                        className={`p-3 rounded-xl border theme-border transition-all flex items-center justify-between gap-3 ${
+                          policy.enabled ? 'card-bg-subtle hover:border-blue-500/40' : 'opacity-70 card-bg-subtle'
+                        }`}
                       >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-bold text-title">{policy.name}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold font-mono border ${
+                              policy.category === 'CRITICAL' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                            }`}>
+                              {policy.category}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-subtitle max-w-lg">{policy.desc}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleGuardrail(policy.id)}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            policy.enabled ? 'bg-blue-600' : 'bg-slate-700/40 dark:bg-slate-700'
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                              policy.enabled ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Forbidden Terminal Commands Filter */}
+                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                    <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <AlertOctagon className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Forbidden Terminal Commands Filter ({forbiddenCmds.length})</span>
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-subtitle">OpsPilot AI agent is strictly blocked from executing any command pattern listed below.</p>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newForbiddenCmd}
+                      onChange={(e) => setNewForbiddenCmd(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddForbiddenCmd()}
+                      placeholder="Add restricted command pattern (e.g. 'sudo rm', 'drop database')..."
+                      className="flex-1 px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleAddForbiddenCmd}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow-sm cursor-pointer shrink-0"
+                    >
+                      Block Command
+                    </motion.button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {forbiddenCmds.map((cmd, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] font-mono font-bold"
+                      >
+                        <span>{cmd}</span>
+                        <button
+                          onClick={() => handleRemoveForbiddenCmd(cmd)}
+                          className="hover:text-rose-700 p-0.5 rounded cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* TAB 5: ORGANIZATION & TEAM ACCESS */}
+            {activeTab === 'team' && (
+              <motion.div 
+                key="tab-team"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                    <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                      <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Building className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Organization Identity</span>
+                      </h2>
+                      <button
+                        onClick={handleSaveProfileAndUI}
+                        className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
+                      >
+                        <Save className="w-3 h-3" /> Save
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5 text-[11px]">
+                      <div className="space-y-1">
+                        <label className="text-subtitle font-bold block">Organization Name</label>
                         <input
-                          type="checkbox"
-                          checked={webhookEvents[ev.id as keyof typeof webhookEvents]}
-                          onChange={() => {}}
-                          className="mt-0.5 accent-blue-600 rounded cursor-pointer"
+                          type="text"
+                          value={orgName}
+                          onChange={(e) => setOrgName(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
                         />
-                        <div>
-                          <span className="text-[11px] font-bold text-title block">{ev.label}</span>
-                          <span className="text-[10px] text-subtitle block leading-tight">{ev.desc}</span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-subtitle font-bold block">Organization ID</label>
+                        <input
+                          type="text"
+                          disabled
+                          value={user?.organizationId || 'org-acme-corp'}
+                          className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-subtitle font-mono text-[11px]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                    <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                      <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Active Operator Profile</span>
+                      </h2>
+                      <button
+                        onClick={handleSaveProfileAndUI}
+                        className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
+                      >
+                        <Save className="w-3 h-3" /> Save Profile
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5 text-[11px]">
+                      <div className="space-y-1">
+                        <label className="text-subtitle font-bold block">Operator Display Name</label>
+                        <input
+                          type="text"
+                          value={operatorName}
+                          onChange={(e) => setOperatorName(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-subtitle font-bold block">Assigned Role</label>
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded-lg border theme-border card-bg-subtle font-mono text-title text-[11px]">
+                          <span>{user?.role || 'ADMIN'}</span>
+                          <span className="px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30 text-[9px] font-bold">
+                            SUPERUSER
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Team Roster Table */}
+                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                    <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Team Access Roster ({teamMembers.length})</span>
+                    </h3>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => addNotification({ type: 'info', title: 'Invite Link', message: 'Team invite link copied to clipboard.' })}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer"
+                    >
+                      <UserPlus className="w-3 h-3" />
+                      <span>Invite Member</span>
+                    </motion.button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {teamMembers.map((member, mIdx) => (
+                      <div key={mIdx} className="flex items-center justify-between p-2.5 rounded-lg card-bg-subtle border theme-border text-[11px]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-[11px] shrink-0">
+                            {member.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-bold text-title">{member.name}</div>
+                            <div className="text-[10px] text-subtitle font-mono">{member.email}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[9px] font-mono font-bold">
+                            {member.role}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono text-emerald-500 font-bold">
+                            {member.status}
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {/* TAB 4: SAFETY GUARDRAILS & FORBIDDEN COMMANDS */}
-          {activeTab === 'guardrails' && (
-            <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <div className="glass-panel p-5 rounded-xl theme-border border space-y-4">
-                <div className="border-b theme-border pb-3">
-                  <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>AI Automated Safety Guardrails & Policies</span>
+            {/* TAB 6: VAULT, TERMINAL UI & BACKUP EXPORT */}
+            {activeTab === 'vault' && (
+              <motion.div 
+                key="tab-vault"
+                initial={{ opacity: 0, y: 10 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                exit={{ opacity: 0, y: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* Terminal Customization Controls */}
+                  <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                    <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                      <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Terminal Customization</span>
+                      </h2>
+                      <button
+                        onClick={handleSaveProfileAndUI}
+                        className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
+                      >
+                        <Save className="w-3 h-3" /> Save UI
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 text-[11px]">
+                      <div className="space-y-1">
+                        <label className="text-subtitle font-bold block">Console Font Family</label>
+                        <select
+                          value={terminalFont}
+                          onChange={(e) => setTerminalFont(e.target.value)}
+                          className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                        >
+                          <option value="JetBrains Mono">JetBrains Mono (Recommended)</option>
+                          <option value="Fira Code">Fira Code (With Ligatures)</option>
+                          <option value="Source Code Pro">Source Code Pro</option>
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-subtitle font-bold block">Console Font Size</label>
+                          <select
+                            value={terminalFontSize}
+                            onChange={(e) => setTerminalFontSize(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                          >
+                            <option value="12px">12px (Compact)</option>
+                            <option value="13px">13px (Standard)</option>
+                            <option value="15px">15px (Large)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-subtitle font-bold block">Terminal Theme</label>
+                          <select
+                            value={terminalTheme}
+                            onChange={(e) => setTerminalTheme(e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                          >
+                            <option value="Cyber Dark">Cyber Dark</option>
+                            <option value="Dracula">Dracula Dark</option>
+                            <option value="Monokai">Monokai Pro</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* LIVE INTERACTIVE TERMINAL LOG PREVIEW BOX */}
+                  <div className="glass-panel p-5 rounded-xl theme-border border space-y-2.5">
+                    <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                      <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Terminal className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Live Console Preview</span>
+                      </h3>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        LIVE PREVIEW
+                      </span>
+                    </div>
+
+                    <div 
+                      style={{ fontFamily: terminalFont, fontSize: terminalFontSize }}
+                      className="p-3.5 rounded-lg bg-slate-950 text-slate-100 border border-slate-800 space-y-1 overflow-x-auto shadow-inner min-h-[140px]"
+                    >
+                      <div className="text-slate-500 text-[10px]">$ opspilot-ai --scan --cluster=production</div>
+                      <div className="text-emerald-400 font-bold">[INFO] PostgreSQL container running on port 5432 (HEALTHY)</div>
+                      <div className="text-blue-400">[OK]   Zero-DB WebCrypto vault encryption active.</div>
+                      <div className="text-amber-400">[WARN] 1 pending patch awaiting operator approval.</div>
+                      <div className="text-slate-400 text-[10px]">$ _</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Workspace Backup & Maintenance */}
+                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
+                  <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5 border-b theme-border pb-2.5">
+                    <FileJson className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Backup & Workspace Maintenance</span>
                   </h2>
-                  <p className="text-[11px] text-subtitle">Toggle automated guardrails to strictly control what actions OpsPilot AI can perform autonomously.</p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2.5">
-                  {guardrails.map((policy: any) => (
-                    <div
-                      key={policy.id}
-                      className={`p-3 rounded-xl border theme-border transition-all flex items-center justify-between gap-3 ${
-                        policy.enabled ? 'card-bg-subtle hover:border-blue-500/40' : 'opacity-70 card-bg-subtle'
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-bold text-title">{policy.name}</span>
-                          <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold font-mono border ${
-                            policy.category === 'CRITICAL' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                          }`}>
-                            {policy.category}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-subtitle max-w-lg">{policy.desc}</p>
-                      </div>
-
-                      <button
-                        onClick={() => handleToggleGuardrail(policy.id)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          policy.enabled ? 'bg-blue-600' : 'bg-slate-700/40 dark:bg-slate-700'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                            policy.enabled ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Forbidden Terminal Commands Filter */}
-              <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                  <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <AlertOctagon className="w-3.5 h-3.5 text-rose-500" />
-                    <span>Forbidden Terminal Commands Filter ({forbiddenCmds.length})</span>
-                  </h3>
-                </div>
-                <p className="text-[11px] text-subtitle">OpsPilot AI agent is strictly blocked from executing any command pattern listed below.</p>
-
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newForbiddenCmd}
-                    onChange={(e) => setNewForbiddenCmd(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddForbiddenCmd()}
-                    placeholder="Add restricted command pattern (e.g. 'sudo rm', 'drop database')..."
-                    className="flex-1 px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    onClick={handleAddForbiddenCmd}
-                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold rounded-lg shadow-sm cursor-pointer shrink-0"
-                  >
-                    Block Command
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {forbiddenCmds.map((cmd, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-500/10 text-rose-500 border border-rose-500/20 text-[10px] font-mono font-bold"
-                    >
-                      <span>{cmd}</span>
-                      <button
-                        onClick={() => handleRemoveForbiddenCmd(cmd)}
-                        className="hover:text-rose-700 p-0.5 rounded cursor-pointer"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* TAB 5: ORGANIZATION & TEAM ACCESS */}
-          {activeTab === 'team' && (
-            <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                    <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <Building className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Organization Identity</span>
-                    </h2>
-                    <button
-                      onClick={handleSaveProfileAndUI}
-                      className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
-                    >
-                      <Save className="w-3 h-3" /> Save
-                    </button>
-                  </div>
-
-                  <div className="space-y-2.5 text-[11px]">
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">Organization Name</label>
-                      <input
-                        type="text"
-                        value={orgName}
-                        onChange={(e) => setOrgName(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">Organization ID</label>
-                      <input
-                        type="text"
-                        disabled
-                        value={user?.organizationId || 'org-acme-corp'}
-                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-subtitle font-mono text-[11px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                    <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Active Operator Profile</span>
-                    </h2>
-                    <button
-                      onClick={handleSaveProfileAndUI}
-                      className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
-                    >
-                      <Save className="w-3 h-3" /> Save Profile
-                    </button>
-                  </div>
-
-                  <div className="space-y-2.5 text-[11px]">
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">Operator Display Name</label>
-                      <input
-                        type="text"
-                        value={operatorName}
-                        onChange={(e) => setOperatorName(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">Assigned Role</label>
-                      <div className="flex items-center justify-between px-3 py-1.5 rounded-lg border theme-border card-bg-subtle font-mono text-title text-[11px]">
-                        <span>{user?.role || 'ADMIN'}</span>
-                        <span className="px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30 text-[9px] font-bold">
-                          SUPERUSER
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Team Roster Table */}
-              <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                  <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Team Access Roster ({teamMembers.length})</span>
-                  </h3>
-                  <button
-                    onClick={() => addNotification({ type: 'info', title: 'Invite Link', message: 'Team invite link copied to clipboard.' })}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer"
-                  >
-                    <UserPlus className="w-3 h-3" />
-                    <span>Invite Member</span>
-                  </button>
-                </div>
-
-                <div className="space-y-1.5">
-                  {teamMembers.map((member, mIdx) => (
-                    <div key={mIdx} className="flex items-center justify-between p-2.5 rounded-lg card-bg-subtle border theme-border text-[11px]">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-[11px] shrink-0">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-bold text-title">{member.name}</div>
-                          <div className="text-[10px] text-subtitle font-mono">{member.email}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[9px] font-mono font-bold">
-                          {member.role}
-                        </span>
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-mono text-emerald-500 font-bold">
-                          {member.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* TAB 6: VAULT, TERMINAL UI & BACKUP EXPORT (WITH LIVE PREVIEW BOX) */}
-          {activeTab === 'vault' && (
-            <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Terminal Customization Controls */}
-                <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                    <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <Palette className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Terminal Customization</span>
-                    </h2>
-                    <button
-                      onClick={handleSaveProfileAndUI}
-                      className="flex items-center gap-1 text-[11px] text-blue-500 font-bold hover:underline cursor-pointer"
-                    >
-                      <Save className="w-3 h-3" /> Save UI
-                    </button>
-                  </div>
 
                   <div className="space-y-3 text-[11px]">
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">Console Font Family</label>
-                      <select
-                        value={terminalFont}
-                        onChange={(e) => setTerminalFont(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
+                    <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-title block">Export Workspace JSON</span>
+                        <span className="text-[10px] text-subtitle">Download full settings backup file</span>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleExportBackupJson}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow-sm cursor-pointer"
                       >
-                        <option value="JetBrains Mono">JetBrains Mono (Recommended)</option>
-                        <option value="Fira Code">Fira Code (With Ligatures)</option>
-                        <option value="Source Code Pro">Source Code Pro</option>
-                      </select>
+                        <Download className="w-3 h-3" />
+                        <span>Download JSON</span>
+                      </motion.button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-subtitle font-bold block">Console Font Size</label>
-                        <select
-                          value={terminalFontSize}
-                          onChange={(e) => setTerminalFontSize(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
-                        >
-                          <option value="12px">12px (Compact)</option>
-                          <option value="13px">13px (Standard)</option>
-                          <option value="15px">15px (Large)</option>
-                        </select>
+                    <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-title block">Purge Local Cache</span>
+                        <span className="text-[10px] text-subtitle">Reset local storage incident cache</span>
                       </div>
-
-                      <div className="space-y-1">
-                        <label className="text-subtitle font-bold block">Terminal Theme</label>
-                        <select
-                          value={terminalTheme}
-                          onChange={(e) => setTerminalTheme(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500 text-[11px]"
-                        >
-                          <option value="Cyber Dark">Cyber Dark</option>
-                          <option value="Dracula">Dracula Dark</option>
-                          <option value="Monokai">Monokai Pro</option>
-                        </select>
-                      </div>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('opspilot_resolved_patches');
+                          addNotification({ type: 'info', title: 'Cache Purged', message: 'Local diagnostic cache successfully cleared.' });
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 font-bold text-[11px] cursor-pointer"
+                      >
+                        Purge Cache
+                      </button>
                     </div>
                   </div>
                 </div>
+              </motion.div>
+            )}
 
-                {/* LIVE INTERACTIVE TERMINAL LOG PREVIEW BOX */}
-                <div className="glass-panel p-5 rounded-xl theme-border border space-y-2.5">
-                  <div className="flex items-center justify-between border-b theme-border pb-2.5">
-                    <h3 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      <Terminal className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Live Console Preview</span>
-                    </h3>
-                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                      LIVE PREVIEW
-                    </span>
-                  </div>
-
-                  <div 
-                    style={{ fontFamily: terminalFont, fontSize: terminalFontSize }}
-                    className="p-3.5 rounded-lg bg-slate-950 text-slate-100 border border-slate-800 space-y-1 overflow-x-auto shadow-inner min-h-[140px]"
-                  >
-                    <div className="text-slate-500 text-[10px]">$ opspilot-ai --scan --cluster=production</div>
-                    <div className="text-emerald-400 font-bold">[INFO] PostgreSQL container running on port 5432 (HEALTHY)</div>
-                    <div className="text-blue-400">[OK]   Zero-DB WebCrypto vault encryption active.</div>
-                    <div className="text-amber-400">[WARN] 1 pending patch awaiting operator approval.</div>
-                    <div className="text-slate-400 text-[10px]">$ _</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Workspace Backup & Maintenance */}
-              <div className="glass-panel p-5 rounded-xl theme-border border space-y-3">
-                <h2 className="text-[11px] font-bold text-title uppercase tracking-wider font-mono flex items-center gap-1.5 border-b theme-border pb-2.5">
-                  <FileJson className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Backup & Workspace Maintenance</span>
-                </h2>
-
-                <div className="space-y-3 text-[11px]">
-                  <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-title block">Export Workspace JSON</span>
-                      <span className="text-[10px] text-subtitle">Download full settings backup file</span>
-                    </div>
-                    <button
-                      onClick={handleExportBackupJson}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow-sm cursor-pointer"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Download JSON</span>
-                    </button>
-                  </div>
-
-                  <div className="p-3 rounded-lg card-bg-subtle border theme-border flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-title block">Purge Local Cache</span>
-                      <span className="text-[10px] text-subtitle">Reset local storage incident cache</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        localStorage.removeItem('opspilot_resolved_patches');
-                        addNotification({ type: 'info', title: 'Cache Purged', message: 'Local diagnostic cache successfully cleared.' });
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 font-bold text-[11px] cursor-pointer"
-                    >
-                      Purge Cache
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
+          </AnimatePresence>
         </div>
 
       </div>
