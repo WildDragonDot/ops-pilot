@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { register, login, getMe } from '../controllers/auth.controller.js';
-import { getProject, getProjectHealth, injectFailure, resetEnv } from '../controllers/project.controller.js';
-import { getRepository, triggerScan, getScanById } from '../controllers/repo.controller.js';
+import { getProject, getProjects, createProject, testProjectConnection, deleteProject, getProjectHealth, injectFailure, resetEnv } from '../controllers/project.controller.js';
+import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -12,7 +12,11 @@ router.post('/auth/login', login);
 // Protected Authentication Profile
 router.get('/auth/me', requireAuth, getMe);
 // Protected Project & Environment Routes
-router.get('/projects', requireAuth, getProject);
+router.get('/projects', requireAuth, getProjects);
+router.post('/projects', requireAuth, createProject);
+router.post('/projects/test-connection', requireAuth, testProjectConnection);
+router.delete('/projects/:id', requireAuth, deleteProject);
+router.get('/projects/:id', requireAuth, getProject);
 router.get('/projects/:id/health', requireAuth, getProjectHealth);
 router.post('/demo/inject-failure', requireAuth, injectFailure);
 router.post('/demo/reset', requireAuth, resetEnv);
@@ -20,6 +24,7 @@ router.post('/demo/reset', requireAuth, resetEnv);
 router.get('/repositories', requireAuth, getRepository);
 router.post('/repositories/scan', requireAuth, triggerScan);
 router.get('/repositories/scans/:id', requireAuth, getScanById);
+router.post('/repositories/findings/:findingId/patch', requireAuth, applyPatch);
 // Protected Incident Commander Routes
 router.post('/incidents', requireAuth, createIncident);
 router.get('/incidents', requireAuth, getIncidents);

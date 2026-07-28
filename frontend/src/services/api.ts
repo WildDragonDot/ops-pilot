@@ -1,8 +1,9 @@
 import { Project, Scan, Incident } from '../types';
+import { OpsPilotVault, ProjectCredentials } from './vault';
 
 const API_BASE = '/api';
 
-function getAuthHeaders(): Record<string, string> {
+function getAuthHeaders(projectId?: string): Record<string, string> {
   const token = localStorage.getItem('opspilot_token');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
@@ -10,14 +11,87 @@ function getAuthHeaders(): Record<string, string> {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+
+  if (projectId) {
+    const creds = OpsPilotVault.getCredentials(projectId);
+    if (creds) {
+      if (creds.sshKey) headers['x-server-ssh-key'] = creds.sshKey;
+      if (creds.sshPassword) headers['x-server-pass'] = creds.sshPassword;
+      if (creds.githubToken) headers['x-github-token'] = creds.githubToken;
+    }
+  }
+
   return headers;
 }
 
-export async function fetchProject(): Promise<Project> {
+export async function fetchProjects(): Promise<Project[]> {
   const res = await fetch(`${API_BASE}/projects`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch projects');
+  const data = await res.json();
+  return data.projects || [data.project];
+}
+
+export async function fetchProject(id?: string): Promise<Project> {
+  const url = id ? `${API_BASE}/projects/${id}` : `${API_BASE}/projects`;
+  const res = await fetch(url, { headers: getAuthHeaders(id) });
   if (!res.ok) throw new Error('Failed to fetch project');
   const data = await res.json();
+  return data.project || (data.projects ? data.projects[0] : null);
+}
+
+export async function createNewProject(
+  payload: { name: string; gitUrl?: string; serverHost?: string; serverPort?: number; serverUser?: string; environmentType?: string },
+  creds?: ProjectCredentials
+): Promise<Project> {
+  const res = await fetch(`${API_BASE}/projects`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('Failed to create project');
+  const data = await res.json();
+
+  if (data.project && creds) {
+    OpsPilotVault.setCredentials(data.project.id, {
+      ...creds,
+      projectId: data.project.id
+    });
+  }
+
   return data.project;
+}
+
+export async function testConnection(
+  payload: { gitUrl?: string; serverHost?: string; serverPort?: number; serverUser?: string },
+  creds?: ProjectCredentials
+): Promise<any> {
+  const headers = getAuthHeaders();
+  if (creds?.sshKey) headers['x-server-ssh-key'] = creds.sshKey;
+  if (creds?.sshPassword) headers['x-server-pass'] = creds.sshPassword;
+  if (creds?.githubToken) headers['x-github-token'] = creds.githubToken;
+
+  const res = await fetch(`${API_BASE}/projects/test-connection`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      ...payload,
+      sshKey: creds?.sshKey,
+      sshPassword: creds?.sshPassword,
+      githubToken: creds?.githubToken
+    })
+  });
+  if (!res.ok) throw new Error('Connection test failed');
+  return res.json();
+}
+
+export async function removeProject(id: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(id)
+  });
+  if (!res.ok) throw new Error('Failed to delete project');
+  OpsPilotVault.removeCredentials(id);
+  return res.json();
 }
 
 export async function fetchRepositoryScan(): Promise<Scan> {
@@ -33,6 +107,16 @@ export async function triggerRepositoryScan(): Promise<Scan> {
     headers: getAuthHeaders()
   });
   if (!res.ok) throw new Error('Failed to trigger scan');
+  const data = await res.json();
+  return data.scan;
+}
+
+export async function applySecurityPatch(findingId: string): Promise<Scan> {
+  const res = await fetch(`${API_BASE}/repositories/findings/${findingId}/patch`, { 
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) throw new Error('Failed to apply security patch');
   const data = await res.json();
   return data.scan;
 }

@@ -6,8 +6,11 @@ import { Project, Scan, Incident } from '../types';
 
 interface DashboardLayoutProps {
   project: Project | null;
+  projects?: Project[];
   scan: Scan | null;
   incidents: Incident[];
+  onSelectProject?: (project: Project) => void;
+  onOpenSetupModal?: () => void;
   onResetEnv: () => void;
   onScanRepo: () => void;
   isScanning: boolean;
@@ -15,8 +18,11 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   project,
+  projects = [],
   scan,
   incidents,
+  onSelectProject,
+  onOpenSetupModal,
   onResetEnv,
   onScanRepo,
   isScanning
@@ -33,6 +39,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Top Header Bar — sticky at top */}
         <Header
           project={project}
+          projects={projects}
+          onSelectProject={onSelectProject}
+          onOpenSetupModal={onOpenSetupModal}
           onResetEnv={onResetEnv}
           onScanRepo={onScanRepo}
           isScanning={isScanning}
@@ -47,7 +56,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {/* Footer inside scroll area */}
           <footer className="border-t theme-border card-bg-subtle py-4 px-8 text-xs text-subtitle flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
             <span>OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
-            <span className="font-mono">Cluster Status: Healthy • Port 5080 API</span>
+            <span className="font-mono font-semibold">Project: {project?.name || 'Local Sandbox'}</span>
           </footer>
         </main>
 

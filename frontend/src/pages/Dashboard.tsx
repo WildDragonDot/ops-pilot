@@ -205,7 +205,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Interactive Topology Graph */}
         <div className="lg:col-span-2">
-          <TopologyGraph environmentStatus={env} />
+          <TopologyGraph project={project} environmentStatus={env} />
         </div>
 
         {/* Right Column: Chaos Outage Scenario Launchers */}

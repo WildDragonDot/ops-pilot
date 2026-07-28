@@ -3,11 +3,18 @@ export interface Project {
   name: string;
   rootPath: string;
   runtimeType: string;
-  healthCheckUrl: string;
-  composeFile: string;
-  testCommand: string;
-  restartCommand: string;
-  environmentStatus: {
+  healthCheckUrl?: string;
+  composeFile?: string;
+  testCommand?: string;
+  restartCommand?: string;
+  gitUrl?: string;
+  serverHost?: string;
+  serverPort?: number;
+  serverUser?: string;
+  environmentType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  environmentStatus?: {
     overall: 'HEALTHY' | 'DEGRADED' | 'DOWN';
     postgres: 'RUNNING' | 'STOPPED' | 'ERROR';
     redis: 'RUNNING' | 'STOPPED' | 'ERROR';

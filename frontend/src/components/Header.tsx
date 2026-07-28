@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Search, 
-  Radio, 
   GitBranch, 
   RefreshCw, 
   Bell, 
@@ -12,9 +11,13 @@ import {
 import { Project } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { CommandPalette } from './CommandPalette';
+import { ProjectSwitcher } from './ProjectSwitcher';
 
 interface HeaderProps {
   project: Project | null;
+  projects?: Project[];
+  onSelectProject?: (project: Project) => void;
+  onOpenSetupModal?: () => void;
   onResetEnv: () => void;
   onScanRepo: () => void;
   isScanning: boolean;
@@ -22,6 +25,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   project,
+  projects = [],
+  onSelectProject = () => {},
+  onOpenSetupModal = () => {},
   onResetEnv,
   onScanRepo,
   isScanning
@@ -41,15 +47,22 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="h-16 header-bg backdrop-blur-xl border-b px-6 flex items-center justify-between sticky top-0 z-40">
         
-        {/* Search Bar / Command Palette Launcher */}
-        <div className="flex items-center gap-4 flex-1 max-w-md">
+        {/* Search Bar / Project Switcher */}
+        <div className="flex items-center gap-3 flex-1 max-w-xl">
+          <ProjectSwitcher
+            projects={projects}
+            activeProject={project}
+            onSelectProject={onSelectProject}
+            onOpenSetupModal={onOpenSetupModal}
+          />
+
           <div 
             onClick={() => setCmdPaletteOpen(true)}
-            className="flex items-center gap-2 card-bg-subtle px-3.5 py-2 rounded-xl border theme-border text-xs w-full hover:border-blue-500/50 transition cursor-pointer"
+            className="hidden sm:flex items-center gap-2 card-bg-subtle px-3.5 py-1.5 rounded-xl border theme-border text-xs flex-1 hover:border-blue-500/50 transition cursor-pointer"
           >
             <Search className="w-4 h-4 text-blue-500" />
             <span className="flex-1 text-subtitle font-mono text-xs truncate">
-              Search commands or inspect cluster (Ctrl + K)...
+              Search commands (Ctrl + K)...
             </span>
             <kbd className="px-2 py-0.5 rounded-md card-bg-subtle text-[10px] text-subtitle border font-mono">⌘K</kbd>
           </div>
@@ -58,9 +71,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Status & Quick Action Pills */}
         <div className="flex items-center gap-3">
           
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl card-bg-subtle border text-xs text-subtitle font-mono">
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-xl card-bg-subtle border text-xs text-subtitle font-mono">
             <Server className="w-3.5 h-3.5 text-blue-500" />
-            <span>Cluster: <b className="text-title">Local Docker</b></span>
+            <span>Host: <b className="text-title font-bold">{project?.serverHost || 'Local Sandbox'}</b></span>
           </div>
 
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono border shadow-sm ${statusColor}`}>

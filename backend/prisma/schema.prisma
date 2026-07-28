@@ -30,20 +30,25 @@ model User {
 }
 
 model Project {
-  id             String       @id @default(cuid())
-  name           String
-  rootPath       String
-  runtimeType    String
-  healthCheckUrl String?
-  composeFile    String?
-  testCommand    String?
-  restartCommand String?
-  organizationId String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  incidents      Incident[]
-  repositories   Repository[]
+  id              String       @id @default(cuid())
+  name            String
+  rootPath        String
+  runtimeType     String
+  healthCheckUrl  String?
+  composeFile     String?
+  testCommand     String?
+  restartCommand  String?
+  gitUrl          String?
+  serverHost      String?
+  serverPort      Int?         @default(22)
+  serverUser      String?
+  environmentType String?      @default("Docker Compose")
+  organizationId  String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  incidents       Incident[]
+  repositories    Repository[]
 }
 
 model Incident {
@@ -134,6 +139,7 @@ model RepositoryFinding {
   impact         String
   recommendation String
   patch          String?
+  status         String         @default("OPEN")
   createdAt      DateTime       @default(now())
   scan           RepositoryScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
 }

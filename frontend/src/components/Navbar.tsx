@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isScanning
 }) => {
   const { user, logout } = useAuth();
-  const status = project?.environmentStatus.overall || 'HEALTHY';
+  const status = project?.environmentStatus?.overall || 'HEALTHY';
   
   const statusColor = 
     status === 'HEALTHY' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
