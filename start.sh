@@ -33,16 +33,26 @@ if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
     (cd "$ROOT_DIR/frontend" && npm install)
 fi
 
-# Start Backend
-echo "⚙️  Starting Backend Service..."
+# Start Backend Service first
+echo "⚙️  Starting Backend Service (Port 5080)..."
 (cd "$ROOT_DIR/backend" && npm run dev) &
 
-# Start Frontend
-echo "💻 Starting Frontend Service..."
+# Wait until backend is active on port 5080 before launching frontend
+echo "⏳ Waiting for Backend to be ready on port 5080..."
+for i in {1..20}; do
+    if lsof -i :5080 >/dev/null 2>&1 || curl -s http://127.0.0.1:5080/api/health >/dev/null 2>&1 || nc -z 127.0.0.1 5080 2>/dev/null; then
+        echo "✅ Backend is active!"
+        break
+    fi
+    sleep 0.4
+done
+
+# Start Frontend Service
+echo "💻 Starting Frontend Service (Port 3000)..."
 (cd "$ROOT_DIR/frontend" && npm run dev) &
 
 echo "=================================================="
-echo "✅ Both Backend and Frontend are running!"
+echo "✅ Both Backend (5080) and Frontend (3000) are running!"
 echo "Press Ctrl+C to stop both servers."
 echo "=================================================="
 

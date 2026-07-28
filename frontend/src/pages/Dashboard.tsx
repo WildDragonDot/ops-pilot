@@ -19,11 +19,13 @@ import {
 } from 'lucide-react';
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
+import { DashboardSkeleton } from '../components/SkeletonLoader';
 
 interface DashboardProps {
   project: Project | null;
   scan: Scan | null;
   incidents: Incident[];
+  isLoading?: boolean;
   onNavigateTab: (tab: string) => void;
   onInjectFailure: (scenarioKey: string) => void;
 }
@@ -32,11 +34,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
   project,
   scan,
   incidents,
+  isLoading = false,
   onNavigateTab,
   onInjectFailure
 }) => {
   const [loadingScenario, setLoadingScenario] = useState<string | null>(null);
   const [lastTriggered, setLastTriggered] = useState<string | null>(null);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   const handleLaunchScenario = async (key: string) => {
     try {

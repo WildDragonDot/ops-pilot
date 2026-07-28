@@ -18,6 +18,7 @@ import { Scan, Finding } from '../types';
 import { DiffViewer } from '../components/DiffViewer';
 import { applySecurityPatch } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { RepoAuditorSkeleton } from '../components/SkeletonLoader';
 
 interface RepoAuditorProps {
   scan: Scan | null;
@@ -35,6 +36,10 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+
+  if (isScanning && !scan) {
+    return <RepoAuditorSkeleton />;
+  }
   const [appliedPatchIds, setAppliedPatchIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('opspilot_resolved_patches');

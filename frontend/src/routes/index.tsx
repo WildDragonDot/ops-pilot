@@ -76,8 +76,23 @@ export function AppRoutes() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-subtitle text-xs font-mono">
-        Initializing OpsPilot AI Workspace Session...
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-app text-title font-sans">
+        <div className="w-full max-w-md space-y-6 text-center animate-fadeIn">
+          <div className="p-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl text-white shadow-xl glow-blue inline-flex items-center justify-center animate-pulse">
+            <svg className="w-8 h-8 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-title font-mono tracking-tight">Initializing OpsPilot AI...</h3>
+            <p className="text-xs text-subtitle font-mono">Verifying authentication vault & loading workspace session</p>
+          </div>
+          <div className="space-y-3 pt-2">
+            <div className="skeleton-box h-4 w-full rounded-lg" />
+            <div className="skeleton-box h-4 w-3/4 mx-auto rounded-lg" />
+            <div className="skeleton-box h-10 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
