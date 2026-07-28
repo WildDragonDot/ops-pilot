@@ -55,7 +55,7 @@ export function AppRoutes() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#090d16] flex items-center justify-center text-slate-400 text-xs font-mono">
+      <div className="min-h-screen flex items-center justify-center text-subtitle text-xs font-mono">
         Initializing OpsPilot AI Workspace Session...
       </div>
     );

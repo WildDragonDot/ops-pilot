@@ -39,122 +39,130 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const pendingApprovals = incidents.filter(i => i.status === 'AWAITING_APPROVAL').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto font-sans">
       
-      {/* Top Welcome Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      {/* Top Welcome Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b theme-border pb-5">
         <div>
-          <h1 className="text-xl font-bold text-slate-100 tracking-tight">Production Overview</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Real-time infrastructure health, codebase security score, and incident investigation launcher.
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-xs font-semibold">
+              Live Operations Control
+            </span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-title mt-1">Production Overview</h1>
+          <p className="text-xs text-subtitle mt-1">
+            Real-time cluster status, security audit scores, and autonomous AI incident commander.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => onNavigateTab('command')}
-            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg glow-blue transition"
           >
-            <Terminal className="w-3.5 h-3.5" />
+            <Terminal className="w-4 h-4" />
             <span>Investigate Outage</span>
           </button>
           <button
             onClick={() => onNavigateTab('auditor')}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold rounded-lg border border-slate-800 transition"
+            className="flex items-center gap-2 px-4 py-2.5 card-bg-subtle hover:text-title text-subtitle text-xs font-bold rounded-xl border theme-border transition"
           >
             <span>Scan Codebase</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Metric Cards Row (4 Spacious Cards) */}
+      {/* Metric Glass Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Overall Cluster Health</span>
-            <Activity className={`w-4 h-4 ${env.overall === 'HEALTHY' ? 'text-emerald-400' : 'text-rose-400'}`} />
+        <div className="glass-panel glass-panel-hover p-5 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-subtitle">
+            <span className="text-xs font-bold uppercase tracking-wider">Overall Health</span>
+            <Activity className={`w-5 h-5 ${env.overall === 'HEALTHY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`} />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-bold ${env.overall === 'HEALTHY' ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <span className={`text-3xl font-extrabold ${env.overall === 'HEALTHY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {env.overall}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400">Nginx, Node API, PostgreSQL, Redis</p>
+          <p className="text-[11px] text-subtitle font-mono">Nginx • Node API • PostgreSQL • Redis</p>
         </div>
 
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Security & Quality Score</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="glass-panel glass-panel-hover p-5 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-subtitle">
+            <span className="text-xs font-bold uppercase tracking-wider">Audit Score</span>
+            <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-slate-100">{score}</span>
-            <span className="text-xs text-slate-400">/ 100</span>
+            <span className="text-3xl font-extrabold text-title">{score}</span>
+            <span className="text-xs text-subtitle">/ 100</span>
           </div>
-          <p className="text-[11px] text-slate-400">Security 72% • Quality 80% • Testing 65%</p>
+          <div className="w-full card-bg-subtle h-2 rounded-full overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" style={{ width: `${score}%` }} />
+          </div>
+          <p className="text-[11px] text-subtitle font-mono">Security 72% | Quality 80% | Testing 65%</p>
         </div>
 
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Critical Code Issues</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+        <div className="glass-panel glass-panel-hover p-5 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-subtitle">
+            <span className="text-xs font-bold uppercase tracking-wider">Critical Code Risks</span>
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-amber-400">{criticalFindings}</span>
-            <span className="text-xs text-slate-400">Findings</span>
+            <span className="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{criticalFindings}</span>
+            <span className="text-xs text-subtitle">Issues</span>
           </div>
-          <p className="text-[11px] text-slate-400">Hardcoded JWT key & string ID query</p>
+          <p className="text-[11px] text-subtitle font-mono">Hardcoded JWT key & string ID parameter</p>
         </div>
 
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Pending Approvals</span>
-            <CheckCircle2 className="w-4 h-4 text-blue-400" />
+        <div className="glass-panel glass-panel-hover p-5 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-subtitle">
+            <span className="text-xs font-bold uppercase tracking-wider">Pending Approvals</span>
+            <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-blue-400">{pendingApprovals}</span>
-            <span className="text-xs text-slate-400">Fix Requests</span>
+            <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">{pendingApprovals}</span>
+            <span className="text-xs text-subtitle">Requests</span>
           </div>
-          <p className="text-[11px] text-slate-400">Operator approval guardrails active</p>
+          <p className="text-[11px] text-subtitle font-mono">Operator approval guardrails active</p>
         </div>
 
       </div>
 
-      {/* Main 2-Column Section: Topology + Outage Launcher */}
+      {/* Main 2-Column Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Column: Topology Map */}
+        {/* Left Column: Glass Topology Map */}
         <div className="lg:col-span-2">
           <TopologyGraph environmentStatus={env} />
         </div>
 
-        {/* Right Column: Outage Investigation Scenarios */}
-        <div className="bg-slate-900/60 p-5 rounded-xl border border-slate-800 space-y-4 flex flex-col justify-between">
+        {/* Right Column: Outage Scenario Launchers */}
+        <div className="glass-panel p-6 rounded-2xl space-y-4 flex flex-col justify-between">
           <div>
-            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <h2 className="text-sm font-extrabold text-title flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-400" />
-              <span>Simulate Incident Outages</span>
+              <span>Simulate Incident Scenarios</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Select an outage scenario to test OpsPilot AI's automated reasoning, tool execution, and approval workflow.
+            <p className="text-xs text-subtitle mt-1">
+              Test OpsPilot AI's automated reasoning, tool execution, and recovery approval loop.
             </p>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <button
               onClick={() => {
                 onInjectFailure('DATABASE_STOPPED');
                 onNavigateTab('command');
               }}
-              className="w-full text-left p-3 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs flex items-center justify-between group transition"
+              className="w-full text-left p-3.5 rounded-xl card-bg-subtle border theme-border hover:border-slate-400 dark:hover:border-slate-700 text-xs flex items-center justify-between group transition-all"
             >
               <div>
-                <span className="font-semibold text-rose-400 block">1. 502 Bad Gateway Outage</span>
-                <span className="text-[11px] text-slate-400">PostgreSQL container down & API crash</span>
+                <span className="font-extrabold text-rose-500 block">1. 502 Bad Gateway Outage</span>
+                <span className="text-[11px] text-subtitle">PostgreSQL container down & API crash</span>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition" />
+              <ArrowRight className="w-4 h-4 text-subtitle group-hover:text-title group-hover:translate-x-1 transition" />
             </button>
 
             <button
@@ -162,13 +170,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onInjectFailure('CONFIG_MISMATCH');
                 onNavigateTab('command');
               }}
-              className="w-full text-left p-3 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs flex items-center justify-between group transition"
+              className="w-full text-left p-3.5 rounded-xl card-bg-subtle border theme-border hover:border-slate-400 dark:hover:border-slate-700 text-xs flex items-center justify-between group transition-all"
             >
               <div>
-                <span className="font-semibold text-amber-400 block">2. Config Host Mismatch</span>
-                <span className="text-[11px] text-slate-400">DATABASE_URL host name misconfigured</span>
+                <span className="font-extrabold text-amber-500 block">2. Config Host Mismatch</span>
+                <span className="text-[11px] text-subtitle">DATABASE_URL host name misconfigured</span>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition" />
+              <ArrowRight className="w-4 h-4 text-subtitle group-hover:text-title group-hover:translate-x-1 transition" />
             </button>
 
             <button
@@ -176,13 +184,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 onInjectFailure('CODE_BUG');
                 onNavigateTab('command');
               }}
-              className="w-full text-left p-3 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-xs flex items-center justify-between group transition"
+              className="w-full text-left p-3.5 rounded-xl card-bg-subtle border theme-border hover:border-slate-400 dark:hover:border-slate-700 text-xs flex items-center justify-between group transition-all"
             >
               <div>
-                <span className="font-semibold text-blue-400 block">3. Login API 500 Code Bug</span>
-                <span className="text-[11px] text-slate-400">String passed to Integer Prisma query</span>
+                <span className="font-extrabold text-blue-500 block">3. Login API 500 Code Bug</span>
+                <span className="text-[11px] text-subtitle">String passed to Integer Prisma query</span>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition" />
+              <ArrowRight className="w-4 h-4 text-subtitle group-hover:text-title group-hover:translate-x-1 transition" />
             </button>
           </div>
         </div>

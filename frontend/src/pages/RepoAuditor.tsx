@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { 
+  GitBranch, 
   ShieldCheck, 
+  AlertTriangle, 
   Bug, 
-  GitCommit, 
+  CheckCircle2, 
   FileCode, 
+  Search, 
   RefreshCw, 
-  ChevronRight,
-  Sparkles,
-  Lock,
-  Code
+  Check, 
+  Zap,
+  ArrowRight,
+  Lock
 } from 'lucide-react';
-import { Scan } from '../types';
+import { Scan, Finding } from '../types';
 import { DiffViewer } from '../components/DiffViewer';
 
 interface RepoAuditorProps {
@@ -19,213 +22,273 @@ interface RepoAuditorProps {
   isScanning: boolean;
 }
 
-export const RepoAuditor: React.FC<RepoAuditorProps> = ({ scan, onScanRepo, isScanning }) => {
+export const RepoAuditor: React.FC<RepoAuditorProps> = ({
+  scan,
+  onScanRepo,
+  isScanning
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [activeFindingId, setActiveFindingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+  const [patchAppliedId, setPatchAppliedId] = useState<string | null>(null);
 
-  if (!scan) return null;
+  const findings = scan?.findings || [];
+  
+  const filteredFindings = findings.filter(f => {
+    const matchesCategory = selectedCategory === 'ALL' || f.category.toUpperCase() === selectedCategory;
+    const matchesSearch = searchQuery.trim() === '' || 
+      f.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (f.filePath && f.filePath.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
 
-  const findings = scan.findings || [];
-  const filteredFindings = selectedCategory === 'ALL' 
-    ? findings 
-    : findings.filter(f => f.category === selectedCategory);
+  const selectedFinding = findings.find(f => f.id === selectedFindingId) || filteredFindings[0] || findings[0];
 
-  const activeFinding = findings.find(f => f.id === activeFindingId);
+  const handleApplyPatch = (findingId: string) => {
+    setPatchAppliedId(findingId);
+    setTimeout(() => {
+      setPatchAppliedId(null);
+    }, 3000);
+  };
+
+  const scores = [
+    { label: 'Security Score', value: scan?.securityScore || 72, color: 'text-emerald-500', bar: 'bg-emerald-500' },
+    { label: 'Code Quality', value: scan?.qualityScore || 80, color: 'text-blue-500', bar: 'bg-blue-500' },
+    { label: 'Test Coverage', value: scan?.testingScore || 65, color: 'text-amber-500', bar: 'bg-amber-500' },
+    { label: 'Reliability', value: scan?.reliabilityScore || 88, color: 'text-indigo-500', bar: 'bg-indigo-500' },
+    { label: 'Documentation', value: scan?.documentationScore || 90, color: 'text-purple-500', bar: 'bg-purple-500' },
+    { label: 'Maintainability', value: scan?.maintainabilityScore || 82, color: 'text-teal-500', bar: 'bg-teal-500' }
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold">
-              OpenAI GitHub Auditor
-            </span>
-            <span className="text-xs font-mono text-slate-400">repo: company/production-backend-api</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-white mt-1">GitHub Repository Auditor</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Automated OpenAI code quality & security scanner detecting exposed JWT secrets, Prisma query bugs, missing tests, and commit risks.
-          </p>
-        </div>
+      
+      {/* Top Repository Banner Card */}
+      <div className="glass-panel p-6 rounded-2xl theme-border border space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-xs font-semibold">
+                GitHub Repository Auditor
+              </span>
+              <span className="text-xs font-mono text-subtitle">Branch: main</span>
+            </div>
 
-        <button
-          onClick={onScanRepo}
-          disabled={isScanning}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/20 transition self-start md:self-auto"
-        >
-          <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
-          <span>{isScanning ? 'Scanning Codebase...' : 'Re-Scan Repository'}</span>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="glass-panel p-4 rounded-xl space-y-1 text-center border-t-2 border-t-emerald-500">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Overall</span>
-          <div className="text-2xl font-extrabold text-white">{scan.overallScore}/100</div>
-          <span className="text-[10px] text-emerald-400">Grade B+</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl space-y-1 text-center border-t-2 border-t-rose-500">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Security (25%)</span>
-          <div className="text-2xl font-extrabold text-rose-400">{scan.securityScore}/100</div>
-          <span className="text-[10px] text-rose-400 font-medium">2 Secrets Found</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl space-y-1 text-center border-t-2 border-t-blue-500">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Code Quality (20%)</span>
-          <div className="text-2xl font-extrabold text-blue-400">{scan.qualityScore}/100</div>
-          <span className="text-[10px] text-slate-400">Good</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl space-y-1 text-center border-t-2 border-t-amber-500">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Testing (20%)</span>
-          <div className="text-2xl font-extrabold text-amber-400">{scan.testingScore}/100</div>
-          <span className="text-[10px] text-amber-400">Coverage 54%</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl space-y-1 text-center border-t-2 border-t-purple-500">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Reliability (15%)</span>
-          <div className="text-2xl font-extrabold text-purple-400">{scan.reliabilityScore}/100</div>
-          <span className="text-[10px] text-purple-400">High</span>
-        </div>
-
-        <div className="glass-panel p-4 rounded-xl space-y-1 text-center border-t-2 border-t-indigo-500">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Doc & Maint</span>
-          <div className="text-2xl font-extrabold text-indigo-400">{scan.documentationScore}/100</div>
-          <span className="text-[10px] text-slate-400">Complete</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            {[
-              { id: 'ALL', label: `All Findings (${findings.length})`, icon: ShieldCheck },
-              { id: 'SECURITY', label: 'Security Secrets', icon: Lock },
-              { id: 'BUG', label: 'Bug Hunter', icon: Bug },
-              { id: 'COMMIT_RISK', label: 'Commit Risk', icon: GitCommit },
-              { id: 'TESTING', label: 'Missing Tests', icon: FileCode },
-            ].map(tab => {
-              const Icon = tab.icon;
-              const active = selectedCategory === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedCategory(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                    active 
-                      ? 'bg-blue-600 text-white shadow-md' 
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+            <div className="flex items-center gap-3">
+              <div className="p-2 card-bg-subtle border theme-border rounded-xl text-blue-500">
+                <GitBranch className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-extrabold text-title">company/production-backend-api</h1>
+                <p className="text-xs text-subtitle">
+                  Last Scanned: {scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : 'Just now'} • {findings.length} findings detected
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {filteredFindings.map(finding => {
-              const isSelected = activeFindingId === finding.id;
+          {/* Overall Health Score Ring Card */}
+          <div className="flex items-center gap-6 card-bg-subtle p-4 rounded-xl border theme-border">
+            <div className="text-center">
+              <span className="text-xs font-bold text-subtitle block uppercase tracking-wider">Overall Score</span>
+              <div className="flex items-baseline justify-center gap-1 mt-0.5">
+                <span className="text-3xl font-extrabold text-emerald-500">{scan?.overallScore || 78}</span>
+                <span className="text-xs text-subtitle">/ 100</span>
+              </div>
+            </div>
+
+            <button
+              onClick={onScanRepo}
+              disabled={isScanning}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg glow-blue transition"
+            >
+              <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
+              <span>{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
+            </button>
+          </div>
+
+        </div>
+
+        {/* 6 Category Radar Scores Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t theme-border">
+          {scores.map((sc, i) => (
+            <div key={i} className="card-bg-subtle p-3 rounded-xl border theme-border space-y-1.5">
+              <span className="text-[10px] font-bold text-subtitle block truncate">{sc.label}</span>
+              <div className="flex items-baseline justify-between font-mono">
+                <span className={`text-base font-extrabold ${sc.color}`}>{sc.value}%</span>
+              </div>
+              <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                <div className={`${sc.bar} h-full rounded-full`} style={{ width: `${sc.value}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+
+      {/* Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-4 rounded-xl theme-border border">
+        
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1 card-bg-subtle p-1 rounded-xl border theme-border overflow-x-auto">
+          {['ALL', 'SECURITY', 'BUG', 'QUALITY'].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                selectedCategory === cat
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-subtitle hover:text-title'
+              }`}
+            >
+              {cat === 'ALL' ? 'All Findings' : cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input */}
+        <div className="flex items-center gap-2 theme-input px-3 py-1.5 rounded-xl border theme-border text-xs w-full sm:w-72">
+          <Search className="w-4 h-4 text-subtitle shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search findings or files..."
+            className="w-full bg-transparent border-none text-title focus:outline-none placeholder:text-subtitle text-xs"
+          />
+        </div>
+
+      </div>
+
+      {/* Main Content Split Grid: Findings List + Monaco Split Diff Inspector */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        {/* Left Column: Filtered Findings List */}
+        <div className="lg:sticky lg:top-6 space-y-3">
+          <h2 className="text-xs font-bold text-subtitle uppercase tracking-wider">Detected Code Risks ({filteredFindings.length})</h2>
+          
+          {filteredFindings.length === 0 ? (
+            <div className="glass-panel p-8 rounded-xl theme-border border text-center text-xs text-subtitle">
+              No code risks matching filter.
+            </div>
+          ) : (
+            filteredFindings.map((f) => {
+              const isSelected = selectedFinding?.id === f.id;
               const severityColor = 
-                finding.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' :
-                finding.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                'bg-blue-500/20 text-blue-400 border-blue-500/30';
+                f.severity === 'CRITICAL' ? 'status-danger' :
+                f.severity === 'HIGH' ? 'status-warning' :
+                'status-healthy';
 
               return (
                 <div
-                  key={finding.id}
-                  onClick={() => setActiveFindingId(finding.id)}
-                  className={`glass-panel p-4 rounded-xl border cursor-pointer transition ${
-                    isSelected ? 'border-blue-500 bg-slate-900/90 shadow-lg shadow-blue-500/10' : 'border-slate-800 hover:border-slate-700'
+                  key={f.id}
+                  onClick={() => setSelectedFindingId(f.id)}
+                  className={`p-4 rounded-xl transition-all cursor-pointer ${
+                    isSelected 
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg glow-blue scale-[1.01]' 
+                      : 'glass-panel theme-border hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${severityColor}`}>
-                          {finding.severity}
-                        </span>
-                        <span className="text-xs font-mono text-purple-400">{finding.category}</span>
-                        {finding.filePath && (
-                          <span className="text-xs font-mono text-slate-400">
-                            {finding.filePath}:{finding.line}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-sm font-bold text-slate-100">{finding.title}</h3>
-                      <p className="text-xs text-slate-300 line-clamp-2">{finding.impact}</p>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase tracking-wider ${
+                      isSelected 
+                        ? 'bg-white/20 text-white border-white/30' 
+                        : severityColor
+                    }`}>
+                      {f.severity}
+                    </span>
+                    <span className={`text-[10px] font-mono font-medium ${isSelected ? 'text-blue-100' : 'text-subtitle'}`}>
+                      {f.category}
+                    </span>
+                  </div>
+
+                  <h3 className={`text-xs font-extrabold line-clamp-1 ${isSelected ? 'text-white' : 'text-title'}`}>
+                    {f.title}
+                  </h3>
+
+                  {f.filePath && (
+                    <div className={`flex items-center gap-1.5 mt-2 text-[11px] font-mono p-1.5 rounded border truncate ${
+                      isSelected 
+                        ? 'bg-black/20 text-blue-100 border-white/20' 
+                        : 'card-bg-subtle text-subtitle theme-border'
+                    }`}>
+                      <FileCode className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-blue-500'}`} />
+                      <span className="truncate">{f.filePath}:{f.line || 1}</span>
                     </div>
-
-                    <ChevronRight className={`w-5 h-5 text-slate-500 transition-transform ${isSelected ? 'rotate-90 text-blue-400' : ''}`} />
-                  </div>
-
-                  <div className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
-                    <span><b>Fix Recommendation:</b> {finding.recommendation}</span>
-                    {finding.patch && (
-                      <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> Patch Ready
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               );
-            })}
-          </div>
+            })
+          )}
         </div>
 
-        <div className="space-y-4">
-          <div className="glass-panel p-5 rounded-2xl border border-slate-800 sticky top-20">
-            <h2 className="text-sm font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center gap-2">
-              <Code className="w-4 h-4 text-blue-400" />
-              <span>Finding Inspector & Code Patch</span>
-            </h2>
-
-            {activeFinding ? (
-              <div className="space-y-4 mt-4">
-                <div>
-                  <span className="text-xs font-mono text-purple-400">{activeFinding.category}</span>
-                  <h3 className="text-base font-bold text-white">{activeFinding.title}</h3>
-                  <p className="text-xs text-slate-300 mt-1">{activeFinding.impact}</p>
-                </div>
-
-                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Target Location:</span>
-                  <code className="text-xs text-blue-400 font-mono block">
-                    {activeFinding.filePath}:{activeFinding.line}
-                  </code>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-xs font-semibold text-slate-300">Recommended Action:</span>
-                  <p className="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                    {activeFinding.recommendation}
-                  </p>
-                </div>
-
-                {activeFinding.patch ? (
+        {/* Right Column: Selected Finding Details & Monaco Patch Inspector */}
+        <div className="lg:col-span-2 space-y-6">
+          {selectedFinding ? (
+            <>
+              {/* Finding Header Card */}
+              <div className="glass-panel p-6 rounded-2xl theme-border border space-y-4">
+                <div className="flex items-start justify-between gap-4 border-b theme-border pb-4">
                   <div>
-                    <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1 mb-2">
-                      <Sparkles className="w-3.5 h-3.5" /> AI Generated Diff Patch:
-                    </span>
-                    <DiffViewer diffText={activeFinding.patch} />
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2.5 py-0.5 rounded text-xs font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 dark:border-rose-500/30">
+                        {selectedFinding.severity}
+                      </span>
+                      <span className="text-xs font-mono text-subtitle">{selectedFinding.category}</span>
+                    </div>
+                    <h2 className="text-lg font-bold text-title mt-1">{selectedFinding.title}</h2>
                   </div>
-                ) : (
-                  <div className="p-4 bg-slate-900/40 rounded-xl border border-slate-800 text-center text-xs text-slate-400">
-                    No automated patch required for this structural finding.
+
+                  <button
+                    onClick={() => handleApplyPatch(selectedFinding.id)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-lg glow-emerald transition whitespace-nowrap"
+                  >
+                    {patchAppliedId === selectedFinding.id ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Patch Applied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4" />
+                        <span>Apply Security Patch</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Impact & Security Recommendation */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="card-bg-subtle p-4 rounded-xl border theme-border space-y-1">
+                    <span className="font-bold text-rose-700 dark:text-rose-400 block">Security Impact</span>
+                    <p className="text-title font-medium leading-relaxed">{selectedFinding.impact}</p>
                   </div>
+
+                  <div className="card-bg-subtle p-4 rounded-xl border theme-border space-y-1">
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400 block">AI Recommendation</span>
+                    <p className="text-title font-medium leading-relaxed">{selectedFinding.recommendation}</p>
+                  </div>
+                </div>
+
+                {/* Monaco Split Code Diff Viewer */}
+                {selectedFinding.patch && (
+                  <DiffViewer
+                    diffText={selectedFinding.patch}
+                    title={`Code Patch: ${selectedFinding.filePath || 'Source Patch'}`}
+                  />
                 )}
               </div>
-            ) : (
-              <div className="py-16 text-center text-xs text-slate-500 space-y-2">
-                <FileCode className="w-8 h-8 mx-auto text-slate-600" />
-                <p>Select any finding from the audit list on the left to inspect detailed line locations and AI diff patches.</p>
-              </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="glass-panel p-12 rounded-2xl theme-border border text-center text-subtitle text-xs">
+              Select a finding from the left panel to inspect security impact and code diff patches.
+            </div>
+          )}
         </div>
+
       </div>
+
     </div>
   );
 };

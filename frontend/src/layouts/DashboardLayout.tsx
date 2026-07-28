@@ -22,15 +22,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   isScanning
 }) => {
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex font-sans antialiased">
+    <div className="h-screen flex font-sans antialiased overflow-hidden">
       
       {/* Left Collapsible Navigation Sidebar */}
       <Sidebar incidents={incidents} scanScore={scan?.overallScore} />
 
-      {/* Main Right Content Section */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Right Content Section — full height, scrollable */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         
-        {/* Top Header Bar */}
+        {/* Top Header Bar — sticky at top */}
         <Header
           project={project}
           onResetEnv={onResetEnv}
@@ -38,16 +38,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           isScanning={isScanning}
         />
 
-        {/* Page Content Outlet */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-8">
-          <Outlet />
+        {/* Page Content — scrollable area */}
+        <main className="flex-1 overflow-y-auto w-full flex flex-col">
+          <div className="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-8">
+            <Outlet />
+          </div>
+          
+          {/* Footer inside scroll area */}
+          <footer className="border-t theme-border card-bg-subtle py-4 px-8 text-xs text-subtitle flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
+            <span>OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
+            <span className="font-mono">Cluster Status: Healthy • Port 5080 API</span>
+          </footer>
         </main>
-
-        {/* Footer */}
-        <footer className="border-t border-slate-800/80 bg-[#070a12] py-4 px-8 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
-          <span className="font-mono text-slate-400">Cluster Status: Healthy • Port 5080 API</span>
-        </footer>
 
       </div>
 
