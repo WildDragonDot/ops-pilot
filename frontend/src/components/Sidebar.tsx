@@ -33,9 +33,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
 
   const navItems = [
     { path: '/dashboard', label: 'Overview', icon: Activity },
-    { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: `${scanScore}/100`, badgeColor: 'bg-slate-100 text-slate-800 border border-slate-300 font-extrabold' },
-    { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-blue-50 text-blue-700 border border-blue-200 font-extrabold' },
-    { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-50 text-amber-800 border border-amber-200 font-extrabold' },
+    { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: `${scanScore}/100`, badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-extrabold' },
+    { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-extrabold' },
+    { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-extrabold' },
     { path: '/runbooks', label: 'Auto Runbooks', icon: BookOpen },
     { path: '/audit-logs', label: 'Audit Logs', icon: ShieldCheck },
     { path: '/reports', label: 'Post-Mortems', icon: FileText },

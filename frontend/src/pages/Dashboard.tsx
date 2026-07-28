@@ -475,8 +475,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
         
         {/* BOTTOM TIER LEFT: CHAOS TESTING ENGINE (lg:col-span-4) */}
         <div className="lg:col-span-4">
-          <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 h-full flex flex-col justify-between shadow-sm">
-            <div>
+          <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 h-full flex flex-col shadow-sm">
+            <div className="space-y-3">
               <div className="flex items-center justify-between border-b theme-border pb-2">
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] font-bold font-mono">
                   Chaos Engine
@@ -484,15 +484,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="text-[9px] font-mono text-subtitle">Live Injections</span>
               </div>
 
-              <h3 className="text-xs font-bold text-title tracking-tight mt-2 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>Simulate Outage Scenarios</span>
-              </h3>
-              <p className="text-[10px] text-subtitle leading-tight mt-0.5">
-                Click a scenario to trigger live failure state in topology & streaming log console.
-              </p>
+              <div>
+                <h3 className="text-xs font-bold text-title tracking-tight flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Simulate Outage Scenarios</span>
+                </h3>
+                <p className="text-[10px] text-subtitle leading-tight mt-0.5">
+                  Click a scenario to trigger live failure state in topology & streaming log console.
+                </p>
+              </div>
 
-              <div className="space-y-2 mt-3">
+              <div className="space-y-2 mt-2">
                 {/* Scenario 1 */}
                 <motion.button
                   whileHover={{ scale: 1.01 }}
@@ -567,12 +569,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     )}
                   </div>
                 </motion.button>
+
+                {/* Scenario 4: Redis Latency Spike */}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={loadingScenario !== null}
+                  onClick={() => handleLaunchScenario('REDIS_LATENCY')}
+                  className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-indigo-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
+                    loadingScenario === 'REDIS_LATENCY'
+                      ? 'ring-2 ring-indigo-500 opacity-80'
+                      : 'hover:border-indigo-500/60 hover:shadow-sm'
+                  }`}
+                >
+                  <div className="space-y-0.5 min-w-0 pr-2">
+                    <span className="font-extrabold text-title block text-[11px] truncate">4. Redis Latency Spike</span>
+                    <span className="text-[9px] text-subtitle block truncate">Key eviction buffer bottleneck</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition shrink-0">
+                    {loadingScenario === 'REDIS_LATENCY' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Play className="w-3 h-3 fill-current" />
+                    )}
+                  </div>
+                </motion.button>
               </div>
             </div>
 
             {/* AI Diagnostic Step Progress Indicator */}
             {diagnosticStep > 0 && (
-              <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs space-y-2 animate-fadeIn mt-2">
+              <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs space-y-2 animate-fadeIn">
                 <div className="flex items-center justify-between text-blue-500 font-bold text-[10px]">
                   <span className="flex items-center gap-1">
                     <Sparkles className="w-3 h-3 animate-pulse" /> AI Incident Diagnostic
@@ -611,7 +638,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* BOTTOM TIER RIGHT: WIDE STREAMING TERMINAL EVENT LOG (lg:col-span-8) */}
         <div className="lg:col-span-8">
-          <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 h-full flex flex-col justify-between">
+          <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 h-full flex flex-col">
             <div className="flex flex-col md:flex-row md:items-center justify-between border-b theme-border pb-2.5 gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Terminal className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -664,8 +691,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Filtered Terminal Stream Box (Top-most newest logs) */}
-            <div className="p-3 rounded-lg bg-slate-950 text-slate-100 font-mono text-[10px] space-y-1.5 max-h-56 overflow-y-auto border border-slate-800 shadow-inner flex-1">
+            {/* Filtered Terminal Stream Box (Full-height expansion, zero empty gap) */}
+            <div className="p-3 rounded-lg bg-slate-950 text-slate-100 font-mono text-[10px] space-y-1.5 min-h-[260px] h-full overflow-y-auto border border-slate-800 shadow-inner flex-1">
               {filteredLogs.length === 0 ? (
                 <div className="text-slate-500 text-center py-4">No logs matching filter level '{logFilter}'</div>
               ) : (
