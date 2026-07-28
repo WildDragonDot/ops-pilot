@@ -74,13 +74,13 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
               key={approval.id} 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-panel p-6 rounded-2xl border-2 border-amber-500/60 space-y-4 shadow-xl glow-amber"
+              className="glass-panel p-6 rounded-2xl border-2 border-amber-500/40 space-y-4 shadow-md"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b theme-border pb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-blue-500">Incident #{incident.id}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                    <span className="text-xs font-mono text-blue-600 dark:text-blue-400 font-bold">Incident #{incident.id}</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                       Risk Level: {approval.riskLevel}
                     </span>
                   </div>
@@ -100,7 +100,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => handleApprove(approval.id)}
-                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-lg glow-emerald transition"
+                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-xl shadow-md glow-emerald transition cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
                     <span>Approve & Execute Fix</span>
@@ -112,7 +112,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
 
               <DiffViewer diffText={approval.diff} commands={approval.commands} />
 
-              <div className="theme-code-block p-3 rounded-xl border theme-border text-xs font-mono">
+              <div className="card-bg-subtle p-3 rounded-xl border theme-border text-xs font-mono">
                 <b className="text-title">Rollback Plan:</b> <span className="text-subtitle">{approval.rollbackPlan}</span>
               </div>
             </motion.div>
