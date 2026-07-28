@@ -189,3 +189,16 @@ export async function fetchPostMortemReport(incidentId: string): Promise<string>
   const data = await res.json();
   return data.report;
 }
+
+export async function executeCommandOnServer(command: string): Promise<{ success: boolean; command: string; output: string; exitCode: number; cwd?: string }> {
+  const res = await fetch(`${API_BASE}/projects/exec`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ command }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to execute command on server');
+  }
+  return res.json();
+}

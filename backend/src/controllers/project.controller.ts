@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { prisma } from '../services/db.service.js';
 import { getProjectState, injectFailureScenario, resetEnvironmentState, createAndRunIncident } from '../services/incident-agent.service.js';
 import { testSSHConnection } from '../services/ssh.service.js';
 import { fetchLiveGitHubAudit } from '../services/github-audit.service.js';
-
 import { broadcastEvent } from './stream.controller.js';
+
+const execAsync = promisify(exec);
 
 const getHeaderString = (val: string | string[] | undefined): string | undefined => {
   if (!val) return undefined;
@@ -161,4 +164,36 @@ export function resetEnv(req: Request, res: Response) {
   const state = resetEnvironmentState();
   broadcastEvent({ type: 'success', title: 'Environment Restored', message: 'All container services reset to HEALTHY status' });
   res.json({ success: true, services: state.environmentStatus });
+}
+
+export async function executeServerCommand(req: Request, res: Response) {
+  const { command } = req.body;
+  if (!command || typeof command !== 'string') {
+    return res.status(400).json({ error: 'Command string is required' });
+  }
+
+  const trimmed = command.trim();
+  if (trimmed.startsWith('rm -rf /') || trimmed.includes('mkfs') || trimmed.includes('dd if=')) {
+    return res.status(403).json({ error: 'Command blocked by OpsPilot AI Safety Policy' });
+  }
+
+  try {
+    const { stdout, stderr } = await execAsync(command, { cwd: process.cwd(), timeout: 15000 });
+    const output = (stdout + (stderr ? `\n[STDERR]\n${stderr}` : '')).trim();
+    res.json({
+      success: true,
+      command,
+      output: output || '(Command executed successfully)',
+      exitCode: 0,
+      cwd: process.cwd()
+    });
+  } catch (err: any) {
+    res.json({
+      success: false,
+      command,
+      output: (err.stdout || '') + (err.stderr ? `\n[STDERR]\n${err.stderr}` : '') || err.message,
+      exitCode: err.code || 1,
+      cwd: process.cwd()
+    });
+  }
 }

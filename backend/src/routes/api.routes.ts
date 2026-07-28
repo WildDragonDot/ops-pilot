@@ -19,6 +19,7 @@ router.get('/auth/me', requireAuth, getMe);
 // Protected Project & Environment Routes
 router.get('/projects', requireAuth, getProjects);
 router.post('/projects', requireAuth, createProject);
+router.post('/projects/exec', requireAuth, executeServerCommand);
 router.post('/projects/test-connection', requireAuth, testProjectConnection);
 router.delete('/projects/:id', requireAuth, deleteProject);
 router.get('/projects/:id', requireAuth, getProject);

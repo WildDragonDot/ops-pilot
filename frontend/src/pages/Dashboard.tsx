@@ -34,6 +34,7 @@ import {
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
+import { ServerTerminalModal } from '../components/ServerTerminalModal';
 
 interface DashboardProps {
   project: Project | null;
@@ -67,6 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [activeEnv, setActiveEnv] = useState<'PROD' | 'STAGING' | 'DEV'>('PROD');
   const [loadingScenario, setLoadingScenario] = useState<string | null>(null);
   const [diagnosticStep, setDiagnosticStep] = useState<number>(0);
+  const [showTerminalModal, setShowTerminalModal] = useState<boolean>(false);
   const [selectedService, setSelectedService] = useState<ServiceNodeDetail | null>(null);
   const [isLogStreaming, setIsLogStreaming] = useState<boolean>(true);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'OK' | 'WARN' | 'ERR'>('ALL');
@@ -323,10 +325,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={() => setShowTerminalModal(true)}
+            className="flex items-center gap-2 px-3 py-2 glass-panel border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl shadow-sm transition cursor-pointer"
+          >
+            <Terminal className="w-4 h-4 text-emerald-500" />
+            <span>SSH Terminal</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => onNavigateTab('command')}
             className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition cursor-pointer"
           >
-            <Terminal className="w-4 h-4" />
+            <Zap className="w-4 h-4" />
             <span>Investigate Outage</span>
           </motion.button>
 
@@ -823,6 +835,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Interactive Remote SSH Server Command Terminal */}
+      <ServerTerminalModal
+        isOpen={showTerminalModal}
+        onClose={() => setShowTerminalModal(false)}
+        serverHost={project?.serverHost || '34.224.80.31'}
+        serverUser={project?.serverUser || 'ubuntu'}
+      />
 
     </motion.div>
   );
