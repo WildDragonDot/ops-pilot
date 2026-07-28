@@ -33,9 +33,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
 
   const navItems = [
     { path: '/dashboard', label: 'Overview', icon: Activity },
-    { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: `${scanScore}/100` },
-    { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-    { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40 glow-amber' },
+    { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: `${scanScore}/100`, badgeColor: 'bg-slate-100 text-slate-800 border border-slate-300 font-extrabold' },
+    { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-blue-50 text-blue-700 border border-blue-200 font-extrabold' },
+    { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-50 text-amber-800 border border-amber-200 font-extrabold' },
     { path: '/runbooks', label: 'Auto Runbooks', icon: BookOpen },
     { path: '/audit-logs', label: 'Audit Logs', icon: ShieldCheck },
     { path: '/reports', label: 'Post-Mortems', icon: FileText },
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
                 to={item.path}
                 title={collapsed ? item.label : undefined}
                 className={({ isActive }) =>
-                  `flex items-center ${collapsed ? 'justify-center px-2' : 'justify-between px-3'} py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  `flex items-center ${collapsed ? 'justify-center px-2 py-3' : 'justify-between px-3 py-2.5'} rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                       : 'text-subtitle hover:text-title hover:bg-slate-500/10'
@@ -112,15 +112,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
+                    <div className={`flex items-center ${collapsed ? 'justify-center relative' : 'gap-3 min-w-0'}`}>
                       <Icon className="w-4 h-4 shrink-0" />
                       {!collapsed && <span className="truncate">{item.label}</span>}
+                      
+                      {/* Collapsed Notification Dot Badge */}
+                      {collapsed && item.badge && !item.badge.includes('/') && (
+                        <span className={`absolute -top-2 -right-2 px-1.5 py-0.2 rounded-full text-[9px] font-extrabold font-mono border shadow-sm ${
+                          isActive
+                            ? 'bg-white text-blue-700 border-white font-extrabold'
+                            : (item.path === '/approvals' ? 'bg-amber-500 text-white border-amber-600 font-extrabold' : 'bg-blue-600 text-white border-blue-700 font-extrabold')
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
                     </div>
 
+                    {/* Expanded Sidebar Badge Pill */}
                     {!collapsed && item.badge && (
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border transition-all ${
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold border transition-all ${
                         isActive
-                          ? 'bg-white/25 text-white border-white/40 shadow-sm font-extrabold'
+                          ? 'bg-white/25 text-white border-white/40 shadow-sm'
                           : (item.badgeColor || 'card-bg-subtle text-subtitle')
                       }`}>
                         {item.badge}

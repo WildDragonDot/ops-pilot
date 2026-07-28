@@ -1,4 +1,0 @@
-/Users/chandanvishwakarma/Desktop/Office Project/OpsPilot AI/README.md
-/Users/chandanvishwakarma/Desktop/Office Project/OpsPilot AI/docker-compose.yml
-/Users/chandanvishwakarma/Desktop/Office Project/OpsPilot AI/docs/architecture.md
-/Users/chandanvishwakarma/Desktop/Office Project/OpsPilot AI/frontend/index.html

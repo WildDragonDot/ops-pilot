@@ -184,40 +184,32 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                 <div
                   key={f.id}
                   onClick={() => setSelectedFindingId(f.id)}
-                  className={`p-4 rounded-xl transition-all cursor-pointer ${
+                  className={`p-4 rounded-xl transition-all cursor-pointer border-2 ${
                     isSelected 
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg glow-blue scale-[1.01]' 
+                      ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-600 shadow-md ring-1 ring-blue-500/20' 
                       : 'glass-panel theme-border hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border uppercase tracking-wider ${
-                      isSelected 
-                        ? 'bg-white/20 text-white border-white/30' 
-                        : severityColor
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold border uppercase tracking-wider ${severityColor}`}>
                       {f.severity}
                     </span>
-                    <span className={`text-[10px] font-mono font-bold ${
-                      isSelected ? 'text-blue-100' : 'text-subtitle'
-                    }`}>
+                    <span className="text-[10px] font-mono font-extrabold text-blue-700 dark:text-blue-400 uppercase">
                       {f.category}
                     </span>
                   </div>
 
-                  <h3 className={`text-xs font-extrabold line-clamp-1 ${
-                    isSelected ? 'text-white' : 'text-title'
-                  }`}>
+                  <h3 className="text-xs font-extrabold text-title line-clamp-1">
                     {f.title}
                   </h3>
 
                   {f.filePath && (
-                    <div className={`flex items-center gap-1.5 mt-2 text-[11px] font-mono p-1.5 rounded border truncate ${
+                    <div className={`flex items-center gap-1.5 mt-2 text-[11px] font-mono p-2 rounded-lg border truncate transition ${
                       isSelected 
-                        ? 'bg-black/20 text-blue-100 border-white/20' 
+                        ? 'bg-white dark:bg-slate-900 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800 shadow-xs font-bold' 
                         : 'card-bg-subtle text-subtitle theme-border'
                     }`}>
-                      <FileCode className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-blue-500'}`} />
+                      <FileCode className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                       <span className="truncate">{f.filePath}:{f.line || 1}</span>
                     </div>
                   )}

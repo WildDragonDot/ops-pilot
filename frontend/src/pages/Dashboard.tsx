@@ -103,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="glass-panel p-6 rounded-2xl theme-border border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold font-mono">
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-bold font-mono">
               Live Operations Control
             </span>
           </div>
@@ -138,16 +138,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="glass-panel p-5 rounded-2xl theme-border border space-y-3 shadow-sm hover:shadow-md transition">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-subtitle font-mono">Overall Health</span>
-            <Activity className={`w-5 h-5 ${env.overall === 'HEALTHY' ? 'text-emerald-600' : 'text-rose-600'}`} />
+            <Activity className={`w-5 h-5 ${pendingApprovals > 0 ? 'text-amber-500 animate-pulse' : (env.overall === 'HEALTHY' ? 'text-emerald-600' : 'text-rose-600')}`} />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-extrabold ${env.overall === 'HEALTHY' ? 'text-emerald-600 font-mono' : 'text-rose-600 font-mono'}`}>
-              {env.overall}
+            <span className={`text-3xl font-extrabold ${pendingApprovals > 0 ? 'text-amber-500 font-mono' : (env.overall === 'HEALTHY' ? 'text-emerald-600 font-mono' : 'text-rose-600 font-mono')}`}>
+              {pendingApprovals > 0 ? 'DEGRADED' : env.overall}
             </span>
           </div>
           <div className="pt-2 border-t theme-border flex items-center justify-between text-[11px] text-subtitle font-mono">
             <span>Uptime: <b className="text-title">99.98%</b></span>
-            <span className="text-emerald-600 font-bold">4/4 Nodes</span>
+            <span className={pendingApprovals > 0 ? 'text-amber-500 font-bold' : 'text-emerald-600 font-bold'}>
+              {pendingApprovals > 0 ? '1 Issue Pending' : '4/4 Nodes'}
+            </span>
           </div>
         </div>
 
@@ -164,7 +166,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="w-full card-bg-subtle h-2 rounded-full overflow-hidden border theme-border">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500" style={{ width: `${score}%` }} />
           </div>
-          <p className="text-[11px] text-subtitle font-mono truncate">Security 72% | Quality 88% | Testing 65%</p>
+          <div className="flex items-center justify-between text-[10px] text-subtitle font-mono pt-0.5">
+            <span>Security <b>72%</b></span>
+            <span>Quality <b>88%</b></span>
+            <span>Testing <b>65%</b></span>
+          </div>
         </div>
 
         {/* Card 3: Critical Code Risks */}
@@ -188,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-blue-600">{pendingApprovals}</span>
-            <span className="text-xs font-bold text-subtitle">Requests</span>
+            <span className="text-xs font-bold text-subtitle">{pendingApprovals === 1 ? 'Pending Request' : 'Pending Requests'}</span>
           </div>
           <p className="text-[11px] text-subtitle font-mono truncate">Operator safety guardrails active</p>
         </div>
