@@ -29,7 +29,9 @@ import {
   Filter,
   Download,
   Trash2,
-  Check
+  Check,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
@@ -72,6 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [selectedService, setSelectedService] = useState<ServiceNodeDetail | null>(null);
   const [isLogStreaming, setIsLogStreaming] = useState<boolean>(true);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'OK' | 'WARN' | 'ERR'>('ALL');
+  const [isLogCollapsed, setIsLogCollapsed] = useState<boolean>(false);
   
   const logContainerRef = useRef<HTMLDivElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -453,34 +456,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Page Title & Subtitle Description */}
-        <div className="space-y-1 relative z-10">
-          <h1 className="text-xl font-bold text-title tracking-tight font-display flex items-center gap-2">
+        {/* Row 2: Page Title & Minimalist Tech Stack Badges */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t theme-border relative z-10">
+          <h1 className="text-lg font-bold text-title tracking-tight font-display flex items-center gap-2">
             <span>Production Overview</span>
             <span className="text-xs font-mono text-subtitle font-normal">({project?.name || 'OpsPilot Workspace'})</span>
           </h1>
-          <p className="text-xs text-subtitle leading-relaxed">
-            Real-time cluster topology status, security audit health metrics, and autonomous AI incident commander.
-          </p>
-        </div>
 
-        {/* Row 3: Single-line Tech Stack Spec Strip */}
-        <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t theme-border font-mono text-[10px] text-subtitle select-none relative z-10">
-          <span className="text-title font-bold shrink-0 flex items-center gap-1">
-            <Cpu className="w-3 h-3 text-blue-500" /> Stack Spec:
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold shrink-0">
-            Region: {envContext.region}
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold shrink-0">
-            Runtime: {project?.runtimeType || 'Docker Compose (Node.js)'}
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold shrink-0">
-            Database: PostgreSQL ({envContext.dbPort})
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold shrink-0">
-            Gateway: Nginx ({envContext.proxyPort})
-          </span>
+          <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold flex items-center gap-1">
+              ⚡ {project?.runtimeType || 'Node.js 20'}
+            </span>
+            <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold flex items-center gap-1">
+              🐘 PostgreSQL 15.2
+            </span>
+            <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1">
+              🔴 Redis 7.0
+            </span>
+          </div>
         </div>
 
       </div>
@@ -875,40 +868,50 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 >
                   <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                 </button>
+
+                <button
+                  onClick={() => setIsLogCollapsed(!isLogCollapsed)}
+                  className="p-1.5 rounded-lg card-bg-subtle text-subtitle hover:text-title border theme-border cursor-pointer shrink-0"
+                  title={isLogCollapsed ? 'Expand Terminal Logs' : 'Collapse Terminal Logs'}
+                >
+                  {isLogCollapsed ? <ChevronDown className="w-3.5 h-3.5 text-blue-500" /> : <ChevronUp className="w-3.5 h-3.5 text-blue-500" />}
+                </button>
               </div>
             </div>
 
-            {/* Filtered Terminal Stream Box (Full-height expansion, zero empty gap, smooth bottom auto-scroll) */}
-            <div 
-              ref={logContainerRef}
-              onScroll={handleLogScroll}
-              className="p-3 rounded-lg bg-slate-950 text-slate-100 font-mono text-[10px] space-y-1.5 min-h-[260px] max-h-[360px] overflow-y-auto border border-slate-800 shadow-inner flex-1"
-            >
-              {filteredLogs.length === 0 ? (
-                <div className="text-slate-500 text-center py-4">No logs matching filter level '{logFilter}'</div>
-              ) : (
-                <>
-                  {filteredLogs.map((log) => (
-                    <div key={log.id} className="flex items-start gap-2">
-                      <span className="text-slate-500 shrink-0">[{log.time}]</span>
-                      <span className={`px-1 py-0.2 rounded text-[8px] font-extrabold shrink-0 ${
-                        log.level === 'OK'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : log.level === 'ERR'
-                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse'
-                          : log.level === 'WARN'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                      }`}>
-                        {log.level}
-                      </span>
-                      <span className="text-slate-200 leading-tight font-mono break-all">{log.message}</span>
-                    </div>
-                  ))}
-                  <div ref={logEndRef} />
-                </>
-              )}
-            </div>
+            {/* Filtered Terminal Stream Box (Collapsible, smooth bottom auto-scroll) */}
+            {!isLogCollapsed && (
+              <div 
+                ref={logContainerRef}
+                onScroll={handleLogScroll}
+                className="p-3 rounded-lg bg-slate-950 text-slate-100 font-mono text-[10px] space-y-1.5 min-h-[220px] max-h-[320px] overflow-y-auto border border-slate-800 shadow-inner flex-1"
+              >
+                {filteredLogs.length === 0 ? (
+                  <div className="text-slate-500 text-center py-4">No logs matching filter level '{logFilter}'</div>
+                ) : (
+                  <>
+                    {filteredLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-2">
+                        <span className="text-slate-500 shrink-0">[{log.time}]</span>
+                        <span className={`px-1 py-0.2 rounded text-[8px] font-extrabold shrink-0 ${
+                          log.level === 'OK'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : log.level === 'ERR'
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse'
+                            : log.level === 'WARN'
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        }`}>
+                          {log.level}
+                        </span>
+                        <span className="text-slate-200 leading-tight font-mono break-all">{log.message}</span>
+                      </div>
+                    ))}
+                    <div ref={logEndRef} />
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { register, login, getMe } from '../controllers/auth.controller.js';
-import { getProject, getProjects, createProject, testProjectConnection, deleteProject, getProjectHealth, injectFailure, resetEnv } from '../controllers/project.controller.js';
+import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, injectFailure, resetEnv } from '../controllers/project.controller.js';
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';

@@ -150,9 +150,22 @@ export async function executeRepoScan() {
   ];
 
   for (const f of findingsData) {
-    await prisma.repositoryFinding.create({
-      data: {
-        id: f.id,
+    const findingId = `${scanId}-${f.id}`;
+    await prisma.repositoryFinding.upsert({
+      where: { id: findingId },
+      update: {
+        severity: f.severity,
+        category: f.category,
+        title: f.title,
+        filePath: f.filePath,
+        line: f.line,
+        impact: f.impact,
+        recommendation: f.recommendation,
+        patch: f.patch,
+        status: f.status
+      },
+      create: {
+        id: findingId,
         scanId,
         severity: f.severity,
         category: f.category,
