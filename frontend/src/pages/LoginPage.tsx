@@ -21,6 +21,7 @@ import {
   Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { CyberBackground } from '../components/CyberBackground';
 
 interface LoginPageProps {
   onSwitchToRegister: () => void;
@@ -86,6 +87,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   return (
     <div className="min-h-screen bg-[#06080d] text-slate-100 flex flex-col justify-between p-6 lg:p-10 relative overflow-hidden font-sans select-none">
       
+      {/* HTML5 Cyber Particle Constellation Background */}
+      <CyberBackground />
+
       {/* Background Animated Glow Spheres */}
       <motion.div 
         animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}

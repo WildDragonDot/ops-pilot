@@ -64,6 +64,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           // Parse fail
         }
       };
+
+      eventSource.onerror = () => {
+        if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+          eventSource.close();
+        }
+      };
     } catch (err) {
       // SSE unsupported fallback
     }
