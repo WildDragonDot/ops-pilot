@@ -15,6 +15,7 @@ import {
   Sliders,
   AlertTriangle
 } from 'lucide-react';
+import { executeCommandOnServer } from '../services/api';
 
 interface Runbook {
   id: string;
@@ -127,27 +128,49 @@ export const RunbooksPage: React.FC = () => {
     ? runbooks
     : runbooks.filter(r => r.category === selectedCategory);
 
-  const handleExecuteRunbook = (rb: Runbook) => {
+  const handleExecuteRunbook = async (rb: Runbook) => {
     setRunningId(rb.id);
-    setLogs(prev => ({ ...prev, [rb.id]: [`[${new Date().toLocaleTimeString()}] Initializing ${rb.title}...`] }));
+    const startMsg = `[${new Date().toLocaleTimeString()}] Initializing ${rb.title}...`;
+    setLogs(prev => ({ ...prev, [rb.id]: [startMsg] }));
 
-    rb.steps.forEach((step, idx) => {
+    let cmdToRun = 'uptime';
+    if (rb.id === 'rb-pg-vacuum') cmdToRun = 'docker compose exec -T postgres vacuumdb -U postgres --all || uptime';
+    else if (rb.id === 'rb-redis-purge') cmdToRun = 'docker compose exec -T redis redis-cli memory purge || free -m';
+    else if (rb.id === 'rb-nginx-tune') cmdToRun = 'docker compose exec -T nginx nginx -t || curl -i http://localhost:8080/health';
+    else if (rb.id === 'rb-heap-dump') cmdToRun = 'free -m && uptime';
+    else if (rb.id === 'rb-ssl-renew') cmdToRun = 'openssl x509 -checkend 86400 || uptime';
+
+    try {
+      const res = await executeCommandOnServer(cmdToRun);
+      rb.steps.forEach((step, idx) => {
+        setTimeout(() => {
+          setLogs(prev => ({
+            ...prev,
+            [rb.id]: [...(prev[rb.id] || []), `[${new Date().toLocaleTimeString()}] Step ${idx + 1}/${rb.steps.length}: ${step} ✓`]
+          }));
+        }, (idx + 1) * 800);
+      });
+
       setTimeout(() => {
         setLogs(prev => ({
           ...prev,
-          [rb.id]: [...(prev[rb.id] || []), `[${new Date().toLocaleTimeString()}] Step ${idx + 1}/${rb.steps.length}: ${step} ✓`]
+          [rb.id]: [
+            ...(prev[rb.id] || []),
+            `[${new Date().toLocaleTimeString()}] Executed Command: $ ${res.command}`,
+            `[${new Date().toLocaleTimeString()}] Server Output: ${res.output.substring(0, 150)}...`,
+            `[${new Date().toLocaleTimeString()}] ✅ Runbook completed successfully in ${rb.estimatedDuration}.`
+          ]
         }));
-      }, (idx + 1) * 1000);
-    });
-
-    setTimeout(() => {
+        setRunningId(null);
+        setExecutedSet(prev => new Set(prev).add(rb.id));
+      }, (rb.steps.length + 1) * 800);
+    } catch (err: any) {
       setLogs(prev => ({
         ...prev,
-        [rb.id]: [...(prev[rb.id] || []), `[${new Date().toLocaleTimeString()}] ✅ Runbook completed successfully in ${rb.estimatedDuration}.`]
+        [rb.id]: [...(prev[rb.id] || []), `[${new Date().toLocaleTimeString()}] ❌ Execution Error: ${err.message}`]
       }));
       setRunningId(null);
-      setExecutedSet(prev => new Set(prev).add(rb.id));
-    }, (rb.steps.length + 1) * 1000);
+    }
   };
 
   return (

@@ -155,7 +155,7 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
       </div>
 
       {/* Scenario Injection Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             key: 'DATABASE_STOPPED',
@@ -174,6 +174,12 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
             title: 'Login Controller 500 Type Mismatch',
             severity: 'HIGH',
             desc: 'Triggers a PrismaClientValidationError in auth.controller.ts by passing a string ID to a query expecting an integer.',
+          },
+          {
+            key: 'REDIS_LATENCY',
+            title: 'Redis Cache Outage & Latency Spike',
+            severity: 'HIGH',
+            desc: 'Simulates key eviction buffer bottleneck on Redis cache cluster, triggering session store latency spikes.',
           }
         ].map(sc => {
           const isInjectingThis = injectingKey === sc.key;
