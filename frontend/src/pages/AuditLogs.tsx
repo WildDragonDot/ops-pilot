@@ -169,7 +169,7 @@ export const AuditLogs: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Filter logs by action, user, or target..."
-            className="w-full bg-transparent border-none text-xs text-title focus:outline-none placeholder:text-subtitle"
+            className="w-full bg-transparent border-none text-xs text-title focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/50 placeholder:opacity-50"
           />
         </div>
 

@@ -138,7 +138,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or search action..."
-            className="flex-1 bg-transparent text-xs text-title focus:outline-none font-mono placeholder:text-subtitle"
+            className="flex-1 bg-transparent text-xs text-title focus:outline-none font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500/50 placeholder:opacity-50"
           />
           <button onClick={onClose} aria-label="Close command palette" className="p-1 rounded-lg text-subtitle hover:text-title card-bg-subtle">
             <X className="w-4 h-4" />

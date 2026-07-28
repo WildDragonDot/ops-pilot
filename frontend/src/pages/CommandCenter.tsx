@@ -555,7 +555,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
             onChange={(e) => setPromptText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe an outage or command (e.g. 'Investigate 502 Bad Gateway error', 'Fix login API 500 bug', 'Check database connection status')... (Press Enter to send)"
-            className="w-full bg-transparent border-none text-title text-xs focus:outline-none placeholder:text-subtitle font-mono resize-none leading-relaxed px-1"
+            className="w-full bg-transparent border-none text-title text-xs focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/50 placeholder:opacity-50 font-mono resize-none leading-relaxed px-1"
           />
 
           <div className="flex items-center justify-between border-t theme-border pt-2 font-mono text-xs">

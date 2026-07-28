@@ -11,6 +11,7 @@
   --text-subtitle: #475569;
   --text-primary: #0f172a;
   --text-muted: #64748b;
+  --text-placeholder: #94a3b8;
   --bg-input: #ffffff;
   
   --status-healthy-bg: #d1fae5;
@@ -58,6 +59,7 @@ html.dark {
   --text-subtitle: #94a3b8;
   --text-primary: #f1f5f9;
   --text-muted: #64748b;
+  --text-placeholder: #475569;
   --bg-input: #070a13;
 
   --status-healthy-bg: rgba(16, 185, 129, 0.12);
@@ -266,8 +268,13 @@ html.dark .header-bg {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.theme-input::placeholder {
-  color: var(--text-muted);
+.theme-input::placeholder,
+input::placeholder,
+textarea::placeholder,
+::placeholder {
+  color: var(--text-placeholder) !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
 }
 
 .theme-input:focus {
