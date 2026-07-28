@@ -108,11 +108,11 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     }
   };
 
-  const baseScore = scan?.overallScore || 78;
-  const currentScore = Math.min(100, baseScore + (allResolvedIds.length * 6));
+  const currentScore = scan?.overallScore || (countAll === 0 ? 100 : countAll === 1 ? 89 : 78);
+  const currentSecurityScore = scan?.securityScore || (countAll === 0 ? 100 : countAll === 1 ? 86 : 72);
 
   const scores = [
-    { label: 'Security Score', value: Math.min(100, (scan?.securityScore || 72) + (allResolvedIds.length * 8)), color: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' },
+    { label: 'Security Score', value: currentSecurityScore, color: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' },
     { label: 'Code Quality', value: scan?.qualityScore || 85, color: 'text-blue-600 dark:text-blue-400', bar: 'bg-blue-500' },
     { label: 'Test Coverage', value: scan?.testingScore || 65, color: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' },
     { label: 'Reliability', value: scan?.reliabilityScore || 88, color: 'text-indigo-600 dark:text-indigo-400', bar: 'bg-indigo-500' },

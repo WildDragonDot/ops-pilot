@@ -10,14 +10,39 @@ export async function getLatestRepoScan() {
     include: { findings: true }
   });
 
-  if (!scan) {
+  if (!scan || !scan.findings || scan.findings.length === 0) {
     return executeRepoScan();
   }
 
   return scan;
 }
 
+async function checkRealDiskFilePatchStatus(filePath: string, patchType: 'JWT' | 'BUG'): Promise<'RESOLVED' | 'OPEN'> {
+  try {
+    const fullPath = path.resolve(process.cwd(), filePath);
+    const content = await readFile(fullPath, 'utf-8');
+    
+    if (patchType === 'JWT') {
+      if (content.includes('if (!process.env.JWT_SECRET) throw new Error')) {
+        return 'RESOLVED';
+      }
+    } else if (patchType === 'BUG') {
+      if (content.includes('const userId = Number(req.params.id)')) {
+        return 'RESOLVED';
+      }
+    }
+  } catch (err) {
+    // File unpatched or missing
+  }
+  return 'OPEN';
+}
+
 export async function executeRepoScan() {
+  // Delete legacy scans to ensure fresh deterministic findings state
+  await prisma.repositoryScan.deleteMany({
+    where: { repositoryId: 'opspilot-demo-repo' }
+  });
+
   const scanId = `scan-${Date.now()}`;
   
   // Read real codebase source files from disk
@@ -54,11 +79,28 @@ export async function executeRepoScan() {
     });
   }
 
-  const overallScore = aiResult?.overallScore || 84;
-  const securityScore = aiResult?.securityScore || 78;
-  const qualityScore = aiResult?.qualityScore || 85;
-  const testingScore = aiResult?.testingScore || 70;
-  const summary = aiResult?.summary || 'Scanned codebase source files. Detected 2 Critical findings and verified JWT key config.';
+  // Check real disk file patch statuses
+  const jwtStatus = await checkRealDiskFilePatchStatus('backend/src/services/auth.service.ts', 'JWT');
+  const bugStatus = await checkRealDiskFilePatchStatus('backend/src/controllers/auth.controller.ts', 'BUG');
+
+  const resolvedCount = (jwtStatus === 'RESOLVED' ? 1 : 0) + (bugStatus === 'RESOLVED' ? 1 : 0);
+  const openCount = 2 - resolvedCount;
+
+  // Compute scores dynamically based on open vs resolved findings
+  let overallScore = 78;
+  let securityScore = 72;
+
+  if (openCount === 1) {
+    overallScore = 89;
+    securityScore = 86;
+  } else if (openCount === 0) {
+    overallScore = 100;
+    securityScore = 100;
+  }
+
+  const summary = openCount === 0 
+    ? 'All codebase source files verified clean. 0 active risks.' 
+    : `Scanned codebase source files. Detected ${openCount} Critical active risks.`;
 
   const newScan = await prisma.repositoryScan.create({
     data: {
@@ -67,8 +109,8 @@ export async function executeRepoScan() {
       status: 'COMPLETED',
       overallScore,
       securityScore,
-      qualityScore,
-      testingScore,
+      qualityScore: 85,
+      testingScore: 70,
       reliabilityScore: 88,
       documentationScore: 92,
       maintainabilityScore: 82,
@@ -78,7 +120,7 @@ export async function executeRepoScan() {
     }
   });
 
-  const findingsData = aiResult?.findings || [
+  const findingsData = [
     {
       id: 'find-sec-jwt-001',
       scanId,
@@ -89,7 +131,8 @@ export async function executeRepoScan() {
       line: 5,
       impact: 'Using default fallback key allows potential token forging if JWT_SECRET env is omitted.',
       recommendation: 'Enforce process.env.JWT_SECRET requirement during server startup.',
-      patch: `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -4,1 +4,3 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET required");\n+const JWT_SECRET = process.env.JWT_SECRET;`
+      patch: `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -4,1 +4,3 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET required");\n+const JWT_SECRET = process.env.JWT_SECRET;`,
+      status: jwtStatus
     },
     {
       id: 'find-bug-sanitize-002',
@@ -101,41 +144,25 @@ export async function executeRepoScan() {
       line: 42,
       impact: 'Raw string ID triggers unhandled Prisma Client validation exception.',
       recommendation: 'Sanitize route parameter with Number(req.params.id) and return 400 Bad Request.',
-      patch: `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -41,1 +41,2 @@\n-const user = await prisma.user.findUnique({ where: { id: req.params.id } });\n+const userId = Number(req.params.id);\n+const user = await prisma.user.findUnique({ where: { id: userId } });`
+      patch: `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -41,1 +41,2 @@\n-const user = await prisma.user.findUnique({ where: { id: req.params.id } });\n+const userId = Number(req.params.id);\n+const user = await prisma.user.findUnique({ where: { id: userId } });`,
+      status: bugStatus
     }
   ];
 
   for (const f of findingsData) {
-    // Check if finding was previously resolved in DB
-    const existing = await prisma.repositoryFinding.findUnique({ where: { id: f.id } });
-    const status = existing?.status === 'RESOLVED' ? 'RESOLVED' : 'OPEN';
-
-    await prisma.repositoryFinding.upsert({
-      where: { id: f.id },
-      update: {
-        scanId,
-        severity: f.severity || 'HIGH',
-        category: f.category || 'BUG',
-        title: f.title || 'Code Finding',
-        filePath: f.filePath,
-        line: f.line,
-        impact: f.impact || 'Impact identified',
-        recommendation: f.recommendation || 'Follow code review guidelines',
-        patch: f.patch,
-        status
-      },
-      create: {
+    await prisma.repositoryFinding.create({
+      data: {
         id: f.id,
         scanId,
-        severity: f.severity || 'HIGH',
-        category: f.category || 'BUG',
-        title: f.title || 'Code Finding',
+        severity: f.severity,
+        category: f.category,
+        title: f.title,
         filePath: f.filePath,
         line: f.line,
-        impact: f.impact || 'Impact identified',
-        recommendation: f.recommendation || 'Follow code review guidelines',
+        impact: f.impact,
+        recommendation: f.recommendation,
         patch: f.patch,
-        status
+        status: f.status
       }
     });
   }
@@ -150,7 +177,6 @@ export async function applyFindingPatch(findingId: string) {
   let finding = await prisma.repositoryFinding.findUnique({ where: { id: findingId } });
   
   if (!finding) {
-    // Try matching title / pattern
     if (findingId.includes('jwt') || findingId.includes('sec')) {
       finding = await prisma.repositoryFinding.findFirst({ where: { category: 'SECURITY' } });
     } else {
@@ -190,20 +216,6 @@ export async function applyFindingPatch(findingId: string) {
     }
   }
 
-  // Update scan scores in DB
-  const scan = await prisma.repositoryScan.findUnique({
-    where: { id: finding.scanId }
-  });
-
-  if (scan) {
-    await prisma.repositoryScan.update({
-      where: { id: scan.id },
-      data: {
-        overallScore: Math.min(100, scan.overallScore + 6),
-        securityScore: Math.min(100, scan.securityScore + 8)
-      }
-    });
-  }
-
-  return getLatestRepoScan();
+  // Trigger scan refresh to re-evaluate real disk state and scores
+  return executeRepoScan();
 }
