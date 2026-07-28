@@ -79,7 +79,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
 
       recognition.onstart = () => {
         setIsListening(true);
-        setVoiceStatus('🎙️ Listening... Speak your command in English or Hinglish');
+        setVoiceStatus('🎙️ Listening... Speak your command now');
       };
 
       recognition.onresult = (event: any) => {
@@ -149,7 +149,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
 
   const handleLaunchInvestigation = async () => {
     const rawText = promptText.trim();
-    const textToSend = rawText || 'Meri production API down hai, 502 Bad Gateway aa raha hai. Root cause trace karke fix karo.';
+    const textToSend = rawText || 'Production API down with 502 Bad Gateway. Trace root cause and execute recovery patch.';
     
     // Auto-detect scenario key from natural language intent if custom prompt entered
     let targetScenarioKey = selectedScenarioKey;
@@ -537,7 +537,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
                 </span>
-                <span>{voiceStatus || '🎙️ Listening... Speak your command in English/Hinglish now'}</span>
+                <span>{voiceStatus || '🎙️ Listening... Speak your command now'}</span>
               </div>
               <button 
                 type="button"
@@ -554,16 +554,16 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type anything in Hinglish, Hindi or English (e.g. 'Bhai 502 error check karo', 'Fix login API bug', 'DB status status dekho')... (Press Enter to send)"
+            placeholder="Describe an outage or command (e.g. 'Investigate 502 Bad Gateway error', 'Fix login API 500 bug', 'Check database connection status')... (Press Enter to send)"
             className="w-full bg-transparent border-none text-title text-xs focus:outline-none placeholder:text-subtitle font-mono resize-none leading-relaxed px-1"
           />
 
           <div className="flex items-center justify-between border-t theme-border pt-2 font-mono text-xs">
             <div className="flex items-center gap-1.5 overflow-x-auto">
               {[
-                { key: 'DATABASE_STOPPED', label: '⚡ 502 Outage', prompt: 'Meri production API down hai, 502 Bad Gateway aa raha hai. Root cause trace karke fix karo.' },
-                { key: 'CONFIG_MISMATCH', label: '🛠 Config Mismatch', prompt: 'API DB connection error aa raha hai after deployment. Check configs.' },
-                { key: 'CODE_BUG', label: '🐞 Login 500 Bug', prompt: 'Login API 500 error de rahi hai. Stack trace padh ke safe patch karo.' },
+                { key: 'DATABASE_STOPPED', label: '⚡ 502 Outage', prompt: 'Production API down with 502 Bad Gateway. Trace root cause and execute recovery patch.' },
+                { key: 'CONFIG_MISMATCH', label: '🛠 Config Mismatch', prompt: 'API DB connection failed after deployment. Inspect environment configuration and fix host URL.' },
+                { key: 'CODE_BUG', label: '🐞 Login 500 Bug', prompt: 'User login API returns 500 Internal Server Error. Inspect Prisma query types and apply safe patch.' },
               ].map(sc => (
                 <button
                   key={sc.key}

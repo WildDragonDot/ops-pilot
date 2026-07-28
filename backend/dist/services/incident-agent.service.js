@@ -23,7 +23,7 @@ let activeScenarios = {
     DATABASE_STOPPED: {
         key: 'DATABASE_STOPPED',
         title: 'API returning 502 Bad Gateway',
-        prompt: 'Meri production API down hai, 502 Bad Gateway aa raha hai. Root cause trace karke fix karo.',
+        prompt: 'Production API down with 502 Bad Gateway response. Trace root cause and apply patch.',
         severity: 'CRITICAL',
         affectedService: 'PostgreSQL / Node.js API',
         confidence: 96,
