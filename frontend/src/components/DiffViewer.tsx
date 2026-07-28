@@ -148,9 +148,9 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ diffText, commands, titl
         <div className="flex items-center gap-2 min-w-0">
           <FileCode className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
           <div className="font-mono text-xs truncate">
-            {titlePrefix && <span className="text-slate-400 dark:text-slate-500 font-normal mr-1">{titlePrefix}</span>}
+            {titlePrefix && <span className="text-slate-700 dark:text-slate-300 font-semibold mr-1.5">{titlePrefix}</span>}
             {dirPath && <span className="text-slate-500 dark:text-slate-400 font-normal">{dirPath}</span>}
-            <span className="font-bold text-slate-800 dark:text-slate-200">{fileName}</span>
+            <span className="font-bold text-slate-900 dark:text-slate-100">{fileName}</span>
           </div>
         </div>
 
