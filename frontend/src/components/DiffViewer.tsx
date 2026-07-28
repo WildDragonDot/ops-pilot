@@ -113,16 +113,11 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ diffText, commands, titl
   };
 
   // Title formatting for GitHub header bar
-  const rawTitle = title || (filePathFromFile ? `Code Patch: ${filePathFromFile}` : 'Proposed Recovery Patch Diff');
-  let titlePrefix = '';
+  const rawTitle = title || (filePathFromFile ? filePathFromFile : 'Proposed Recovery Patch Diff');
   let filePath = rawTitle;
 
   if (rawTitle.includes('Code Patch:')) {
-    const parts = rawTitle.split('Code Patch:');
-    titlePrefix = 'Code Patch: ';
-    filePath = parts[1].trim();
-  } else if (rawTitle.includes('Proposed Code Patch')) {
-    filePath = rawTitle;
+    filePath = rawTitle.replace('Code Patch:', '').trim();
   }
 
   const lastSlashIndex = filePath.lastIndexOf('/');
@@ -148,7 +143,6 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ diffText, commands, titl
         <div className="flex items-center gap-2 min-w-0">
           <FileCode className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
           <div className="font-mono text-xs truncate">
-            {titlePrefix && <span className="text-slate-700 dark:text-slate-300 font-semibold mr-1.5">{titlePrefix}</span>}
             {dirPath && <span className="text-slate-500 dark:text-slate-400 font-normal">{dirPath}</span>}
             <span className="font-bold text-slate-900 dark:text-slate-100">{fileName}</span>
           </div>
@@ -193,24 +187,24 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ diffText, commands, titl
 
       {/* Terminal Commands Execution Plan */}
       {commands && commands.length > 0 && (
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-100 space-y-2">
-          <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono font-bold flex items-center gap-1.5">
-            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 space-y-2">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono font-bold flex items-center gap-1.5">
+            <Terminal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Execution Commands Plan
           </div>
           <div className="space-y-1 font-mono">
             {commands.map((cmd, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 bg-slate-950/80 px-3 py-1.5 rounded border border-slate-800 text-xs">
+              <div key={idx} className="flex items-center justify-between gap-2 bg-white dark:bg-slate-950 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-800 text-xs">
                 <div className="flex items-center gap-2 min-w-0 overflow-x-auto">
-                  <span className="text-emerald-400 shrink-0 select-none">$</span>
-                  <code className="text-slate-200 font-mono whitespace-nowrap">{cmd}</code>
+                  <span className="text-blue-600 dark:text-blue-400 shrink-0 select-none font-bold">$</span>
+                  <code className="text-slate-800 dark:text-slate-200 font-mono whitespace-nowrap">{cmd}</code>
                 </div>
                 <button
                   onClick={() => handleCopyCmd(cmd, idx)}
-                  className="p-1 text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors shrink-0"
                   title="Copy command"
                 >
-                  {copiedCmdIndex === idx ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  {copiedCmdIndex === idx ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                 </button>
               </div>
             ))}
