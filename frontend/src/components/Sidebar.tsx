@@ -8,6 +8,8 @@ import {
   FileText, 
   Zap, 
   Settings, 
+  BookOpen,
+  ShieldCheck,
   ChevronLeft, 
   ChevronRight, 
   LogOut, 
@@ -34,6 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
     { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: `${scanScore}/100` },
     { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
     { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40 glow-amber' },
+    { path: '/runbooks', label: 'Auto Runbooks', icon: BookOpen },
+    { path: '/audit-logs', label: 'Audit Logs', icon: ShieldCheck },
     { path: '/reports', label: 'Post-Mortems', icon: FileText },
     { path: '/sandbox', label: 'Failure Injector', icon: Zap },
     { path: '/settings', label: 'Settings', icon: Settings },
@@ -70,6 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
 
           <button
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
             className="p-1.5 rounded-lg card-bg-subtle text-subtitle hover:text-title transition"
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -143,6 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) =
               <button
                 onClick={logout}
                 title="Logout"
+                aria-label="Log out of session"
                 className="p-2 text-subtitle hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition"
               >
                 <LogOut className="w-4 h-4" />

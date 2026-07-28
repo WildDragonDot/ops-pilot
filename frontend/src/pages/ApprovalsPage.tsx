@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Check, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Clock, Check, ShieldAlert, CheckCircle2, CheckSquare } from 'lucide-react';
 import { Incident } from '../types';
 import { approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
@@ -57,8 +57,16 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
         </h2>
 
         {pendingApprovals.length === 0 ? (
-          <div className="glass-panel p-8 rounded-2xl theme-border border text-center text-xs text-subtitle">
-            No pending approval requests. All systems operating cleanly under current policies.
+          <div className="glass-panel p-10 rounded-2xl theme-border border text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
+              <CheckSquare className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-title">No Pending Approval Requests</h3>
+              <p className="text-xs text-subtitle max-w-md mx-auto">
+                All production environment policies and service recovery actions have been executed or reviewed. Trigger a failure scenario in Sandbox Control to test the safety queue.
+              </p>
+            </div>
           </div>
         ) : (
           pendingApprovals.map(({ incident, approval }) => (

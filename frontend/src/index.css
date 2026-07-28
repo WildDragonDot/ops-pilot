@@ -3,27 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --bg-app: #f4f5f7;
+  --bg-app: #f8fafc;
   --bg-card: #ffffff;
-  --bg-card-subtle: #f8fafc;
-  --border-color: rgba(15, 23, 42, 0.08);
+  --bg-card-subtle: #f1f5f9;
+  --border-color: #cbd5e1;
   --text-title: #0f172a;
   --text-subtitle: #475569;
-  --text-primary: #1e293b;
+  --text-primary: #0f172a;
   --text-muted: #64748b;
   --bg-input: #ffffff;
   
-  --status-healthy-bg: rgba(16, 185, 129, 0.1);
-  --status-healthy-text: #059669;
-  --status-healthy-border: rgba(16, 185, 129, 0.25);
+  --status-healthy-bg: #d1fae5;
+  --status-healthy-text: #065f46;
+  --status-healthy-border: #6ee7b7;
 
-  --status-warning-bg: rgba(245, 158, 11, 0.1);
-  --status-warning-text: #d97706;
-  --status-warning-border: rgba(245, 158, 11, 0.25);
+  --status-warning-bg: #fef3c7;
+  --status-warning-text: #92400e;
+  --status-warning-border: #fde68a;
 
-  --status-danger-bg: rgba(244, 63, 94, 0.1);
-  --status-danger-text: #dc2626;
-  --status-danger-border: rgba(244, 63, 94, 0.25);
+  --status-danger-bg: #ffe4e6;
+  --status-danger-text: #9f1239;
+  --status-danger-border: #fecdd3;
 
   --alert-cyan-bg: #ecfeff;
   --alert-cyan-border: #06b6d4;
@@ -42,18 +42,18 @@
   --chat-user-text: #1e3a8a;
 
   --chat-ai-bg: #ffffff;
-  --chat-ai-border: rgba(15, 23, 42, 0.08);
-  --chat-ai-text: #1e293b;
+  --chat-ai-border: #cbd5e1;
+  --chat-ai-text: #0f172a;
 
   --code-bg: #f8fafc;
-  --code-border: rgba(15, 23, 42, 0.08);
+  --code-border: #cbd5e1;
 }
 
 html.dark {
   --bg-app: #030712;
   --bg-card: #0b0f19;
   --bg-card-subtle: #0f1322;
-  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.12);
   --text-title: #f8fafc;
   --text-subtitle: #94a3b8;
   --text-primary: #f1f5f9;

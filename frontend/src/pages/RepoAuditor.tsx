@@ -69,7 +69,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
           
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-xs font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold font-mono">
                 GitHub Repository Auditor
               </span>
               <span className="text-xs font-mono text-subtitle">Branch: main</span>
@@ -198,12 +198,16 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                     }`}>
                       {f.severity}
                     </span>
-                    <span className={`text-[10px] font-mono font-medium ${isSelected ? 'text-blue-100' : 'text-subtitle'}`}>
+                    <span className={`text-[10px] font-mono font-bold ${
+                      isSelected ? 'text-blue-100' : 'text-subtitle'
+                    }`}>
                       {f.category}
                     </span>
                   </div>
 
-                  <h3 className={`text-xs font-extrabold line-clamp-1 ${isSelected ? 'text-white' : 'text-title'}`}>
+                  <h3 className={`text-xs font-extrabold line-clamp-1 ${
+                    isSelected ? 'text-white' : 'text-title'
+                  }`}>
                     {f.title}
                   </h3>
 

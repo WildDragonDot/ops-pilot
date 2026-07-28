@@ -15,15 +15,15 @@ export const SettingsPage: React.FC = () => {
     >
       
       {/* Header Banner */}
-      <div className="glass-panel p-6 rounded-2xl theme-border border">
+      <div className="glass-panel p-6 rounded-2xl theme-border border space-y-1">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-xs font-semibold">
-            Enterprise Configuration
+          <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold font-mono">
+            System Configuration & Guardrails
           </span>
         </div>
-        <h1 className="text-xl font-extrabold text-title mt-1">Organization & AI Settings</h1>
-        <p className="text-xs text-subtitle mt-1">
-          Manage workspace settings, OpenAI API models, connected GitHub repositories, team roles, and guardrail policies.
+        <h1 className="text-2xl font-bold text-title tracking-tight">Workspace Settings</h1>
+        <p className="text-xs text-subtitle max-w-2xl leading-relaxed">
+          Manage system LLM keys, target repository connections, execution permissions, and autonomous safety thresholds.
         </p>
       </div>
 

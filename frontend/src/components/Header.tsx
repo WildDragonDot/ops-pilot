@@ -82,6 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={toggleTheme}
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Theme`}
             className="p-2 text-subtitle hover:text-amber-500 card-bg-subtle rounded-xl border transition"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
@@ -90,6 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onResetEnv}
             title="Reset environment status"
+            aria-label="Reset environment health status"
             className="p-2 text-subtitle hover:text-emerald-500 card-bg-subtle rounded-xl border transition"
           >
             <RefreshCw className="w-4 h-4" />
@@ -98,6 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => setCmdPaletteOpen(true)}
             title="Alerts"
+            aria-label="View system alerts and command palette"
             className="p-2 text-subtitle hover:text-title card-bg-subtle rounded-xl border transition relative"
           >
             <Bell className="w-4 h-4" />

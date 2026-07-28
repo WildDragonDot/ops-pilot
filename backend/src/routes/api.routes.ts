@@ -11,26 +11,28 @@ export const router = Router();
 // Public Authentication Routes
 router.post('/auth/register', register);
 router.post('/auth/login', login);
+
+// Protected Authentication Profile
 router.get('/auth/me', requireAuth, getMe);
 
-// Project Routes
-router.get('/projects', getProject);
-router.get('/projects/:id/health', getProjectHealth);
-router.post('/demo/inject-failure', injectFailure);
-router.post('/demo/reset', resetEnv);
+// Protected Project & Environment Routes
+router.get('/projects', requireAuth, getProject);
+router.get('/projects/:id/health', requireAuth, getProjectHealth);
+router.post('/demo/inject-failure', requireAuth, injectFailure);
+router.post('/demo/reset', requireAuth, resetEnv);
 
-// Repository Routes
-router.get('/repositories', getRepository);
-router.post('/repositories/scan', triggerScan);
-router.get('/repositories/scans/:id', getScanById);
+// Protected Repository Auditor Routes
+router.get('/repositories', requireAuth, getRepository);
+router.post('/repositories/scan', requireAuth, triggerScan);
+router.get('/repositories/scans/:id', requireAuth, getScanById);
 
-// Incident Routes
-router.post('/incidents', createIncident);
-router.get('/incidents', getIncidents);
-router.get('/incidents/:id', getIncident);
-router.get('/incidents/:id/stream', streamIncident);
-router.get('/incidents/:id/report', getReport);
+// Protected Incident Commander Routes
+router.post('/incidents', requireAuth, createIncident);
+router.get('/incidents', requireAuth, getIncidents);
+router.get('/incidents/:id', requireAuth, getIncident);
+router.get('/incidents/:id/stream', requireAuth, streamIncident);
+router.get('/incidents/:id/report', requireAuth, getReport);
 
-// Approval Routes
-router.post('/approvals/:id/approve', approveFix);
-router.post('/approvals/:id/reject', rejectFix);
+// Protected Approval Queue Routes
+router.post('/approvals/:id/approve', requireAuth, approveFix);
+router.post('/approvals/:id/reject', requireAuth, rejectFix);

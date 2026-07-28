@@ -7,6 +7,8 @@ import { RepoAuditor } from '../pages/RepoAuditor';
 import { CommandCenter } from '../pages/CommandCenter';
 import { ApprovalsPage } from '../pages/ApprovalsPage';
 import { IncidentReports } from '../pages/IncidentReports';
+import { RunbooksPage } from '../pages/RunbooksPage';
+import { AuditLogs } from '../pages/AuditLogs';
 import { SandboxControl } from '../pages/SandboxControl';
 import { SettingsPage } from '../pages/SettingsPage';
 import { LoginPage } from '../pages/LoginPage';
@@ -48,7 +50,11 @@ export function AppRoutes() {
   useEffect(() => {
     if (user) {
       loadData();
-      const interval = setInterval(loadData, 3000);
+      const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          loadData();
+        }
+      }, 5000);
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -166,6 +172,8 @@ export function AppRoutes() {
             />
           }
         />
+        <Route path="/runbooks" element={<RunbooksPage />} />
+        <Route path="/audit-logs" element={<AuditLogs />} />
         <Route
           path="/reports"
           element={

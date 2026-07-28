@@ -94,22 +94,30 @@ export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) =
                   onClick={() => setSelectedIncidentId(inc.id)}
                   className={`p-4 rounded-xl transition-all cursor-pointer ${
                     isSelected 
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg glow-emerald scale-[1.01]' 
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg glow-blue scale-[1.01]' 
                       : 'glass-panel theme-border hover:border-slate-300 dark:hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className={`text-xs font-mono font-extrabold ${isSelected ? 'text-emerald-100' : 'text-slate-900 dark:text-slate-100'}`}>
+                    <span className={`text-xs font-mono font-extrabold ${
+                      isSelected ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                    }`}>
                       #{inc.id}
                     </span>
-                    <span className={`text-[10px] font-mono font-medium ${isSelected ? 'text-emerald-100' : 'text-subtitle'}`}>
+                    <span className={`text-[10px] font-mono font-bold ${
+                      isSelected ? 'text-blue-100' : 'text-subtitle'
+                    }`}>
                       {inc.resolvedAt ? new Date(inc.resolvedAt).toLocaleDateString() : ''}
                     </span>
                   </div>
-                  <h3 className={`text-xs font-extrabold line-clamp-1 ${isSelected ? 'text-white' : 'text-title'}`}>
+                  <h3 className={`text-xs font-extrabold line-clamp-1 ${
+                    isSelected ? 'text-white' : 'text-title'
+                  }`}>
                     {inc.title}
                   </h3>
-                  <p className={`text-[11px] mt-0.5 line-clamp-1 font-medium ${isSelected ? 'text-emerald-100' : 'text-subtitle'}`}>
+                  <p className={`text-[11px] mt-0.5 line-clamp-1 font-medium ${
+                    isSelected ? 'text-blue-100' : 'text-subtitle'
+                  }`}>
                     Resolved via approved fix
                   </p>
                 </div>

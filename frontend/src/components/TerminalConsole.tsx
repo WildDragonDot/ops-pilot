@@ -52,6 +52,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incide
             <button
               onClick={onClose}
               title="Close Modal"
+              aria-label="Close terminal console"
               className="p-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition ml-1"
             >
               <X className="w-4 h-4" />

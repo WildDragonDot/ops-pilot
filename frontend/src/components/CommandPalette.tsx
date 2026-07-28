@@ -8,7 +8,6 @@ import {
   FileText, 
   Zap, 
   Settings, 
-  Activity, 
   X,
   ArrowRight
 } from 'lucide-react';
@@ -34,9 +33,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         if (isOpen) onClose();
-        else {
-          // Open
-        }
       } else if (e.key === 'Escape' && isOpen) {
         onClose();
       }
@@ -130,21 +126,21 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     : actions.filter(a => a.title.toLowerCase().includes(query.toLowerCase()) || a.category.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-start justify-center pt-20 p-4 animate-in fade-in duration-200">
-      <div className="max-w-xl w-full glass-panel rounded-2xl border border-slate-700/80 shadow-2xl overflow-hidden bg-slate-950/95 space-y-2">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 p-4 animate-in fade-in duration-200">
+      <div className="max-w-xl w-full glass-panel rounded-2xl border theme-border shadow-2xl overflow-hidden space-y-2">
         
         {/* Search Bar Input */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-800">
-          <Search className="w-5 h-5 text-blue-400" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b theme-border">
+          <Search className="w-5 h-5 text-blue-500 shrink-0" />
           <input
             type="text"
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or search action..."
-            className="flex-1 bg-transparent text-sm text-slate-100 focus:outline-none font-mono placeholder:text-slate-500"
+            className="flex-1 bg-transparent text-xs text-title focus:outline-none font-mono placeholder:text-subtitle"
           />
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900">
+          <button onClick={onClose} aria-label="Close command palette" className="p-1 rounded-lg text-subtitle hover:text-title card-bg-subtle">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -152,7 +148,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         {/* Actions List */}
         <div className="p-2 max-h-80 overflow-y-auto space-y-1">
           {filtered.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-500">No matching commands found</div>
+            <div className="p-6 text-center text-xs text-subtitle">No matching commands found</div>
           ) : (
             filtered.map((act) => {
               const Icon = act.icon;
@@ -160,26 +156,26 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 <div
                   key={act.id}
                   onClick={act.run}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-900/90 border border-transparent hover:border-slate-800 cursor-pointer group transition text-xs"
+                  className="flex items-center justify-between p-3 rounded-xl hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 cursor-pointer group transition text-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-slate-900 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
+                    <div className="p-2 rounded-lg card-bg-subtle text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition">
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="font-bold text-slate-200 block group-hover:text-white">{act.title}</span>
-                      <span className="text-[10px] text-slate-500 font-mono">{act.category}</span>
+                      <span className="font-bold text-title block">{act.title}</span>
+                      <span className="text-[10px] text-subtitle font-mono">{act.category}</span>
                     </div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-1 transition" />
+                  <ArrowRight className="w-4 h-4 text-subtitle group-hover:text-blue-500 group-hover:translate-x-1 transition" />
                 </div>
               );
             })
           )}
         </div>
 
-        <div className="px-4 py-2 bg-slate-900/80 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 flex items-center justify-between">
-          <span>Use <b>↑ ↓</b> to navigate, <b>↵</b> to execute</span>
+        <div className="px-4 py-2.5 card-bg-subtle border-t theme-border text-[10px] font-mono text-subtitle flex items-center justify-between">
+          <span>Search or click command to execute</span>
           <span>Press <b>ESC</b> to exit</span>
         </div>
 
