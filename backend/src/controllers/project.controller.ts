@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../services/db.service.js';
-import { getProjectState, injectFailureScenario, resetEnvironmentState } from '../services/incident-agent.service.js';
+import { getProjectState, injectFailureScenario, resetEnvironmentState, createAndRunIncident } from '../services/incident-agent.service.js';
 
 export async function getProject(req: Request, res: Response) {
   let project = await prisma.project.findFirst({
@@ -38,13 +38,16 @@ export function getProjectHealth(req: Request, res: Response) {
   });
 }
 
-export function injectFailure(req: Request, res: Response) {
+export async function injectFailure(req: Request, res: Response) {
   const { scenarioKey } = req.body;
-  const state = injectFailureScenario(scenarioKey || 'DATABASE_STOPPED');
-  res.json({ success: true, services: state.environmentStatus });
+  const key = scenarioKey || 'DATABASE_STOPPED';
+  const state = injectFailureScenario(key);
+  const incident = await createAndRunIncident('', key);
+  res.json({ success: true, services: state.environmentStatus, incident });
 }
 
 export function resetEnv(req: Request, res: Response) {
   const state = resetEnvironmentState();
   res.json({ success: true, services: state.environmentStatus });
 }
+

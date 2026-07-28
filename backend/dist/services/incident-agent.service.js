@@ -45,7 +45,7 @@ let activeScenarios = {
             ],
             riskLevel: 'LOW',
             rollbackPlan: 'If health check fails, capture container logs and issue docker compose logs api --tail=100.',
-            diff: undefined
+            diff: `--- docker-compose.yml\n+++ docker-compose.yml\n@@ -12,2 +12,2 @@\n-    postgres:\n-      restart: no\n+    postgres:\n+      restart: always`
         },
         verification: [
             { check: 'PostgreSQL Container Status', result: 'RUNNING (healthy)' },
@@ -122,7 +122,7 @@ export function injectFailureScenario(scenarioKey) {
         projectState.environmentStatus = { overall: 'DEGRADED', postgres: 'RUNNING', redis: 'RUNNING', api: 'CRASHED', nginx: 'UPSTREAM_502' };
     }
     else if (scenarioKey === 'CODE_BUG') {
-        projectState.environmentStatus = { overall: 'DEGRADED', postgres: 'RUNNING', redis: 'RUNNING', api: 'RUNNING', nginx: 'HEALTHY' };
+        projectState.environmentStatus = { overall: 'DEGRADED', postgres: 'RUNNING', redis: 'RUNNING', api: 'CRASHED', nginx: 'HEALTHY' };
     }
     return projectState;
 }
@@ -181,11 +181,14 @@ export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_S
             }
         });
     }
+    const incidentTitle = (userPrompt && userPrompt.length > 5)
+        ? (userPrompt.length > 55 ? `${userPrompt.substring(0, 52)}...` : userPrompt)
+        : scenario.title;
     const newIncident = await prisma.incident.create({
         data: {
             id: incidentId,
             projectId: project.id,
-            title: scenario.title,
+            title: incidentTitle,
             userPrompt: userPrompt || scenario.prompt,
             scenarioKey,
             status: 'INVESTIGATING',
