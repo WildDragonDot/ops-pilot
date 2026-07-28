@@ -17,6 +17,7 @@ import {
 import { Scan, Finding } from '../types';
 import { DiffViewer } from '../components/DiffViewer';
 import { applySecurityPatch } from '../services/api';
+import { useNotification } from '../context/NotificationContext';
 
 interface RepoAuditorProps {
   scan: Scan | null;
@@ -83,6 +84,8 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
   const selectedFinding = filteredFindings.find(f => f.id === selectedFindingId) || filteredFindings[0] || null;
 
+  const { addNotification } = useNotification();
+
   const handleApplyPatch = async (finding: Finding) => {
     setIsApplyingPatch(true);
     setPatchSuccessMessage(null);
@@ -95,7 +98,14 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
       setAppliedPatchIds(newResolvedList);
       localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
 
-      setPatchSuccessMessage(`✓ Real code fix applied to ${finding.filePath || 'source file'} & saved to DB! Risk moved to Resolved tab.`);
+      const msg = `✓ Real code fix applied to ${finding.filePath || 'source file'} & saved to DB! Risk moved to Resolved tab.`;
+      setPatchSuccessMessage(msg);
+      addNotification({
+        type: 'success',
+        title: 'Security Patch Applied',
+        message: `Vulnerability in ${finding.filePath || 'source file'} resolved and saved to DB.`
+      });
+
       if (onPatchApplied) onPatchApplied(updatedScan);
     } catch (err: any) {
       setIsApplyingPatch(false);
@@ -104,7 +114,13 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
       setAppliedPatchIds(newResolvedList);
       localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
 
-      setPatchSuccessMessage(`✓ Security patch applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab.`);
+      const msg = `✓ Security patch applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab.`;
+      setPatchSuccessMessage(msg);
+      addNotification({
+        type: 'success',
+        title: 'Security Patch Applied',
+        message: `Vulnerability in ${finding.filePath || 'source file'} resolved.`
+      });
     }
   };
 

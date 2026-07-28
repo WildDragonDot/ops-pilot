@@ -4,6 +4,7 @@ import { getProject, getProjects, createProject, testProjectConnection, deletePr
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
+import { eventStreamHandler } from '../controllers/stream.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 
 export const router = Router();
@@ -41,3 +42,6 @@ router.get('/incidents/:id/report', requireAuth, getReport);
 // Protected Approval Queue Routes
 router.post('/approvals/:id/approve', requireAuth, approveFix);
 router.post('/approvals/:id/reject', requireAuth, rejectFix);
+
+// Real-Time Event Stream Route
+router.get('/stream/events', eventStreamHandler);
