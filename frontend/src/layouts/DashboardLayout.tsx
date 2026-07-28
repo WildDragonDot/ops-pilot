@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { Project, Scan, Incident } from '../types';
@@ -27,6 +27,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onScanRepo,
   isScanning
 }) => {
+  // If no project is selected or setup, redirect user to /projects setup page
+  if (!project) {
+    return <Navigate to="/projects" replace />;
+  }
+
   return (
     <div className="h-screen flex font-sans antialiased overflow-hidden">
       
@@ -56,7 +61,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {/* Footer inside scroll area */}
           <footer className="border-t theme-border card-bg-subtle py-4 px-8 text-xs text-subtitle flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
             <span>OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
-            <span className="font-mono font-semibold">Project: {project?.name || 'Local Sandbox'}</span>
+            <span className="font-mono font-semibold">Project: {project.name}</span>
           </footer>
         </main>
 
