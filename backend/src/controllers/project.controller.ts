@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { prisma } from '../services/db.service.js';
 import { getProjectState, injectFailureScenario, resetEnvironmentState, createAndRunIncident } from '../services/incident-agent.service.js';
-import { testSSHConnection } from '../services/ssh.service.js';
+import { testSSHConnection, discoverServerTechStack } from '../services/ssh.service.js';
 import { fetchLiveGitHubAudit } from '../services/github-audit.service.js';
 import { broadcastEvent } from './stream.controller.js';
 
@@ -112,23 +112,28 @@ export async function testProjectConnection(req: Request, res: Response) {
   const headerSshPass = getHeaderString(req.headers['x-server-pass']) || sshPassword;
   const headerGitToken = getHeaderString(req.headers['x-github-token']) || githubToken;
 
-  const sshResult = await testSSHConnection({
+  const sshCreds = {
     host: serverHost,
     port: serverPort ? parseInt(serverPort, 10) : 22,
     user: serverUser || 'root',
     key: headerSshKey,
     password: headerSshPass
-  });
+  };
+
+  const sshResult = await testSSHConnection(sshCreds);
 
   const gitResult = await fetchLiveGitHubAudit({
     gitUrl,
     githubToken: headerGitToken
   });
 
+  const discoveryResult = await discoverServerTechStack(sshCreds);
+
   res.json({
     success: sshResult.success || gitResult.connected,
     ssh: sshResult,
-    github: gitResult
+    github: gitResult,
+    discovery: discoveryResult
   });
 }
 

@@ -25,6 +25,7 @@ import {
 import { createNewProject, testConnection } from '../services/api';
 import { ProjectCredentials } from '../services/vault';
 import { Project } from '../types';
+import { ServerDiscoveryReport } from './ServerDiscoveryReport';
 
 interface ProjectSetupModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
   const [testing, setTesting] = useState<boolean>(false);
-  const [testResult, setTestResult] = useState<{ success?: boolean; ssh?: any; github?: any; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ success?: boolean; ssh?: any; github?: any; discovery?: any; error?: string } | null>(null);
 
   // Modular Setup Scope: BOTH (Full Stack), GITHUB_ONLY, SERVER_ONLY
   const [setupScope, setSetupScope] = useState<'BOTH' | 'GITHUB_ONLY' | 'SERVER_ONLY'>('BOTH');
@@ -603,6 +604,14 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                       <div className="font-semibold text-[11px]">Error: {testResult.error}</div>
                     )}
                   </div>
+                )}
+
+                {testResult?.discovery && (
+                  <ServerDiscoveryReport
+                    discovery={testResult.discovery}
+                    host={serverHost || '34.224.80.31'}
+                    user={serverUser || 'ubuntu'}
+                  />
                 )}
               </div>
             )}
