@@ -5,9 +5,11 @@
   "description": "OpsPilot AI Monorepo - Decoupled Frontend & Backend with OpenAI API Integration",
   "type": "module",
   "scripts": {
+    "start": "./start.sh",
+    "dev:all": "./start.sh",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev": "npm run dev:backend",
+    "dev": "./start.sh",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && npm run build",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
