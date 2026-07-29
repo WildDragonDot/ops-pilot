@@ -65,6 +65,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [editHost, setEditHost] = useState<string>('');
   const [editPort, setEditPort] = useState<string>('22');
   const [editUser, setEditUser] = useState<string>('root');
+  const [sshAuthMethod, setSshAuthMethod] = useState<'password' | 'key'>('password');
   const [editSshPassword, setEditSshPassword] = useState<string>('');
   const [editSshKey, setEditSshKey] = useState<string>('');
   const [isTestingEdit, setIsTestingEdit] = useState<boolean>(false);
@@ -187,6 +188,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     setEditHost(proj.serverHost || '');
     setEditPort(proj.serverPort ? String(proj.serverPort) : '22');
     setEditUser(proj.serverUser || 'root');
+    setSshAuthMethod('password');
     setEditSshPassword('');
     setEditSshKey('');
     setTestResult(null);
@@ -205,8 +207,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
         },
         { 
           githubToken: editGitToken,
-          sshPassword: editSshPassword,
-          sshKey: editSshKey
+          sshPassword: sshAuthMethod === 'password' ? editSshPassword : '',
+          sshKey: sshAuthMethod === 'key' ? editSshKey : ''
         }
       );
 
@@ -1789,27 +1791,73 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-subtitle font-bold block">SSH Password</label>
-                            <input
-                              type="password"
-                              value={editSshPassword}
-                              onChange={(e) => setEditSshPassword(e.target.value)}
-                              placeholder="Optional SSH Password"
-                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                            />
+                        {/* SSH Auth Method Radio / Switcher (Either Password OR Key, never both) */}
+                        <div className="space-y-2 pt-1 border-t theme-border">
+                          <label className="text-subtitle font-bold block text-[11px] uppercase tracking-wider">
+                            SSH Authentication Method (Select One)
+                          </label>
+                          <div className="flex items-center gap-2 p-1 rounded-xl card-bg-subtle border theme-border">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSshAuthMethod('password');
+                                setEditSshKey('');
+                              }}
+                              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                                sshAuthMethod === 'password'
+                                  ? 'bg-blue-600 text-white shadow-sm'
+                                  : 'text-subtitle hover:text-title'
+                              }`}
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>1. SSH Password</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSshAuthMethod('key');
+                                setEditSshPassword('');
+                              }}
+                              className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                                sshAuthMethod === 'key'
+                                  ? 'bg-indigo-600 text-white shadow-sm'
+                                  : 'text-subtitle hover:text-title'
+                              }`}
+                            >
+                              <Terminal className="w-3.5 h-3.5" />
+                              <span>2. SSH Private Key (.pem)</span>
+                            </button>
                           </div>
-                          <div className="space-y-1">
-                            <label className="text-subtitle font-bold block">SSH Private Key (.pem)</label>
-                            <input
-                              type="password"
-                              value={editSshKey}
-                              onChange={(e) => setEditSshKey(e.target.value)}
-                              placeholder="Optional RSA Private Key"
-                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                            />
-                          </div>
+
+                          {/* Dynamic Single Input depending on Auth Method Selection */}
+                          {sshAuthMethod === 'password' ? (
+                            <div className="space-y-1 pt-1">
+                              <label className="text-subtitle font-bold block flex items-center gap-1">
+                                <Lock className="w-3 h-3 text-blue-400" /> SSH Server Password
+                              </label>
+                              <input
+                                type="password"
+                                value={editSshPassword}
+                                onChange={(e) => setEditSshPassword(e.target.value)}
+                                placeholder="Enter SSH Password for authentication"
+                                className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          ) : (
+                            <div className="space-y-1 pt-1">
+                              <label className="text-subtitle font-bold block flex items-center gap-1">
+                                <Terminal className="w-3 h-3 text-indigo-400" /> SSH Private Key (.pem / id_rsa)
+                              </label>
+                              <textarea
+                                value={editSshKey}
+                                onChange={(e) => setEditSshKey(e.target.value)}
+                                placeholder="Paste -----BEGIN OPENSSH PRIVATE KEY----- here"
+                                rows={3}
+                                className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono text-[11px] focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
 
