@@ -560,21 +560,31 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe an outage or command (e.g. 'Investigate 502 Bad Gateway error', 'Fix login API 500 bug', 'Check database connection status')... (Press Enter to send)"
+            placeholder={
+              Boolean(project?.serverHost?.trim())
+                ? "Describe an outage or command (e.g. 'Investigate 502 Bad Gateway error', 'Fix login API 500 bug', 'Check database connection status')... (Press Enter to send)"
+                : "Describe a code security audit or repository issue (e.g. 'Audit JWT secret fallback key', 'Sanitize route parameter in auth controller', 'Check GitHub branch protection')... (Press Enter to send)"
+            }
             className="w-full bg-transparent border-none text-title text-xs focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/50 placeholder:opacity-50 font-mono resize-none leading-relaxed px-1"
           />
 
           <div className="flex items-center justify-between border-t theme-border pt-2 font-mono text-xs">
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-              {[
+              {(Boolean(project?.serverHost?.trim()) ? [
                 { key: 'DATABASE_STOPPED', label: '⚡ 502 Outage', prompt: 'Production API down with 502 Bad Gateway. Trace root cause and execute recovery patch.' },
                 { key: 'CONFIG_MISMATCH', label: '🛠 Config Mismatch', prompt: 'API DB connection failed after deployment. Inspect environment configuration and fix host URL.' },
                 { key: 'CODE_BUG', label: '🐞 Login 500 Bug', prompt: 'User login API returns 500 Internal Server Error. Inspect Prisma query types and apply safe patch.' },
                 { key: 'SECURITY_AUDIT', label: '🛡️ Security Audit', prompt: 'Perform automated repository security audit to scan for leaked credentials and vulnerable dependencies.' },
                 { key: 'PERF_DIAGNOSTIC', label: '📊 Check Latency', prompt: 'Run deep diagnostic on API response latency, memory consumption, and database query index usage.' },
-              ].map(sc => (
+              ] : [
+                { key: 'SECURITY_AUDIT', label: '🛡️ Security Audit', prompt: 'Perform automated repository security audit to scan for hardcoded secret fallback keys and vulnerable dependencies.' },
+                { key: 'CODE_BUG', label: '🐞 Route Parameter Bug', prompt: 'Inspect auth.controller.ts for unsanitized route parameter integer query exceptions and apply fix.' },
+                { key: 'CONFIG_MISMATCH', label: '🛠 Git Branch Verification', prompt: 'Verify target audit branch main protection, authenticated status, and commit history.' },
+                { key: 'SECURITY_AUDIT', label: '🔒 Env Secret Check', prompt: 'Check process.env.JWT_SECRET requirement enforcement across backend authentication services.' },
+                { key: 'PERF_DIAGNOSTIC', label: '📦 Package Audit', prompt: 'Inspect backend/package.json for outdated or insecure node dependency packages.' },
+              ]).map(sc => (
                 <button
-                  key={sc.key}
+                  key={sc.label}
                   onClick={() => {
                     setSelectedScenarioKey(sc.key);
                     setPromptText(sc.prompt);
