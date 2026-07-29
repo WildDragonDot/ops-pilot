@@ -292,31 +292,41 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
             className="px-5 pt-3 pb-1"
             style={{ display: 'grid', gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`, gap: '6px' }}
           >
-            {steps.map(s => (
-              <div
-                key={s.num}
-                onClick={() => handleStepClick(s.num)}
-                className={`relative py-1.5 px-2 rounded-xl border text-center cursor-pointer transition-all flex items-center justify-center gap-1 text-[11px] ${
-                  step === s.num
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-600 font-extrabold shadow-sm glow-blue'
-                    : step > s.num
-                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 font-semibold'
-                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-500 font-medium hover:border-slate-300'
-                }`}
-              >
-                {s.isOptional && (
-                  <span className={`absolute -top-2 right-1 text-[8px] font-extrabold font-mono px-1.5 py-0.2 rounded-full border shadow-2xs ${
+            {steps.map(s => {
+              const isConfigured = 
+                s.label === 'General' ? Boolean(name.trim()) :
+                s.label === 'GitHub' ? Boolean(gitUrl.trim()) :
+                s.label === 'Server SSH' ? Boolean(serverHost.trim()) :
+                step === s.num;
+
+              const isCompleted = step > s.num && isConfigured;
+
+              return (
+                <div
+                  key={s.num}
+                  onClick={() => handleStepClick(s.num)}
+                  className={`relative py-1.5 px-2 rounded-xl border text-center cursor-pointer transition-all flex items-center justify-center gap-1 text-[11px] ${
                     step === s.num
-                      ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs'
-                      : 'bg-slate-900 text-amber-400 border-amber-500/40 font-bold'
-                  }`}>
-                    Optional
-                  </span>
-                )}
-                {step > s.num ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <span>{s.num}.</span>}
-                <span className="truncate">{s.label}</span>
-              </div>
-            ))}
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-600 font-extrabold shadow-sm glow-blue'
+                      : isCompleted
+                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 font-semibold'
+                      : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-500 font-medium hover:border-slate-300'
+                  }`}
+                >
+                  {s.isOptional && (
+                    <span className={`absolute -top-2 right-1 text-[8px] font-extrabold font-mono px-1.5 py-0.2 rounded-full border shadow-2xs ${
+                      step === s.num
+                        ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs'
+                        : 'bg-slate-900 text-amber-400 border-amber-500/40 font-bold'
+                    }`}>
+                      Optional
+                    </span>
+                  )}
+                  {isCompleted ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <span>{s.num}.</span>}
+                  <span className="truncate">{s.label}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Body Content */}
