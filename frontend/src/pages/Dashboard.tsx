@@ -424,15 +424,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setShowTerminalModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 glass-panel border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl shadow-sm transition cursor-pointer"
-            >
-              <Terminal className="w-3.5 h-3.5 text-emerald-500" />
-              <span>SSH Terminal</span>
-            </motion.button>
+            {Boolean(project?.serverHost?.trim()) && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowTerminalModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 glass-panel border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl shadow-sm transition cursor-pointer"
+              >
+                <Terminal className="w-3.5 h-3.5 text-emerald-500" />
+                <span>SSH Terminal</span>
+              </motion.button>
+            )}
 
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -459,20 +461,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Row 2: Page Title & Minimalist Tech Stack Badges */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t theme-border relative z-10">
           <h1 className="text-lg font-bold text-title tracking-tight font-display flex items-center gap-2">
-            <span>Production Overview</span>
+            <span>{Boolean(project?.serverHost?.trim()) ? 'Production Overview' : 'Project Overview'}</span>
             <span className="text-xs font-mono text-subtitle font-normal">({project?.name || 'OpsPilot Workspace'})</span>
           </h1>
 
           <div className="flex items-center gap-1.5 font-mono text-[10px]">
-            <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold flex items-center gap-1">
-              ⚡ {project?.runtimeType || 'Node.js 20'}
-            </span>
-            <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold flex items-center gap-1">
-              🐘 PostgreSQL 15.2
-            </span>
-            <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1">
-              🔴 Redis 7.0
-            </span>
+            {Boolean(project?.serverHost?.trim()) ? (
+              <>
+                <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold flex items-center gap-1">
+                  ⚡ {project?.runtimeType || 'Node.js 20'}
+                </span>
+                <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold flex items-center gap-1">
+                  🐘 PostgreSQL 15.2
+                </span>
+                <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1">
+                  🔴 Redis 7.0
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold flex items-center gap-1">
+                  ⚡ Local AST Sandbox Engine
+                </span>
+                <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold flex items-center gap-1">
+                  🛡️ Static Code Auditor
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -551,52 +566,69 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          {/* System Resource Gauges Card */}
-          <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
-            <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-title flex items-center justify-between border-b theme-border pb-2">
-              <span className="flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-blue-500" /> System Resource Gauges
-              </span>
-              <span className="text-[9px] text-emerald-500 font-extrabold">REALTIME</span>
-            </h3>
+          {/* System Resource Gauges Card OR Local Sandbox Notice Card */}
+          {Boolean(project?.serverHost?.trim()) ? (
+            <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
+              <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-title flex items-center justify-between border-b theme-border pb-2">
+                <span className="flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-blue-500" /> System Resource Gauges
+                </span>
+                <span className="text-[9px] text-emerald-500 font-extrabold">REALTIME</span>
+              </h3>
 
-            <div className="space-y-3 text-[10px] font-mono">
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-subtitle">
-                  <span className="flex items-center gap-1"><Cpu className="w-3 h-3 text-blue-500" /> CPU Load</span>
-                  <span className="font-bold text-title">{cpuUsage}%</span>
+              <div className="space-y-3 text-[10px] font-mono">
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-subtitle">
+                    <span className="flex items-center gap-1"><Cpu className="w-3 h-3 text-blue-500" /> CPU Load</span>
+                    <span className="font-bold text-title">{cpuUsage}%</span>
+                  </div>
+                  <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                    <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${cpuUsage}%` }} />
+                  </div>
                 </div>
-                <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
-                  <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${cpuUsage}%` }} />
+
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-subtitle">
+                    <span className="flex items-center gap-1"><HardDrive className="w-3 h-3 text-indigo-500" /> RAM Memory</span>
+                    <span className="font-bold text-title">{memoryMB} MB ({memoryPct}%)</span>
+                  </div>
+                  <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                    <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${memoryPct}%` }} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-subtitle">
+                    <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-emerald-500" /> Network Throughput</span>
+                    <span className="font-bold text-title">{networkMBs} MB/s</span>
+                  </div>
+                  <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                    <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, networkMBs * 15)}%` }} />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-subtitle">
-                  <span className="flex items-center gap-1"><HardDrive className="w-3 h-3 text-indigo-500" /> RAM Memory</span>
-                  <span className="font-bold text-title">{memoryMB} MB ({memoryPct}%)</span>
-                </div>
-                <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
-                  <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${memoryPct}%` }} />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-subtitle">
-                  <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-emerald-500" /> Network Throughput</span>
-                  <span className="font-bold text-title">{networkMBs} MB/s</span>
-                </div>
-                <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
-                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, networkMBs * 15)}%` }} />
-                </div>
+              <div className="pt-2 border-t theme-border flex items-center justify-between text-[10px] text-subtitle font-mono">
+                <span>Vault Crypto: <b className="text-emerald-500">WebCrypto AES-256</b></span>
+                <span className="text-emerald-500 font-bold">● VERIFIED</span>
               </div>
             </div>
-
-            <div className="pt-2 border-t theme-border flex items-center justify-between text-[10px] text-subtitle font-mono">
-              <span>Vault Crypto: <b className="text-emerald-500">WebCrypto AES-256</b></span>
-              <span className="text-emerald-500 font-bold">● VERIFIED</span>
+          ) : (
+            <div className="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-400 font-extrabold text-xs">
+                  <Server className="w-4 h-4 text-blue-400" />
+                  <span>Production Server Unattached</span>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-mono font-bold">
+                  LOCAL ENGINE
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Workspace is operating in <strong>Local AST Sandbox Engine</strong> mode. Remote server SSH metrics are disabled until an SSH endpoint is added.
+              </p>
             </div>
-          </div>
+          )}
 
           {/* AI Safety & Guardrails Summary Card */}
           <div 
