@@ -530,14 +530,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             
             {/* TOP TIER LEFT: TOPOLOGY GRAPH CANVAS OR GITHUB AUDIT CARD (lg:col-span-8) */}
-            <div className="lg:col-span-8">
-              {Boolean(project?.serverHost?.trim()) ? (
+            <div className="lg:col-span-8 space-y-5">
+              {Boolean(project?.serverHost?.trim()) && (
                 <TopologyGraph 
                   project={project} 
                   environmentStatus={env} 
                   onSelectNode={(nodeKey) => setSelectedService(nodeDataMap[nodeKey])}
                 />
-              ) : (
+              )}
+
+              {Boolean(project?.gitUrl?.trim() || !project?.serverHost?.trim()) && (
                 <div className="glass-panel p-6 rounded-2xl theme-border border space-y-5 shadow-xs font-sans">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b theme-border pb-4">
                     <div className="space-y-1">

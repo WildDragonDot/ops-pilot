@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Incident, Project } from '../types';
+import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
 
 interface SidebarProps {
   incidents: Incident[];
@@ -31,7 +32,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project 
 
   const pendingApprovalsCount = incidents.filter(i => i.status === 'AWAITING_APPROVAL').length;
   const activeIncidentsCount = incidents.filter(i => i.status === 'INVESTIGATING' || i.status === 'AWAITING_APPROVAL').length;
-  const isServerConfigured = Boolean(project?.serverHost?.trim());
+  
+  const mode = getProjectOperatingMode(project);
+  const modeBadge = getModeBadgeInfo(mode);
+  const isServerConfigured = mode === 'SERVER_ONLY' || mode === 'HYBRID_BOTH';
 
   const navItems = [
     { path: '/dashboard', label: 'Overview', icon: Activity },
@@ -60,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project 
       </button>
 
       {/* Top Section */}
-      <div className={`space-y-5 ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
+      <div className={`space-y-4 ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
         
         {/* Brand Logo */}
         <div className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-3'}`}>
@@ -68,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project 
             <Cpu className="w-5 h-5 animate-pulse" />
           </div>
           {!collapsed && (
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-base tracking-tight text-title">
                   OpsPilot
@@ -77,7 +81,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project 
                   AI
                 </span>
               </div>
-              <p className="text-[10px] text-subtitle font-mono">DevOps Agent</p>
+              <div className="mt-1">
+                <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border block truncate text-center ${modeBadge.color}`}>
+                  {modeBadge.label}
+                </span>
+              </div>
             </div>
           )}
         </div>

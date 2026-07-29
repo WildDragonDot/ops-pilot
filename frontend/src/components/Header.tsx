@@ -19,6 +19,7 @@ import { Project, Scan } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { CommandPalette } from './CommandPalette';
 import { ProjectSwitcher } from './ProjectSwitcher';
+import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
 
 interface HeaderProps {
   project: Project | null;
@@ -62,14 +63,26 @@ export const Header: React.FC<HeaderProps> = ({
     return !savedResolved.some(id => id.includes(baseKey));
   }).length;
 
-  const isServerConfigured = Boolean(project?.serverHost?.trim());
+  const mode = getProjectOperatingMode(project);
+  const modeBadge = getModeBadgeInfo(mode);
   const rawEnv = project?.environmentStatus;
   const allNodesHealthy = rawEnv && rawEnv.postgres === 'RUNNING' && rawEnv.redis === 'RUNNING' && rawEnv.api === 'RUNNING' && rawEnv.nginx === 'HEALTHY';
 
   let status = 'HEALTHY';
   let statusColor = 'status-healthy glow-emerald';
 
-  if (!isServerConfigured) {
+  if (mode === 'HYBRID_BOTH') {
+    if (unresolvedCount > 0) {
+      status = `${unresolvedCount} CODE RISKS DETECTED`;
+      statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 glow-amber font-extrabold';
+    } else if (!allNodesHealthy) {
+      status = 'INFRA DEGRADED';
+      statusColor = 'status-warning glow-amber font-extrabold';
+    } else {
+      status = 'HYBRID HEALTHY (100%)';
+      statusColor = 'status-healthy glow-emerald font-extrabold';
+    }
+  } else if (mode === 'GITHUB_ONLY') {
     if (unresolvedCount > 0) {
       status = 'RISKS DETECTED';
       statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 glow-amber font-extrabold';
@@ -77,9 +90,12 @@ export const Header: React.FC<HeaderProps> = ({
       status = 'REPO PROTECTED';
       statusColor = 'status-healthy glow-emerald font-extrabold';
     }
+  } else if (mode === 'SERVER_ONLY') {
+    status = allNodesHealthy ? 'CLUSTER HEALTHY' : (rawEnv?.overall || 'CLUSTER DEGRADED');
+    statusColor = allNodesHealthy ? 'status-healthy glow-emerald' : 'status-warning glow-amber';
   } else {
-    status = allNodesHealthy ? 'HEALTHY' : (rawEnv?.overall || 'HEALTHY');
-    statusColor = status === 'HEALTHY' ? 'status-healthy glow-emerald' : status === 'DEGRADED' ? 'status-warning glow-amber' : 'status-danger glow-rose animate-pulse';
+    status = 'LOCAL SANDBOX';
+    statusColor = 'card-bg-subtle text-title border theme-border font-mono';
   }
 
   const nodes = [

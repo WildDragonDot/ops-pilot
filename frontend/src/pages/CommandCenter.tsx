@@ -31,6 +31,7 @@ import { Incident, Project } from '../types';
 import { startIncident, approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
 import { TerminalConsole } from '../components/TerminalConsole';
+import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
 
 interface CommandCenterProps {
   incidents: Incident[];
@@ -39,6 +40,8 @@ interface CommandCenterProps {
 }
 
 export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project, onRefreshIncidents }) => {
+  const mode = getProjectOperatingMode(project);
+  const modeBadge = getModeBadgeInfo(mode);
   const [promptText, setPromptText] = useState<string>('');
   const [selectedScenarioKey, setSelectedScenarioKey] = useState<string>('DATABASE_STOPPED');
   const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
@@ -249,9 +252,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
             <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
               GPT-4o
             </span>
-            <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{Boolean(project?.serverHost?.trim()) ? 'Docker Healthy' : 'GitHub Live Protection'}</span>
+            <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold border ${modeBadge.color}`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${modeBadge.dotColor}`} />
+              <span>{modeBadge.label}</span>
             </div>
           </div>
 
