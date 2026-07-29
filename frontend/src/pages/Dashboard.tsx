@@ -647,9 +647,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className={`h-full rounded-full transition-all duration-500 ${allNodesHealthy ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: uptimePercentage }} />
                     </div>
 
-                    <div className="flex items-center justify-between text-[9px] text-subtitle font-mono pt-1 border-t theme-border">
-                      <span>Uptime <b>{uptimePercentage}</b></span>
-                      <span className="text-title font-bold">{onlineCount}/4 Nodes</span>
+                    <div className="flex items-center justify-between text-[9px] font-mono pt-1.5 border-t theme-border gap-2">
+                      <span className="text-emerald-400 font-bold shrink-0">Uptime <b className="text-emerald-300 font-extrabold">{uptimePercentage}</b></span>
+                      <span className="text-title font-bold truncate text-right"><b className="text-indigo-400 font-extrabold">{onlineCount}/4</b> Nodes</span>
                     </div>
                   </div>
                 ) : (
@@ -670,9 +670,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <div className="h-full rounded-full bg-emerald-500 transition-all duration-500 w-full" />
                     </div>
 
-                    <div className="flex items-center justify-between text-[9px] text-subtitle font-mono pt-1 border-t theme-border">
-                      <span>Sync <b>100%</b></span>
-                      <span className="text-title font-bold">Branch: {project?.gitBranch || 'main'}</span>
+                    <div className="flex items-center justify-between text-[9px] font-mono pt-1.5 border-t theme-border gap-2">
+                      <span className="text-emerald-400 font-bold shrink-0">Sync <b className="text-emerald-300 font-extrabold">100%</b></span>
+                      <span className="text-title font-bold truncate text-right">Branch: <b className="text-blue-400 font-extrabold">{project?.gitBranch || 'main'}</b></span>
                     </div>
                   </div>
                 )}
