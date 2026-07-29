@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe } from '../controllers/auth.controller.js';
+import { register, login, firebaseAuth, getMe } from '../controllers/auth.controller.js';
 import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, injectFailure, resetEnv } from '../controllers/project.controller.js';
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
@@ -10,6 +10,7 @@ export const router = Router();
 // Public Authentication Routes
 router.post('/auth/register', register);
 router.post('/auth/login', login);
+router.post('/auth/firebase', firebaseAuth);
 // Protected Authentication Profile
 router.get('/auth/me', requireAuth, getMe);
 // Protected Project & Environment Routes

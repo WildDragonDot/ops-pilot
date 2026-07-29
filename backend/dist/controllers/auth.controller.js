@@ -1,4 +1,4 @@
-import { registerUser, loginUser } from '../services/auth.service.js';
+import { registerUser, loginUser, authenticateFirebaseUser } from '../services/auth.service.js';
 import { prisma } from '../services/db.service.js';
 export async function register(req, res) {
     try {
@@ -40,6 +40,26 @@ export async function login(req, res) {
         res.status(401).json({ error: err.message || 'Authentication failed.' });
     }
 }
+export async function firebaseAuth(req, res) {
+    try {
+        const { firebaseUid, email, name, provider, avatarUrl } = req.body;
+        if (!firebaseUid || typeof firebaseUid !== 'string') {
+            return res.status(400).json({ error: 'Firebase UID is required.' });
+        }
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            return res.status(400).json({ error: 'A valid email address is required from your social provider.' });
+        }
+        const result = await authenticateFirebaseUser(firebaseUid, email.trim().toLowerCase(), name?.trim() || email.split('@')[0], provider || 'social', avatarUrl);
+        res.json({
+            success: true,
+            message: `Signed in with ${provider === 'github.com' ? 'GitHub' : provider === 'google.com' ? 'Google' : 'Firebase'} successfully.`,
+            ...result
+        });
+    }
+    catch (err) {
+        res.status(400).json({ error: err.message || 'Social authentication failed.' });
+    }
+}
 export async function getMe(req, res) {
     try {
         if (!req.user) {
@@ -59,6 +79,8 @@ export async function getMe(req, res) {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                provider: user.provider || 'email',
+                avatarUrl: user.avatarUrl,
                 organizationId: user.organizationId,
                 organizationName: user.organization.name
             }

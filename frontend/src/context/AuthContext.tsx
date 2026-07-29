@@ -5,6 +5,8 @@ export interface User {
   email: string;
   name: string;
   role: string;
+  provider?: string;
+  avatarUrl?: string;
   organizationId: string;
   organizationName: string;
 }
