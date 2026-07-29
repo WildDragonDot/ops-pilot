@@ -9,7 +9,13 @@ const execAsync = promisify(exec);
 const getHeaderString = (val) => {
     if (!val)
         return undefined;
-    return Array.isArray(val) ? val[0] : val;
+    const str = Array.isArray(val) ? val[0] : val;
+    try {
+        return decodeURIComponent(str);
+    }
+    catch {
+        return str;
+    }
 };
 export async function getProjects(req, res) {
     const projects = await prisma.project.findMany({

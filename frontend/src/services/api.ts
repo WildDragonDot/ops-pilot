@@ -3,6 +3,15 @@ import { OpsPilotVault, ProjectCredentials } from './vault';
 
 const API_BASE = '/api';
 
+function safeHeaderEncode(val?: string): string | undefined {
+  if (!val) return undefined;
+  try {
+    return encodeURIComponent(val);
+  } catch {
+    return undefined;
+  }
+}
+
 function getAuthHeaders(projectId?: string): Record<string, string> {
   const token = localStorage.getItem('opspilot_token');
   const headers: Record<string, string> = {
@@ -15,9 +24,18 @@ function getAuthHeaders(projectId?: string): Record<string, string> {
   if (projectId) {
     const creds = OpsPilotVault.getCredentials(projectId);
     if (creds) {
-      if (creds.sshKey) headers['x-server-ssh-key'] = creds.sshKey;
-      if (creds.sshPassword) headers['x-server-pass'] = creds.sshPassword;
-      if (creds.githubToken) headers['x-github-token'] = creds.githubToken;
+      if (creds.sshKey) {
+        const enc = safeHeaderEncode(creds.sshKey);
+        if (enc) headers['x-server-ssh-key'] = enc;
+      }
+      if (creds.sshPassword) {
+        const enc = safeHeaderEncode(creds.sshPassword);
+        if (enc) headers['x-server-pass'] = enc;
+      }
+      if (creds.githubToken) {
+        const enc = safeHeaderEncode(creds.githubToken);
+        if (enc) headers['x-github-token'] = enc;
+      }
     }
   }
 
@@ -66,9 +84,18 @@ export async function testConnection(
   creds?: ProjectCredentials
 ): Promise<any> {
   const headers = getAuthHeaders();
-  if (creds?.sshKey) headers['x-server-ssh-key'] = creds.sshKey;
-  if (creds?.sshPassword) headers['x-server-pass'] = creds.sshPassword;
-  if (creds?.githubToken) headers['x-github-token'] = creds.githubToken;
+  if (creds?.sshKey) {
+    const enc = safeHeaderEncode(creds.sshKey);
+    if (enc) headers['x-server-ssh-key'] = enc;
+  }
+  if (creds?.sshPassword) {
+    const enc = safeHeaderEncode(creds.sshPassword);
+    if (enc) headers['x-server-pass'] = enc;
+  }
+  if (creds?.githubToken) {
+    const enc = safeHeaderEncode(creds.githubToken);
+    if (enc) headers['x-github-token'] = enc;
+  }
 
   const res = await fetch(`${API_BASE}/projects/test-connection`, {
     method: 'POST',

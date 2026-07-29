@@ -11,7 +11,12 @@ const execAsync = promisify(exec);
 
 const getHeaderString = (val: string | string[] | undefined): string | undefined => {
   if (!val) return undefined;
-  return Array.isArray(val) ? val[0] : val;
+  const str = Array.isArray(val) ? val[0] : val;
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return str;
+  }
 };
 
 export async function getProjects(req: Request, res: Response) {
