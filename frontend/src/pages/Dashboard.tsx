@@ -82,10 +82,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Real initial seed logs ordered CHRONOLOGICALLY (oldest -> newest at bottom)
   const [logFeed, setLogFeed] = useState<Array<{ id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }>>([
-    { id: '1', time: '22:11:58', level: 'INFO', message: 'cluster.watch -- Nginx Proxy HTTP 200 OK (2ms latency)' },
-    { id: '2', time: '22:12:01', level: 'INFO', message: 'db.postgres    -- Active connection pool: 14/100 (HEALTHY)' },
-    { id: '3', time: '22:12:04', level: 'INFO', message: 'redis.cache   -- Cache hit ratio: 94.2% (1ms latency)' },
-    { id: '4', time: '22:12:07', level: 'OK',   message: 'vault.crypto   -- Zero-DB WebCrypto vault verification passed' },
+    { id: '1', time: '22:11:58', level: 'INFO', message: 'ast.engine     -- Local workspace file index active' },
+    { id: '2', time: '22:12:01', level: 'OK',   message: 'vault.crypto   -- Zero-DB WebCrypto vault verification passed' },
+    { id: '3', time: '22:12:04', level: 'INFO', message: 'security.scan  -- Static vulnerability analysis standing by' },
+    { id: '4', time: '22:12:07', level: 'OK',   message: 'git.auditor    -- Repository branch target verified' },
     { id: '5', time: '22:12:10', level: 'OK',   message: 'guardrails     -- Safety policies active and armed' }
   ]);
 
@@ -133,12 +133,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const interval = setInterval(() => {
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
-      const sampleLogs: Array<{ level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }> = [
+      const sampleLogs: Array<{ level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }> = Boolean(project?.serverHost?.trim()) ? [
         { level: 'INFO', message: 'healthcheck -- GET /api/health 200 OK (2ms)' },
-        { level: 'INFO', message: 'db.postgres    -- Executed SELECT 1 FROM projects (4ms)' },
-        { level: 'OK',   message: 'vault.crypto   -- WebCrypto signature valid' },
-        { level: 'INFO', message: 'redis.ping     -- PONG (1ms latency)' },
+        { level: 'INFO', message: 'db.postgres    -- Active connection pool: 14/100 (HEALTHY)' },
+        { level: 'OK',   message: 'vault.crypto   -- Zero-DB WebCrypto vault verification passed' },
+        { level: 'INFO', message: 'redis.cache    -- Cache hit ratio: 94.2% (1ms latency)' },
         { level: 'WARN', message: 'metrics.watch  -- Memory buffer allocation at 11%' }
+      ] : [
+        { level: 'INFO', message: 'ast.engine     -- Local workspace file index active' },
+        { level: 'OK',   message: 'vault.crypto   -- WebCrypto zero-db vault active' },
+        { level: 'INFO', message: 'security.scan  -- Static vulnerability analysis standing by' },
+        { level: 'OK',   message: 'git.auditor    -- Repository branch target verified' },
+        { level: 'INFO', message: 'sandbox.local  -- Port 5080 local environment healthy' }
       ];
       const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
       setLogFeed(prev => [...prev, { id: Date.now().toString(), time: timeStr, level: randomLog.level, message: randomLog.message }].slice(-20));
@@ -688,107 +694,119 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </p>
               </div>
 
-              <div className="space-y-2 mt-2">
-                {/* Scenario 1 */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loadingScenario !== null}
-                  onClick={() => handleLaunchScenario('DATABASE_STOPPED')}
-                  className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-rose-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
-                    loadingScenario === 'DATABASE_STOPPED'
-                      ? 'ring-2 ring-rose-500 opacity-80'
-                      : 'hover:border-rose-500/60 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="space-y-0.5 min-w-0 pr-2">
-                    <span className="font-extrabold text-title block text-[11px] truncate">1. 502 Bad Gateway</span>
-                    <span className="text-[9px] text-subtitle block truncate">PostgreSQL container down</span>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 group-hover:bg-rose-600 group-hover:text-white transition shrink-0">
-                    {loadingScenario === 'DATABASE_STOPPED' ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Play className="w-3 h-3 fill-current" />
-                    )}
-                  </div>
-                </motion.button>
+              {Boolean(project?.serverHost?.trim()) ? (
+                <div className="space-y-2 mt-2">
+                  {/* Scenario 1 */}
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={loadingScenario !== null}
+                    onClick={() => handleLaunchScenario('DATABASE_STOPPED')}
+                    className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-rose-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
+                      loadingScenario === 'DATABASE_STOPPED'
+                        ? 'ring-2 ring-rose-500 opacity-80'
+                        : 'hover:border-rose-500/60 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-0.5 min-w-0 pr-2">
+                      <span className="font-extrabold text-title block text-[11px] truncate">1. 502 Bad Gateway</span>
+                      <span className="text-[9px] text-subtitle block truncate">PostgreSQL container down</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 group-hover:bg-rose-600 group-hover:text-white transition shrink-0">
+                      {loadingScenario === 'DATABASE_STOPPED' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Play className="w-3 h-3 fill-current" />
+                      )}
+                    </div>
+                  </motion.button>
 
-                {/* Scenario 2 */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loadingScenario !== null}
-                  onClick={() => handleLaunchScenario('CONFIG_MISMATCH')}
-                  className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-amber-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
-                    loadingScenario === 'CONFIG_MISMATCH'
-                      ? 'ring-2 ring-amber-500 opacity-80'
-                      : 'hover:border-amber-500/60 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="space-y-0.5 min-w-0 pr-2">
-                    <span className="font-extrabold text-title block text-[11px] truncate">2. Config Host Mismatch</span>
-                    <span className="text-[9px] text-subtitle block truncate">DATABASE_URL host error</span>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-600 group-hover:text-white transition shrink-0">
-                    {loadingScenario === 'CONFIG_MISMATCH' ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Play className="w-3 h-3 fill-current" />
-                    )}
-                  </div>
-                </motion.button>
+                  {/* Scenario 2 */}
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={loadingScenario !== null}
+                    onClick={() => handleLaunchScenario('CONFIG_MISMATCH')}
+                    className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-amber-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
+                      loadingScenario === 'CONFIG_MISMATCH'
+                        ? 'ring-2 ring-amber-500 opacity-80'
+                        : 'hover:border-amber-500/60 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-0.5 min-w-0 pr-2">
+                      <span className="font-extrabold text-title block text-[11px] truncate">2. Config Host Mismatch</span>
+                      <span className="text-[9px] text-subtitle block truncate">DATABASE_URL host error</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-600 group-hover:text-white transition shrink-0">
+                      {loadingScenario === 'CONFIG_MISMATCH' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Play className="w-3 h-3 fill-current" />
+                      )}
+                    </div>
+                  </motion.button>
 
-                {/* Scenario 3 */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loadingScenario !== null}
-                  onClick={() => handleLaunchScenario('CODE_BUG')}
-                  className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-blue-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
-                    loadingScenario === 'CODE_BUG'
-                      ? 'ring-2 ring-blue-500 opacity-80'
-                      : 'hover:border-blue-500/60 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="space-y-0.5 min-w-0 pr-2">
-                    <span className="font-extrabold text-title block text-[11px] truncate">3. Login API 500 Bug</span>
-                    <span className="text-[9px] text-subtitle block truncate">String passed to Integer query</span>
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition shrink-0">
-                    {loadingScenario === 'CODE_BUG' ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Play className="w-3 h-3 fill-current" />
-                    )}
-                  </div>
-                </motion.button>
+                  {/* Scenario 3 */}
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={loadingScenario !== null}
+                    onClick={() => handleLaunchScenario('CODE_BUG')}
+                    className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-blue-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
+                      loadingScenario === 'CODE_BUG'
+                        ? 'ring-2 ring-blue-500 opacity-80'
+                        : 'hover:border-blue-500/60 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-0.5 min-w-0 pr-2">
+                      <span className="font-extrabold text-title block text-[11px] truncate">3. Login API 500 Bug</span>
+                      <span className="text-[9px] text-subtitle block truncate">String passed to Integer query</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition shrink-0">
+                      {loadingScenario === 'CODE_BUG' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Play className="w-3 h-3 fill-current" />
+                      )}
+                    </div>
+                  </motion.button>
 
-                {/* Scenario 4: Redis Latency Spike */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loadingScenario !== null}
-                  onClick={() => handleLaunchScenario('REDIS_LATENCY')}
-                  className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-indigo-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
-                    loadingScenario === 'REDIS_LATENCY'
-                      ? 'ring-2 ring-indigo-500 opacity-80'
-                      : 'hover:border-indigo-500/60 hover:shadow-sm'
-                  }`}
-                >
-                  <div className="space-y-0.5 min-w-0 pr-2">
-                    <span className="font-extrabold text-title block text-[11px] truncate">4. Redis Latency Spike</span>
-                    <span className="text-[9px] text-subtitle block truncate">Key eviction buffer bottleneck</span>
+                  {/* Scenario 4: Redis Latency Spike */}
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={loadingScenario !== null}
+                    onClick={() => handleLaunchScenario('REDIS_LATENCY')}
+                    className={`w-full text-left p-2.5 rounded-lg glass-panel border border-l-3 border-l-indigo-500 theme-border text-[11px] flex items-center justify-between group transition-all cursor-pointer ${
+                      loadingScenario === 'REDIS_LATENCY'
+                        ? 'ring-2 ring-indigo-500 opacity-80'
+                        : 'hover:border-indigo-500/60 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="space-y-0.5 min-w-0 pr-2">
+                      <span className="font-extrabold text-title block text-[11px] truncate">4. Redis Latency Spike</span>
+                      <span className="text-[9px] text-subtitle block truncate">Key eviction buffer bottleneck</span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition shrink-0">
+                      {loadingScenario === 'REDIS_LATENCY' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Play className="w-3 h-3 fill-current" />
+                      )}
+                    </div>
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-950/20 space-y-2 text-xs mt-2">
+                  <div className="flex items-center gap-1.5 text-amber-400 font-extrabold">
+                    <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Chaos Engine Inactive</span>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-600 group-hover:text-white transition shrink-0">
-                    {loadingScenario === 'REDIS_LATENCY' ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Play className="w-3 h-3 fill-current" />
-                    )}
-                  </div>
-                </motion.button>
-              </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Failure injection simulations require an attached production SSH server. Connect an SSH host to trigger live container outages & AI auto-remediation.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* AI Diagnostic Step Progress Indicator */}

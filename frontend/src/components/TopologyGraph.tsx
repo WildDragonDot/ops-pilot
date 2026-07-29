@@ -18,6 +18,57 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
   const envType = project?.environmentType || project?.runtimeType || 'Docker Compose';
 
   const getTopologyConfig = () => {
+    if (!project?.serverHost?.trim()) {
+      return {
+        stackLabel: 'Local Sandbox Engine',
+        title: 'Local Workspace Topology',
+        statusText: 'SANDBOX ACTIVE',
+        pipeline: ['LOCAL_CODE', 'AST_SCANNER', 'CLIENT_VAULT', 'OPSPILOT_AGENT'],
+        nodes: [
+          {
+            id: 'code',
+            label: 'Local Codebase',
+            port: 5080,
+            protocol: 'FILESYSTEM',
+            latency: '0ms',
+            status: 'RUNNING',
+            icon: Code,
+            accent: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
+          },
+          {
+            id: 'ast',
+            label: 'AST Static Scanner',
+            port: 5080,
+            protocol: 'AST/SWC',
+            latency: '1ms',
+            status: 'RUNNING',
+            icon: Cpu,
+            accent: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20'
+          },
+          {
+            id: 'vault',
+            label: 'Client Vault',
+            port: 5080,
+            protocol: 'WEBCRYPTO',
+            latency: '0ms',
+            status: 'RUNNING',
+            icon: Database,
+            accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+          },
+          {
+            id: 'agent',
+            label: 'OpsPilot AI Agent',
+            port: 5080,
+            protocol: 'LOCAL ENGINE',
+            latency: '1ms',
+            status: 'RUNNING',
+            icon: Activity,
+            accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+          }
+        ]
+      };
+    }
+
     if (envType.includes('Python') || envType.includes('FastAPI')) {
       return {
         stackLabel: 'Python / FastAPI Stack',
