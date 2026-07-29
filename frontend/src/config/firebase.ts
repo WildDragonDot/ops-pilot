@@ -4,12 +4,12 @@ import { getAuth, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
 const metaEnv = (import.meta as any).env || {};
 
 const firebaseConfig = {
-  apiKey: metaEnv.VITE_FIREBASE_API_KEY || 'AIzaSyDemoKeyOpsPilotAI2026DummyKey',
-  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || 'opspilot-ai.firebaseapp.com',
-  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || 'opspilot-ai',
-  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || 'opspilot-ai.appspot.com',
-  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890',
-  appId: metaEnv.VITE_FIREBASE_APP_ID || '1:1234567890:web:abcdef123456'
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || 'AIzaSyCdu1Qa6gLovnGvpWm7RKXIuASzEx5mXjo',
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || 'ops-pilot-fcbc7.firebaseapp.com',
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || 'ops-pilot-fcbc7',
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || 'ops-pilot-fcbc7.firebasestorage.app',
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || '997542591226',
+  appId: metaEnv.VITE_FIREBASE_APP_ID || '1:997542591226:web:f6fd309eeeee8cbed7e743'
 };
 
 // Initialize Firebase App singleton
