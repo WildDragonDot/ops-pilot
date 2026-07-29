@@ -426,7 +426,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
                         </div>
                         <h3 className="text-sm font-extrabold text-title font-display">Step 2: {activeIncident.activeApproval.title}</h3>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      <span className="px-3 py-1 rounded-full text-xs font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0 inline-block">
                         Risk: {activeIncident.activeApproval.riskLevel}
                       </span>
                     </div>

@@ -80,7 +80,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono text-blue-600 dark:text-blue-400 font-bold">Incident #{incident.id}</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0 inline-block">
                       Risk Level: {approval.riskLevel}
                     </span>
                   </div>
