@@ -65,6 +65,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [editHost, setEditHost] = useState<string>('');
   const [editPort, setEditPort] = useState<string>('22');
   const [editUser, setEditUser] = useState<string>('root');
+  const [editSshPassword, setEditSshPassword] = useState<string>('');
+  const [editSshKey, setEditSshKey] = useState<string>('');
   const [isTestingEdit, setIsTestingEdit] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<{ tested: boolean; success: boolean; gitMsg?: string; sshMsg?: string } | null>(null);
 
@@ -185,6 +187,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     setEditHost(proj.serverHost || '');
     setEditPort(proj.serverPort ? String(proj.serverPort) : '22');
     setEditUser(proj.serverUser || 'root');
+    setEditSshPassword('');
+    setEditSshKey('');
     setTestResult(null);
   };
 
@@ -199,7 +203,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
           serverPort: parseInt(editPort, 10) || 22,
           serverUser: editUser
         },
-        { githubToken: editGitToken }
+        { 
+          githubToken: editGitToken,
+          sshPassword: editSshPassword,
+          sshKey: editSshKey
+        }
       );
 
       const gitMsg = res.github?.message || (res.github?.connected ? `Connected to ${editGitUrl}` : 'GitHub validation failed');
@@ -1776,6 +1784,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                               value={editUser}
                               onChange={(e) => setEditUser(e.target.value)}
                               placeholder="root"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">SSH Password</label>
+                            <input
+                              type="password"
+                              value={editSshPassword}
+                              onChange={(e) => setEditSshPassword(e.target.value)}
+                              placeholder="Optional SSH Password"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">SSH Private Key (.pem)</label>
+                            <input
+                              type="password"
+                              value={editSshKey}
+                              onChange={(e) => setEditSshKey(e.target.value)}
+                              placeholder="Optional RSA Private Key"
                               className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
                             />
                           </div>
