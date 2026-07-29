@@ -93,35 +93,8 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
         return false;
       }
     }
-    
-    if (setupScope === 'BOTH') {
-      if (currentStep === 2) {
-        if (!gitUrl.trim()) {
-          alert('Please enter a GitHub Repository URL to continue.');
-          return false;
-        }
-      }
-      if (currentStep === 3) {
-        if (!serverHost.trim()) {
-          alert('Please enter a Server Host IP / Domain to continue.');
-          return false;
-        }
-      }
-    } else if (setupScope === 'GITHUB_ONLY') {
-      if (currentStep === 2) {
-        if (!gitUrl.trim()) {
-          alert('Please enter a GitHub Repository URL to continue.');
-          return false;
-        }
-      }
-    } else if (setupScope === 'SERVER_ONLY') {
-      if (currentStep === 2) {
-        if (!serverHost.trim()) {
-          alert('Please enter a Server Host IP / Domain to continue.');
-          return false;
-        }
-      }
-    }
+    // GitHub Repo URL, PAT token, Server Host IP, and SSH keys are 100% OPTIONAL.
+    // Users can create a workspace with just a name and add or edit credentials later!
     return true;
   };
 
@@ -413,7 +386,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                 <div>
                   <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
                     <Github className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
-                    <span>GitHub Repository URL <span className="text-rose-500">*</span></span>
+                    <span>GitHub Repository URL <span className="text-slate-400 font-normal text-[10px]">(Optional - Add or edit anytime)</span></span>
                   </label>
                   <input
                     type="text"
@@ -442,75 +415,37 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                       </button>
                     </span>
                     <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">Client-Side Vault Only</span>
-                  </label>                  {/* Inline Step-by-Step PAT Guide Panel */}
+                  </label>
+
+                  {/* Inline Step-by-Step PAT Guide (100% Unclipped Guarantee) */}
                   {showPatHelp && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      className="my-2.5 p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950/40 border border-blue-500/30 text-slate-100 space-y-3 shadow-xl backdrop-blur-md"
-                    >
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <span className="flex items-center gap-1.5 text-xs font-black text-blue-400">
+                    <div className="my-2.5 p-3.5 rounded-2xl bg-blue-950/40 border border-blue-500/40 text-slate-100 space-y-2 shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-1">
+                      <div className="flex items-center justify-between text-blue-400 font-black text-xs border-b border-blue-500/30 pb-1.5">
+                        <span className="flex items-center gap-1.5">
                           <Info className="w-4 h-4 text-blue-400 shrink-0" />
-                          <span>Generate Your GitHub Personal Access Token (PAT)</span>
+                          <span>How to get GitHub Access Token (PAT):</span>
                         </span>
-                        
-                        <div className="flex items-center gap-2">
-                          <a 
-                            href="https://github.com/settings/tokens" 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-mono font-extrabold transition shadow-xs flex items-center gap-1 active:scale-95"
-                          >
-                            <span>Open GitHub Tokens</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </a>
-                          <button 
-                            type="button" 
-                            onClick={() => setShowPatHelp(false)} 
-                            className="text-slate-400 hover:text-white px-1.5 py-0.5 rounded font-bold text-xs"
-                          >
-                            ✕
-                          </button>
-                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setShowPatHelp(false)} 
+                          className="text-slate-400 hover:text-white px-1.5 py-0.5 font-bold text-xs"
+                        >
+                          ✕
+                        </button>
                       </div>
 
-                      <div className="grid grid-cols-1 gap-2 text-xs font-mono text-slate-300">
-                        <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                          <span className="w-5 h-5 rounded-lg bg-blue-600/20 text-blue-400 font-extrabold flex items-center justify-center text-[10px] border border-blue-500/30 shrink-0 mt-0.5">1</span>
-                          <span className="text-[11px] leading-relaxed">
-                            Open <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold hover:text-blue-300">github.com/settings/tokens</a> in your browser.
-                          </span>
-                        </div>
+                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-200 font-mono leading-relaxed pl-0.5">
+                        <li>Open GitHub Settings: <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold hover:text-blue-300">github.com/settings/tokens</a></li>
+                        <li>Click <strong className="text-white font-bold">Generate new token (classic)</strong>.</li>
+                        <li>Give a Note (e.g. <code className="text-blue-400 font-bold">OpsPilot AI</code>) and check <strong className="text-emerald-400 font-bold">repo</strong> scope.</li>
+                        <li>Click <strong className="text-white font-bold">Generate token</strong>, copy your <code className="text-amber-400 font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/40">ghp_...</code> key & paste below.</li>
+                      </ol>
 
-                        <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                          <span className="w-5 h-5 rounded-lg bg-blue-600/20 text-blue-400 font-extrabold flex items-center justify-center text-[10px] border border-blue-500/30 shrink-0 mt-0.5">2</span>
-                          <span className="text-[11px] leading-relaxed">
-                            Click <strong className="text-white font-bold">Generate new token</strong> & select <strong className="text-slate-200">Generate new token (classic)</strong>.
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                          <span className="w-5 h-5 rounded-lg bg-blue-600/20 text-blue-400 font-extrabold flex items-center justify-center text-[10px] border border-blue-500/30 shrink-0 mt-0.5">3</span>
-                          <span className="text-[11px] leading-relaxed">
-                            Add note (e.g. <code className="text-blue-400 font-bold">OpsPilot AI</code>) and check <strong className="text-emerald-400 font-bold">repo</strong> scope permission.
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-                          <span className="w-5 h-5 rounded-lg bg-blue-600/20 text-blue-400 font-extrabold flex items-center justify-center text-[10px] border border-blue-500/30 shrink-0 mt-0.5">4</span>
-                          <span className="text-[11px] leading-relaxed">
-                            Click <strong className="text-white font-bold">Generate token</strong>, copy key (<code className="text-amber-400 font-bold bg-amber-500/20 px-1 py-0.5 rounded border border-amber-500/40">ghp_...</code>) & paste below.
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 border-t border-slate-800/80 pt-2">
+                      <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 border-t border-slate-800/80 pt-2 mt-1">
                         <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>Zero-DB Vault Guarantee: Token remains 100% encrypted in your local browser session.</span>
+                        <span>Encrypted 100% in client vault. Never saved to DB.</span>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
 
                   <input
@@ -533,7 +468,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                 <div className="grid grid-cols-3 gap-2.5">
                   <div className="col-span-2">
                     <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1">
-                      Server Host IP / Domain <span className="text-rose-500">*</span>
+                      Server Host IP / Domain <span className="text-slate-400 font-normal text-[10px]">(Optional - Add or edit anytime)</span>
                     </label>
                     <input
                       type="text"
