@@ -30,7 +30,6 @@ export async function getProjects(req: Request, res: Response) {
   res.json({
     projects: projects.map(p => ({
       ...p,
-      serverHost: p.serverHost === '34.224.80.31' ? null : p.serverHost,
       environmentStatus: state.environmentStatus
     }))
   });
