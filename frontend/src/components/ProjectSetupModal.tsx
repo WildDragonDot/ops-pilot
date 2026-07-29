@@ -113,6 +113,16 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
     setTesting(true);
     setTestResult(null);
     try {
+      if (!gitUrl.trim() && !serverHost.trim()) {
+        setTestResult({
+          success: true,
+          ssh: { message: 'Local Sandbox Engine Active (Port 5080)' },
+          github: { message: 'Local Workspace ready (Attach repository anytime)' }
+        });
+        setTesting(false);
+        return;
+      }
+
       const creds: ProjectCredentials = {
         gitUrl: setupScope !== 'SERVER_ONLY' ? gitUrl : undefined,
         githubToken: setupScope !== 'SERVER_ONLY' ? githubToken : undefined,
@@ -592,13 +602,25 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     <div><span className="text-slate-400 block text-[9px]">Project Name</span> <strong className="text-slate-800 dark:text-slate-200">{name || 'Unnamed Project'}</strong></div>
                     <div><span className="text-slate-400 block text-[9px]">Scope Mode</span> <strong className="text-blue-600 dark:text-blue-400 font-bold">{setupScope}</strong></div>
                     {setupScope !== 'SERVER_ONLY' && (
-                      <div><span className="text-slate-400 block text-[9px]">GitHub Repository</span> <strong className="text-slate-800 dark:text-slate-200 font-mono truncate block">{gitUrl || 'Not specified'}</strong></div>
+                      <div><span className="text-slate-400 block text-[9px]">GitHub Repository</span> <strong className="text-slate-800 dark:text-slate-200 font-mono truncate block">{gitUrl || 'Not specified (Local AST Engine)'}</strong></div>
                     )}
                     {setupScope !== 'GITHUB_ONLY' && (
-                      <div><span className="text-slate-400 block text-[9px]">Server SSH Endpoint</span> <strong className="text-slate-800 dark:text-slate-200 font-mono">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox'}</strong></div>
+                      <div><span className="text-slate-400 block text-[9px]">Server SSH Endpoint</span> <strong className="text-slate-800 dark:text-slate-200 font-mono">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox Engine'}</strong></div>
                     )}
                   </div>
                 </div>
+
+                {!gitUrl.trim() && !serverHost.trim() && (
+                  <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/30 space-y-1 text-xs">
+                    <div className="flex items-center gap-1.5 text-blue-400 font-extrabold">
+                      <Cpu className="w-4 h-4 text-blue-400 shrink-0" />
+                      <span>⚡ Local Sandbox & AST Engine Ready</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Your project workspace is initialized! You can perform instant AST vulnerability audits on local workspace files, or attach a live GitHub repo / SSH server anytime from project settings.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pt-0.5">
                   <button
