@@ -316,7 +316,11 @@ async function executeAgentReasoning(
   try {
     const fs = await import('fs');
     const path = await import('path');
-    const authPath = path.resolve(process.cwd(), 'src/services/auth.service.ts');
+    const cwd = process.cwd();
+    const authPath = cwd.endsWith('backend')
+      ? path.resolve(cwd, 'src/services/auth.service.ts')
+      : path.resolve(cwd, 'backend/src/services/auth.service.ts');
+
     if (fs.existsSync(authPath)) {
       const code = fs.readFileSync(authPath, 'utf8');
       if (!code.includes("process.env.JWT_SECRET || '") && !code.includes('opspilot-secret-jwt-key-2026')) {
@@ -387,7 +391,11 @@ export async function approveIncidentFix(approvalId: string) {
   try {
     const fs = await import('fs');
     const path = await import('path');
-    const authPath = path.resolve(process.cwd(), 'src/services/auth.service.ts');
+    const cwd = process.cwd();
+    const authPath = cwd.endsWith('backend')
+      ? path.resolve(cwd, 'src/services/auth.service.ts')
+      : path.resolve(cwd, 'backend/src/services/auth.service.ts');
+
     if (fs.existsSync(authPath)) {
       let content = fs.readFileSync(authPath, 'utf8');
       if (content.includes("process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026'")) {
