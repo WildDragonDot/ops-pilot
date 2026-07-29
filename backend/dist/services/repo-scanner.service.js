@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
+import { execSync } from 'child_process';
 import { prisma } from './db.service.js';
 import { auditCodebaseWithOpenAI } from './openai.service.js';
 export async function getLatestRepoScan() {
@@ -194,10 +195,28 @@ export async function applyFindingPatch(findingId) {
             if (finding.title.includes('JWT') || finding.filePath.includes('auth.service.ts')) {
                 content = content.replace(/const JWT_SECRET = process\.env\.JWT_SECRET \|\| 'opspilot-secret-jwt-key-2026';/g, 'if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET required");\nconst JWT_SECRET = process.env.JWT_SECRET;');
                 await writeFile(fullPath, content, 'utf-8');
+                // Execute real git commit for resolved security patch
+                try {
+                    const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
+                    execSync(`git add "${finding.filePath}" && git commit -m "${commitMsg}"`, { cwd: process.cwd() });
+                    console.log(`[Git Commit] Security patch for ${finding.filePath} committed successfully`);
+                }
+                catch (gitErr) {
+                    console.warn(`[Git Commit] ${gitErr}`);
+                }
             }
             else if (finding.title.includes('Unsanitized') || finding.filePath.includes('auth.controller.ts')) {
                 content = content.replace(/const user = await prisma\.user\.findUnique\(\{ where: \{ id: req\.params\.id \} \}\);/g, 'const userId = Number(req.params.id);\nconst user = await prisma.user.findUnique({ where: { id: userId } });');
                 await writeFile(fullPath, content, 'utf-8');
+                // Execute real git commit for resolved security patch
+                try {
+                    const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
+                    execSync(`git add "${finding.filePath}" && git commit -m "${commitMsg}"`, { cwd: process.cwd() });
+                    console.log(`[Git Commit] Security patch for ${finding.filePath} committed successfully`);
+                }
+                catch (gitErr) {
+                    console.warn(`[Git Commit] ${gitErr}`);
+                }
             }
         }
         catch (err) {

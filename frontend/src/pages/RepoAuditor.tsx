@@ -14,7 +14,7 @@ import {
   GitCommit,
   ArrowRight
 } from 'lucide-react';
-import { Scan, Finding } from '../types';
+import { Project, Scan, Finding } from '../types';
 import { DiffViewer } from '../components/DiffViewer';
 import { applySecurityPatch } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
@@ -22,6 +22,7 @@ import { RepoAuditorSkeleton } from '../components/SkeletonLoader';
 
 interface RepoAuditorProps {
   scan: Scan | null;
+  project?: Project | null;
   onScanRepo: () => void;
   isScanning: boolean;
   onPatchApplied?: (updatedScan: Scan) => void;
@@ -29,6 +30,7 @@ interface RepoAuditorProps {
 
 export const RepoAuditor: React.FC<RepoAuditorProps> = ({
   scan,
+  project,
   onScanRepo,
   isScanning,
   onPatchApplied
@@ -156,7 +158,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-mono border border-slate-200 dark:border-slate-700">
                 <GitCommit className="w-3 h-3 text-slate-400" />
-                main
+                {project?.gitBranch || 'main'}
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-mono font-medium">
                 ● Live Protection Active
@@ -168,7 +170,9 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">company/production-backend-api</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">
+                  {project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot'}
+                </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Last Scanned: {scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : 'Just now'} • <span className="font-semibold text-slate-700 dark:text-slate-300">{countAll} active risks</span> detected ({countResolved} resolved)
                 </p>

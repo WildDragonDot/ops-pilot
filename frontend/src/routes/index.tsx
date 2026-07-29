@@ -202,6 +202,7 @@ export function AppRoutes() {
             element={
               <RepoAuditor
                 scan={scan}
+                project={project}
                 onScanRepo={handleScanRepo}
                 isScanning={isScanning}
                 onPatchApplied={(updatedScan) => setScan(updatedScan)}
