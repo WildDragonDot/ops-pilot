@@ -602,10 +602,16 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     <div><span className="text-slate-400 block text-[9px]">Project Name</span> <strong className="text-slate-800 dark:text-slate-200">{name || 'Unnamed Project'}</strong></div>
                     <div><span className="text-slate-400 block text-[9px]">Scope Mode</span> <strong className="text-blue-600 dark:text-blue-400 font-bold">{setupScope}</strong></div>
                     {setupScope !== 'SERVER_ONLY' && (
-                      <div><span className="text-slate-400 block text-[9px]">GitHub Repository</span> <strong className="text-slate-800 dark:text-slate-200 font-mono truncate block">{gitUrl || 'Not specified (Local AST Engine)'}</strong></div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">GitHub Repository</span> 
+                        <span className="text-[10px] font-mono break-all font-bold text-slate-800 dark:text-slate-200 block leading-tight mt-0.5">{gitUrl || 'Not specified (Local AST Engine)'}</span>
+                      </div>
                     )}
                     {setupScope !== 'GITHUB_ONLY' && (
-                      <div><span className="text-slate-400 block text-[9px]">Server SSH Endpoint</span> <strong className="text-slate-800 dark:text-slate-200 font-mono">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox Engine'}</strong></div>
+                      <div>
+                        <span className="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Server SSH Endpoint</span> 
+                        <span className="text-[10px] font-mono break-all font-bold text-slate-800 dark:text-slate-200 block leading-tight mt-0.5">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox Engine'}</span>
+                      </div>
                     )}
                   </div>
                 </div>
