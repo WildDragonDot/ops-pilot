@@ -701,16 +701,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full" style={{ width: `${realScore}%` }} />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-1 text-[8.5px] font-mono pt-1.5 border-t theme-border text-center">
-                    <div className="py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold">
+                  <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t theme-border whitespace-nowrap px-0.5">
+                    <span className="text-emerald-400 font-bold">
                       Sec <b className="text-emerald-300 font-extrabold">{realSecurityPct}%</b>
-                    </div>
-                    <div className="py-1 rounded bg-cyan-500/10 text-cyan-400 font-bold">
+                    </span>
+                    <span className="text-slate-600 font-bold text-[8px]">•</span>
+                    <span className="text-cyan-400 font-bold">
                       Qual <b className="text-cyan-300 font-extrabold">{realQualityPct}%</b>
-                    </div>
-                    <div className="py-1 rounded bg-indigo-500/10 text-indigo-400 font-bold">
+                    </span>
+                    <span className="text-slate-600 font-bold text-[8px]">•</span>
+                    <span className="text-indigo-400 font-bold">
                       Test <b className="text-indigo-300 font-extrabold">{realTestingPct}%</b>
-                    </div>
+                    </span>
                   </div>
                 </div>
               </div>
