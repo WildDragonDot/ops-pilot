@@ -83,10 +83,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Real initial seed logs ordered CHRONOLOGICALLY (oldest -> newest at bottom)
   const [logFeed, setLogFeed] = useState<Array<{ id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }>>([
-    { id: '1', time: '22:11:58', level: 'INFO', message: 'ast.engine     -- Local workspace file index active' },
+    { id: '1', time: '22:11:58', level: 'INFO', message: 'github.api     -- Connected to GitHub REST API endpoint' },
     { id: '2', time: '22:12:01', level: 'OK',   message: 'vault.crypto   -- Zero-DB WebCrypto vault verification passed' },
-    { id: '3', time: '22:12:04', level: 'INFO', message: 'security.scan  -- Static vulnerability analysis standing by' },
-    { id: '4', time: '22:12:07', level: 'OK',   message: 'git.auditor    -- Repository branch target verified' },
+    { id: '3', time: '22:12:04', level: 'INFO', message: 'security.scan  -- Repository static code audit active' },
+    { id: '4', time: '22:12:07', level: 'OK',   message: 'git.auditor    -- Repository target branch "main" verified' },
     { id: '5', time: '22:12:10', level: 'OK',   message: 'guardrails     -- Safety policies active and armed' }
   ]);
 
@@ -135,17 +135,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
       const sampleLogs: Array<{ level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }> = Boolean(project?.serverHost?.trim()) ? [
-        { level: 'INFO', message: 'healthcheck -- GET /api/health 200 OK (2ms)' },
+        { level: 'INFO', message: 'healthcheck    -- GET /api/health 200 OK (2ms latency)' },
         { level: 'INFO', message: 'db.postgres    -- Active connection pool: 14/100 (HEALTHY)' },
         { level: 'OK',   message: 'vault.crypto   -- Zero-DB WebCrypto vault verification passed' },
         { level: 'INFO', message: 'redis.cache    -- Cache hit ratio: 94.2% (1ms latency)' },
         { level: 'WARN', message: 'metrics.watch  -- Memory buffer allocation at 11%' }
       ] : [
-        { level: 'INFO', message: 'ast.engine     -- Local workspace file index active' },
+        { level: 'INFO', message: 'github.api     -- GET /repos/WildDragonDot/ops-pilot 200 OK' },
+        { level: 'OK',   message: 'git.branch     -- Verified target branch "main"' },
+        { level: 'INFO', message: 'security.audit -- Static vulnerability scan completed (0 critical)' },
         { level: 'OK',   message: 'vault.crypto   -- WebCrypto zero-db vault active' },
-        { level: 'INFO', message: 'security.scan  -- Static vulnerability analysis standing by' },
-        { level: 'OK',   message: 'git.auditor    -- Repository branch target verified' },
-        { level: 'INFO', message: 'sandbox.local  -- Port 5080 local environment healthy' }
+        { level: 'INFO', message: 'github.auditor -- Repository audit stream standing by' }
       ];
       const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
       setLogFeed(prev => [...prev, { id: Date.now().toString(), time: timeStr, level: randomLog.level, message: randomLog.message }].slice(-20));
@@ -937,8 +937,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex items-center gap-1.5 min-w-0">
                 <Terminal className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <h3 className="text-xs font-bold text-title uppercase tracking-wider font-mono truncate flex items-center gap-2">
-                  <span>Streaming Cluster Logs</span>
-                  <span className="text-[9px] text-subtitle font-normal font-mono text-slate-400 font-sans"> (20 Events • Live Bottom Stream)</span>
+                  <span>{Boolean(project?.serverHost?.trim()) ? 'Streaming Cluster Logs' : 'GitHub Audit Event Feed'}</span>
+                  <span className="text-[9px] text-subtitle font-normal font-mono text-slate-400 font-sans">
+                    ({Boolean(project?.serverHost?.trim()) ? '20 Events • Live Server Stream' : 'Live Repository Audit Events'})
+                  </span>
                 </h3>
               </div>
               
