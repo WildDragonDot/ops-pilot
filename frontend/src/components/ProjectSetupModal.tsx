@@ -20,7 +20,9 @@ import {
   EyeOff,
   Layers,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  HelpCircle,
+  Info
 } from 'lucide-react';
 import { createNewProject, testConnection } from '../services/api';
 import { ProjectCredentials } from '../services/vault';
@@ -42,6 +44,9 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [testing, setTesting] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<{ success?: boolean; ssh?: any; github?: any; discovery?: any; error?: string } | null>(null);
+
+  // Help Tooltip State
+  const [showPatHelp, setShowPatHelp] = useState<boolean>(false);
 
   // Modular Setup Scope: BOTH (Full Stack), GITHUB_ONLY, SERVER_ONLY
   const [setupScope, setSetupScope] = useState<'BOTH' | 'GITHUB_ONLY' | 'SERVER_ONLY'>('BOTH');
@@ -424,9 +429,51 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     <span className="flex items-center gap-1.5">
                       <Key className="w-3.5 h-3.5 text-amber-500" />
                       <span>GitHub Personal Access Token (PAT)</span>
+                      
+                      {/* Interactive Tooltip Button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowPatHelp(!showPatHelp)}
+                        onMouseEnter={() => setShowPatHelp(true)}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 text-[10px] font-extrabold transition"
+                        title="Where to get your PAT?"
+                      >
+                        <HelpCircle className="w-3 h-3" />
+                        <span>Where to get this?</span>
+                      </button>
                     </span>
                     <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">Client-Side Vault Only</span>
                   </label>
+
+                  {/* Step-by-Step PAT Popover Guide */}
+                  {showPatHelp && (
+                    <div className="mb-2 p-3 rounded-xl bg-slate-950/95 border border-blue-500/30 text-[11px] text-slate-300 space-y-2 shadow-2xl backdrop-blur-md animate-in fade-in">
+                      <div className="flex items-center justify-between text-blue-400 font-extrabold text-xs">
+                        <span className="flex items-center gap-1.5">
+                          <Info className="w-4 h-4 text-blue-400" />
+                          <span>How to get your GitHub Personal Access Token (PAT):</span>
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => setShowPatHelp(false)} 
+                          className="text-slate-400 hover:text-white p-0.5 font-bold text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300 font-mono leading-relaxed">
+                        <li>Go to GitHub: <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold hover:text-blue-300">github.com/settings/tokens</a></li>
+                        <li>Click <strong className="text-white">Generate new token (classic)</strong>.</li>
+                        <li>Give a Note (e.g. <code className="text-blue-400">OpsPilot AI</code>) and check <strong className="text-emerald-400">repo</strong> scope permissions.</li>
+                        <li>Click <strong className="text-white">Generate token</strong>, copy your <code className="text-amber-400 font-bold">ghp_...</code> token and paste it here.</li>
+                      </ol>
+                      <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 border-t border-slate-800/80 pt-1.5">
+                        <Shield className="w-3 h-3 text-emerald-400" />
+                        <span>Tokens stay 100% encrypted in your local client-side vault. Never saved in database.</span>
+                      </div>
+                    </div>
+                  )}
+
                   <input
                     type="password"
                     value={githubToken}
