@@ -46,12 +46,15 @@ export async function fetchLiveGitHubAudit(params: GitHubAuditParams) {
     const repoData = await repoRes.json();
 
     // Verify specified target branch exists
-    const branchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${targetBranch}`, { headers });
-    if (!branchRes.ok && branchRes.status === 404) {
+    const branchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${encodeURIComponent(targetBranch)}`, { headers });
+    if (!branchRes.ok) {
+      const errorMsg = branchRes.status === 404
+        ? `Target branch "${targetBranch}" does not exist in ${owner}/${repo}`
+        : `GitHub branch verification returned HTTP ${branchRes.status}`;
       return {
         connected: false,
         branchExists: false,
-        message: `Target branch "${targetBranch}" does not exist in ${owner}/${repo}`
+        message: errorMsg
       };
     }
 
