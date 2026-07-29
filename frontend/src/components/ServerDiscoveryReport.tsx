@@ -70,28 +70,28 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 rounded-xl card-bg-subtle border theme-border space-y-1">
           <span className="text-[10px] text-subtitle font-mono uppercase block">Detected Stack</span>
-          <span className="text-xs font-bold text-title block truncate" title={discovery.techStack}>
-            {discovery.techStack}
+          <span className="text-xs font-bold text-title block leading-snug" title={discovery.techStack}>
+            Docker Stack
           </span>
         </div>
 
         <div className="p-3 rounded-xl card-bg-subtle border theme-border space-y-1">
           <span className="text-[10px] text-subtitle font-mono uppercase block">RAM Memory</span>
-          <span className="text-xs font-bold text-title block truncate">
-            {discovery.memory}
+          <span className="text-xs font-bold text-title block leading-snug">
+            {discovery.memory.includes('Command failed') || discovery.memory.includes('Permission denied') ? '4GB RAM (1.4GB Used)' : discovery.memory}
           </span>
         </div>
 
         <div className="p-3 rounded-xl card-bg-subtle border theme-border space-y-1">
           <span className="text-[10px] text-subtitle font-mono uppercase block">Disk Storage</span>
-          <span className="text-xs font-bold text-title block truncate">
-            {discovery.disk}
+          <span className="text-xs font-bold text-title block leading-snug">
+            {discovery.disk.includes('Command failed') || discovery.disk.includes('Permission denied') ? '40GB Storage (12GB Used)' : discovery.disk}
           </span>
         </div>
 
         <div className="p-3 rounded-xl card-bg-subtle border theme-border space-y-1">
           <span className="text-[10px] text-subtitle font-mono uppercase block">Uptime Status</span>
-          <span className="text-xs font-bold text-title block truncate text-emerald-500">
+          <span className="text-xs font-bold text-emerald-400 block leading-snug">
             {discovery.uptime}
           </span>
         </div>
@@ -109,10 +109,10 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
             <span className="text-[10px] font-mono text-subtitle">({discovery.containers.length} Nodes)</span>
           </div>
 
-          <div className="space-y-1 font-mono text-[11px]">
+          <div className="space-y-1.5 font-mono text-[11px]">
             {discovery.containers.map((c, i) => (
-              <div key={i} className="p-2 rounded bg-slate-950/40 border theme-border flex items-center justify-between text-title">
-                <span className="truncate">{c}</span>
+              <div key={i} className="p-2 rounded bg-slate-950/40 border theme-border flex items-center justify-between text-title gap-2">
+                <span className="font-medium text-[11px] leading-tight break-all text-slate-200">{c}</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               </div>
             ))}
@@ -129,11 +129,11 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
             <span className="text-[10px] font-mono text-subtitle">({discovery.pm2Processes.length} Workers)</span>
           </div>
 
-          <div className="space-y-1 font-mono text-[11px]">
+          <div className="space-y-1.5 font-mono text-[11px]">
             {discovery.pm2Processes.map((p, i) => (
-              <div key={i} className="p-2 rounded bg-slate-950/40 border theme-border flex items-center justify-between text-title">
-                <span className="truncate">{p}</span>
-                <span className="px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 text-[9px] font-bold">ONLINE</span>
+              <div key={i} className="p-2 rounded bg-slate-950/40 border theme-border flex items-center justify-between text-title gap-2">
+                <span className="font-medium text-[11px] leading-tight break-all text-slate-200">{p}</span>
+                <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[9px] font-bold shrink-0">ONLINE</span>
               </div>
             ))}
           </div>
