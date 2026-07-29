@@ -701,18 +701,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full" style={{ width: `${realScore}%` }} />
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t theme-border whitespace-nowrap px-0.5">
-                    <span className="text-emerald-400 font-bold">
-                      Sec <b className="text-emerald-300 font-extrabold">{realSecurityPct}%</b>
-                    </span>
-                    <span className="text-slate-600 font-bold text-[8px]">•</span>
-                    <span className="text-cyan-400 font-bold">
-                      Qual <b className="text-cyan-300 font-extrabold">{realQualityPct}%</b>
-                    </span>
-                    <span className="text-slate-600 font-bold text-[8px]">•</span>
-                    <span className="text-indigo-400 font-bold">
-                      Test <b className="text-indigo-300 font-extrabold">{realTestingPct}%</b>
-                    </span>
+                  <div className="grid grid-cols-3 gap-1 font-mono pt-2 border-t theme-border text-center">
+                    <div className="flex flex-col items-center">
+                      <span className="text-emerald-400 font-bold text-[8px] uppercase tracking-wider">Sec</span>
+                      <span className="text-emerald-300 font-extrabold text-[11px]">{realSecurityPct}%</span>
+                    </div>
+                    <div className="flex flex-col items-center border-x theme-border">
+                      <span className="text-cyan-400 font-bold text-[8px] uppercase tracking-wider">Qual</span>
+                      <span className="text-cyan-300 font-extrabold text-[11px]">{realQualityPct}%</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-indigo-400 font-bold text-[8px] uppercase tracking-wider">Test</span>
+                      <span className="text-indigo-300 font-extrabold text-[11px]">{realTestingPct}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
