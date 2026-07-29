@@ -228,7 +228,7 @@ export function AppRoutes() {
               />
             }
           />
-          <Route path="/runbooks" element={<RunbooksPage />} />
+          <Route path="/runbooks" element={<RunbooksPage project={project} />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
           <Route
             path="/reports"
