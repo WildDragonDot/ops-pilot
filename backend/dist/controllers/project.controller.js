@@ -68,7 +68,7 @@ export async function createProject(req, res) {
     });
 }
 export async function testProjectConnection(req, res) {
-    const { gitUrl, serverHost, serverPort, serverUser, sshKey, sshPassword, githubToken } = req.body;
+    const { gitUrl, gitBranch, serverHost, serverPort, serverUser, sshKey, sshPassword, githubToken } = req.body;
     const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']) || sshKey;
     const headerSshPass = getHeaderString(req.headers['x-server-pass']) || sshPassword;
     const headerGitToken = getHeaderString(req.headers['x-github-token']) || githubToken;
@@ -84,11 +84,13 @@ export async function testProjectConnection(req, res) {
         : { success: true, message: 'Local Sandbox Engine Active (Port 5080)' };
     const gitResult = await fetchLiveGitHubAudit({
         gitUrl,
+        gitBranch,
         githubToken: headerGitToken
     });
     const discoveryResult = serverHost ? await discoverServerTechStack(sshCreds) : null;
+    const isSuccess = (serverHost ? sshResult.success : true) && (gitUrl ? gitResult.connected : true);
     res.json({
-        success: true,
+        success: isSuccess,
         ssh: sshResult,
         github: gitResult,
         discovery: discoveryResult

@@ -62,7 +62,7 @@ export async function createNewProject(
 }
 
 export async function testConnection(
-  payload: { gitUrl?: string; serverHost?: string; serverPort?: number; serverUser?: string },
+  payload: { gitUrl?: string; gitBranch?: string; serverHost?: string; serverPort?: number; serverUser?: string },
   creds?: ProjectCredentials
 ): Promise<any> {
   const headers = getAuthHeaders();

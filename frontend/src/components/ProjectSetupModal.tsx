@@ -24,7 +24,8 @@ import {
   HelpCircle,
   Info,
   ExternalLink,
-  GitBranch
+  GitBranch,
+  AlertTriangle
 } from 'lucide-react';
 import { createNewProject, testConnection } from '../services/api';
 import { ProjectCredentials } from '../services/vault';
@@ -138,14 +139,18 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
 
       const result = await testConnection({
         gitUrl: setupScope !== 'SERVER_ONLY' ? gitUrl : undefined,
+        gitBranch: setupScope !== 'SERVER_ONLY' ? gitBranch : undefined,
         serverHost: setupScope !== 'GITHUB_ONLY' ? serverHost : undefined,
         serverPort: parseInt(serverPort, 10) || 22,
         serverUser
       }, creds);
 
       setTestResult(result);
+      return result;
     } catch (err: any) {
-      setTestResult({ success: false, error: err.message });
+      const errRes = { success: false, error: err.message };
+      setTestResult(errRes);
+      return errRes;
     } finally {
       setTesting(false);
     }
@@ -157,6 +162,16 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
     try {
       const finalGitUrl = setupScope !== 'SERVER_ONLY' ? gitUrl.trim() : undefined;
       const finalServerHost = setupScope !== 'GITHUB_ONLY' ? serverHost.trim() : undefined;
+
+      // Auto-verify connection if user provided GitHub URL or SSH Server but hasn't verified yet
+      if ((finalGitUrl || finalServerHost) && (!testResult || !testResult.success)) {
+        const testRes = await handleTestConnection();
+        if (!testRes?.success) {
+          setLoading(false);
+          alert(`Connection Verification Failed: ${testRes?.github?.message || testRes?.ssh?.message || testRes?.error || 'Check details & try again.'}`);
+          return;
+        }
+      }
 
       const creds: ProjectCredentials = {
         gitUrl: finalGitUrl,
@@ -690,8 +705,14 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     )}
                     {testResult.github && setupScope !== 'SERVER_ONLY' && gitUrl.trim() !== '' && (
                       <div className="flex items-center gap-1.5 font-bold text-[11px]">
-                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        <span>GitHub Connection: {testResult.github.message || 'Authenticated successfully'}</span>
+                        {testResult.github.connected ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        ) : (
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0 animate-bounce" />
+                        )}
+                        <span className={testResult.github.connected ? 'text-emerald-400' : 'text-rose-400 font-extrabold'}>
+                          GitHub Connection: {testResult.github.message || (testResult.github.connected ? 'Authenticated successfully' : 'Branch or repository error')}
+                        </span>
                       </div>
                     )}
                     {!serverHost.trim() && !gitUrl.trim() && (

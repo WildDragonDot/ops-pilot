@@ -5,6 +5,7 @@ export async function fetchLiveGitHubAudit(params) {
             message: 'No GitHub repository URL specified.'
         };
     }
+    const targetBranch = params.gitBranch?.trim() || 'main';
     // Parse owner/repo from URL
     const match = params.gitUrl.match(/github\.com\/([^/]+)\/([^/.]+)/);
     if (!match) {
@@ -31,14 +32,26 @@ export async function fetchLiveGitHubAudit(params) {
             };
         }
         const repoData = await repoRes.json();
+        // Verify specified target branch exists
+        const branchRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches/${targetBranch}`, { headers });
+        if (!branchRes.ok && branchRes.status === 404) {
+            return {
+                connected: false,
+                branchExists: false,
+                message: `Target branch "${targetBranch}" does not exist in ${owner}/${repo}`
+            };
+        }
         // Fetch branches
         const branchesRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches`, { headers });
         const branches = branchesRes.ok ? await branchesRes.json() : [];
         // Fetch recent commits
-        const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=5`, { headers });
+        const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?sha=${targetBranch}&per_page=5`, { headers });
         const commits = commitsRes.ok ? await commitsRes.json() : [];
         return {
             connected: true,
+            branchExists: true,
+            targetBranch,
+            message: `Branch "${targetBranch}" verified & authenticated successfully`,
             repository: {
                 name: repoData.name,
                 fullName: repoData.full_name,

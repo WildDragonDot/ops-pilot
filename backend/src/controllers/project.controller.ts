@@ -83,7 +83,7 @@ export async function createProject(req: Request, res: Response) {
 }
 
 export async function testProjectConnection(req: Request, res: Response) {
-  const { gitUrl, serverHost, serverPort, serverUser, sshKey, sshPassword, githubToken } = req.body;
+  const { gitUrl, gitBranch, serverHost, serverPort, serverUser, sshKey, sshPassword, githubToken } = req.body;
 
   const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']) || sshKey;
   const headerSshPass = getHeaderString(req.headers['x-server-pass']) || sshPassword;
@@ -103,13 +103,16 @@ export async function testProjectConnection(req: Request, res: Response) {
 
   const gitResult = await fetchLiveGitHubAudit({
     gitUrl,
+    gitBranch,
     githubToken: headerGitToken
   });
 
   const discoveryResult = serverHost ? await discoverServerTechStack(sshCreds) : null;
 
+  const isSuccess = (serverHost ? sshResult.success : true) && (gitUrl ? gitResult.connected : true);
+
   res.json({
-    success: true,
+    success: isSuccess,
     ssh: sshResult,
     github: gitResult,
     discovery: discoveryResult
