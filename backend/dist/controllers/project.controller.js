@@ -12,24 +12,11 @@ const getHeaderString = (val) => {
     return Array.isArray(val) ? val[0] : val;
 };
 export async function getProjects(req, res) {
-    let projects = await prisma.project.findMany({
+    const projects = await prisma.project.findMany({
         include: { repositories: true },
         orderBy: { createdAt: 'desc' }
     });
     const state = getProjectState();
-    if (projects.length === 0) {
-        const defaultProj = await prisma.project.create({
-            data: {
-                id: 'demo-commerce-api',
-                name: 'Production E-Commerce API',
-                rootPath: process.cwd(),
-                runtimeType: 'Docker Compose',
-                environmentType: 'Docker Compose'
-            },
-            include: { repositories: true }
-        });
-        projects = [defaultProj];
-    }
     res.json({
         projects: projects.map(p => ({
             ...p,

@@ -357,21 +357,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
               <p className="text-xs text-slate-400">Enter your organization credentials</p>
             </div>
 
-            {/* Demo Account Filler Banner */}
-            <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between text-xs">
-              <div>
-                <span className="text-blue-400 font-extrabold block text-xs">Demo Admin Account</span>
-                <span className="text-slate-400 text-[11px] font-mono">admin@opspilot.ai / password123</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleDemoLogin}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-mono text-[10px] font-extrabold transition shadow-sm glow-blue active:scale-95"
-              >
-                Fill Demo
-              </button>
-            </div>
-
             {/* Social Authentication Providers (Firebase Auth) */}
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-3">
