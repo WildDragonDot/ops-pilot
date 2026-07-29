@@ -202,3 +202,10 @@ export async function executeCommandOnServer(command: string): Promise<{ success
   }
   return res.json();
 }
+
+export async function fetchAuditLogs(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/audit-logs`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch audit logs');
+  const data = await res.json();
+  return data.logs || [];
+}

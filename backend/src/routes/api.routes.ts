@@ -4,6 +4,7 @@ import { getProject, getProjects, createProject, executeServerCommand, testProje
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
+import { getAuditLogs } from '../controllers/audit.controller.js';
 import { eventStreamHandler } from '../controllers/stream.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 
@@ -42,9 +43,10 @@ router.get('/incidents/:id', requireAuth, getIncident);
 router.get('/incidents/:id/stream', requireAuth, streamIncident);
 router.get('/incidents/:id/report', requireAuth, getReport);
 
-// Protected Approval Queue Routes
+// Protected Approval Queue & Audit Routes
 router.post('/approvals/:id/approve', requireAuth, approveFix);
 router.post('/approvals/:id/reject', requireAuth, rejectFix);
+router.get('/audit-logs', requireAuth, getAuditLogs);
 
 // Real-Time Event Stream Route
 router.get('/stream/events', eventStreamHandler);

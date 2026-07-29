@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ShieldCheck, 
@@ -12,8 +12,10 @@ import {
   Terminal, 
   FileCode,
   Lock,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
+import { fetchAuditLogs } from '../services/api';
 
 interface AuditLogEntry {
   id: string;
@@ -31,69 +33,24 @@ interface AuditLogEntry {
 export const AuditLogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const logs: AuditLogEntry[] = [
-    {
-      id: 'log-1094',
-      timestamp: '2026-07-28 07:30:15',
-      user: 'Chandan Vishwakarma',
-      userEmail: 'admin@opspilot.ai',
-      action: 'APPROVED_INCIDENT_FIX',
-      category: 'APPROVAL',
-      target: 'Incident #inc-1785183161671',
-      ipAddress: '192.168.1.104',
-      status: 'SUCCESS',
-      details: 'Approved code patch for req.params.id integer parsing in auth.controller.ts.'
-    },
-    {
-      id: 'log-1093',
-      timestamp: '2026-07-28 07:15:02',
-      user: 'OpsPilot Autonomous Agent',
-      userEmail: 'agent@system.internal',
-      action: 'TRIGGERED_REPO_SCAN',
-      category: 'SCAN',
-      target: 'company/production-backend-api',
-      ipAddress: '127.0.0.1',
-      status: 'SUCCESS',
-      details: 'Completed security & code quality audit (Score: 78/100, 3 findings).'
-    },
-    {
-      id: 'log-1092',
-      timestamp: '2026-07-28 06:45:22',
-      user: 'Chandan Vishwakarma',
-      userEmail: 'admin@opspilot.ai',
-      action: 'INJECTED_FAILURE_SCENARIO',
-      category: 'FAILURE_INJECTION',
-      target: 'Sandbox Environment (DATABASE_STOPPED)',
-      ipAddress: '192.168.1.104',
-      status: 'WARNING',
-      details: 'Simulated PostgreSQL container crash to test autonomous recovery loop.'
-    },
-    {
-      id: 'log-1091',
-      timestamp: '2026-07-28 06:10:44',
-      user: 'Chandan Vishwakarma',
-      userEmail: 'admin@opspilot.ai',
-      action: 'USER_LOGIN',
-      category: 'AUTH',
-      target: 'OpsPilot Workspace',
-      ipAddress: '192.168.1.104',
-      status: 'SUCCESS',
-      details: 'User authenticated via JWT Bearer Token Session.'
-    },
-    {
-      id: 'log-1090',
-      timestamp: '2026-07-27 22:40:11',
-      user: 'DevOps Lead',
-      userEmail: 'lead@opspilot.ai',
-      action: 'UPDATED_WORKSPACE_SETTINGS',
-      category: 'AUTH',
-      target: 'Guardrails & Safety Rules',
-      ipAddress: '10.0.4.12',
-      status: 'SUCCESS',
-      details: 'Set requireApprovalForWriteActions = true.'
+  const loadRealLogs = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchAuditLogs();
+      setLogs(data);
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadRealLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log => {
     const matchesCategory = selectedCategory === 'ALL' || log.category === selectedCategory;
