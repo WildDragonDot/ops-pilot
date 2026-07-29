@@ -22,7 +22,8 @@ import {
   Zap,
   CheckCircle2,
   HelpCircle,
-  Info
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import { createNewProject, testConnection } from '../services/api';
 import { ProjectCredentials } from '../services/vault';
@@ -604,7 +605,20 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     {setupScope !== 'SERVER_ONLY' && (
                       <div className="col-span-2 flex items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-200 dark:border-slate-800/80">
                         <span className="text-slate-400 text-[10px] font-bold shrink-0">GitHub Repository</span> 
-                        <span className="text-[10.5px] font-mono font-extrabold text-blue-600 dark:text-blue-400 truncate text-right">{gitUrl || 'Not specified (Local AST Engine)'}</span>
+                        {gitUrl.trim() ? (
+                          <a 
+                            href={gitUrl.startsWith('http') ? gitUrl : `https://${gitUrl}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-[10.5px] font-mono font-extrabold text-blue-500 hover:text-blue-400 underline flex items-center gap-1.5 truncate text-right hover:scale-[1.01] transition"
+                            title="Open repository in GitHub"
+                          >
+                            <span className="truncate">{gitUrl}</span>
+                            <ExternalLink className="w-3 h-3 text-blue-400 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="text-[10.5px] font-mono font-bold text-slate-400 italic">Not specified (Local AST Engine)</span>
+                        )}
                       </div>
                     )}
                     {setupScope !== 'GITHUB_ONLY' && (
