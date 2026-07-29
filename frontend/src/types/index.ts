@@ -7,11 +7,11 @@ export interface Project {
   composeFile?: string;
   testCommand?: string;
   restartCommand?: string;
-  gitUrl?: string;
-  gitBranch?: string;
-  serverHost?: string;
-  serverPort?: number;
-  serverUser?: string;
+  gitUrl?: string | null;
+  gitBranch?: string | null;
+  serverHost?: string | null;
+  serverPort?: number | null;
+  serverUser?: string | null;
   environmentType?: string;
   createdAt?: string;
   updatedAt?: string;
