@@ -202,15 +202,17 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Scan Repo Action Button */}
-          <button
-            onClick={onScanRepo}
-            disabled={isScanning}
-            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            <GitBranch className={`w-3.5 h-3.5 shrink-0 ${isScanning ? 'animate-spin' : ''}`} />
-            <span className="inline-block whitespace-nowrap">{isScanning ? 'Scanning...' : 'Scan Repo'}</span>
-          </button>
+          {/* Scan Repo Action Button (Hidden for SERVER_ONLY projects) */}
+          {mode !== 'SERVER_ONLY' && (
+            <button
+              onClick={onScanRepo}
+              disabled={isScanning}
+              className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <GitBranch className={`w-3.5 h-3.5 shrink-0 ${isScanning ? 'animate-spin' : ''}`} />
+              <span className="inline-block whitespace-nowrap">{isScanning ? 'Scanning...' : 'Scan Repo'}</span>
+            </button>
+          )}
 
           {/* Uniform Action Icon Buttons */}
           <button

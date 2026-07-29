@@ -466,15 +466,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span>Investigate Outage</span>
             </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onNavigateTab('auditor')}
-              className="flex items-center gap-1.5 px-3.5 py-2 card-bg-subtle hover:text-title text-subtitle text-xs font-bold rounded-xl border theme-border transition cursor-pointer"
-            >
-              <span>Scan Codebase</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </motion.button>
+            {Boolean(project?.gitUrl?.trim() || !project?.serverHost?.trim()) && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onNavigateTab('auditor')}
+                className="flex items-center gap-1.5 px-3.5 py-2 card-bg-subtle hover:text-title text-subtitle text-xs font-bold rounded-xl border theme-border transition cursor-pointer"
+              >
+                <span>Scan Codebase</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </motion.button>
+            )}
           </div>
         </div>
 
