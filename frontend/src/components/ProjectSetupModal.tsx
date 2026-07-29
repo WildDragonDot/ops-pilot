@@ -602,15 +602,15 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     <div><span className="text-slate-400 block text-[9px]">Project Name</span> <strong className="text-slate-800 dark:text-slate-200">{name || 'Unnamed Project'}</strong></div>
                     <div><span className="text-slate-400 block text-[9px]">Scope Mode</span> <strong className="text-blue-600 dark:text-blue-400 font-bold">{setupScope}</strong></div>
                     {setupScope !== 'SERVER_ONLY' && (
-                      <div>
-                        <span className="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">GitHub Repository</span> 
-                        <span className="text-[10px] font-mono break-all font-bold text-slate-800 dark:text-slate-200 block leading-tight mt-0.5">{gitUrl || 'Not specified (Local AST Engine)'}</span>
+                      <div className="col-span-2 flex items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-200 dark:border-slate-800/80">
+                        <span className="text-slate-400 text-[10px] font-bold shrink-0">GitHub Repository</span> 
+                        <span className="text-[10.5px] font-mono font-extrabold text-blue-600 dark:text-blue-400 truncate text-right">{gitUrl || 'Not specified (Local AST Engine)'}</span>
                       </div>
                     )}
                     {setupScope !== 'GITHUB_ONLY' && (
-                      <div>
-                        <span className="text-slate-400 block text-[9px] font-bold uppercase tracking-wider">Server SSH Endpoint</span> 
-                        <span className="text-[10px] font-mono break-all font-bold text-slate-800 dark:text-slate-200 block leading-tight mt-0.5">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox Engine'}</span>
+                      <div className="col-span-2 flex items-center justify-between gap-2 text-xs pt-1 border-t border-slate-200 dark:border-slate-800/80">
+                        <span className="text-slate-400 text-[10px] font-bold shrink-0">Server SSH Endpoint</span> 
+                        <span className="text-[10.5px] font-mono font-bold text-slate-800 dark:text-slate-200 truncate text-right">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox Engine'}</span>
                       </div>
                     )}
                   </div>
