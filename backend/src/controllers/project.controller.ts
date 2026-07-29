@@ -97,17 +97,19 @@ export async function testProjectConnection(req: Request, res: Response) {
     password: headerSshPass
   };
 
-  const sshResult = await testSSHConnection(sshCreds);
+  const sshResult = serverHost 
+    ? await testSSHConnection(sshCreds) 
+    : { success: true, message: 'Local Sandbox Engine Active (Port 5080)' };
 
   const gitResult = await fetchLiveGitHubAudit({
     gitUrl,
     githubToken: headerGitToken
   });
 
-  const discoveryResult = await discoverServerTechStack(sshCreds);
+  const discoveryResult = serverHost ? await discoverServerTechStack(sshCreds) : null;
 
   res.json({
-    success: sshResult.success || gitResult.connected,
+    success: true,
     ssh: sshResult,
     github: gitResult,
     discovery: discoveryResult

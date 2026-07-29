@@ -658,11 +658,11 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                   </div>
                 )}
 
-                {testResult?.discovery && (
+                {testResult?.discovery && serverHost.trim() !== '' && (
                   <ServerDiscoveryReport
                     discovery={testResult.discovery}
-                    host={serverHost || '34.224.80.31'}
-                    user={serverUser || 'ubuntu'}
+                    host={serverHost}
+                    user={serverUser || 'root'}
                   />
                 )}
               </div>
