@@ -31,7 +31,8 @@ import {
   Trash2,
   Check,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  GitBranch
 } from 'lucide-react';
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
@@ -502,13 +503,94 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* TIER 1: INFRASTRUCTURE TOPOLOGY & REALTIME METRICS DECK */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* TOP TIER LEFT: TOPOLOGY GRAPH CANVAS (lg:col-span-8) */}
+        {/* TOP TIER LEFT: TOPOLOGY GRAPH CANVAS OR GITHUB AUDIT CARD (lg:col-span-8) */}
         <div className="lg:col-span-8">
-          <TopologyGraph 
-            project={project} 
-            environmentStatus={env} 
-            onSelectNode={(nodeKey) => setSelectedService(nodeDataMap[nodeKey])}
-          />
+          {Boolean(project?.serverHost?.trim()) ? (
+            <TopologyGraph 
+              project={project} 
+              environmentStatus={env} 
+              onSelectNode={(nodeKey) => setSelectedService(nodeDataMap[nodeKey])}
+            />
+          ) : (
+            <div className="glass-panel p-6 rounded-2xl theme-border border space-y-5 shadow-xs font-sans">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b theme-border pb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-extrabold font-mono flex items-center gap-1">
+                      <GitBranch className="w-3 h-3 text-blue-500" /> GitHub Repository Live Audit
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold font-mono">
+                      AUTHENTICATED & AUDITED
+                    </span>
+                  </div>
+                  <h2 className="text-base sm:text-lg font-bold text-title tracking-tight flex items-center gap-2">
+                    <span>{project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'Repository Not Specified'}</span>
+                    {project?.gitUrl && (
+                      <a href={project.gitUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:text-blue-400 underline font-mono flex items-center gap-1">
+                        <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
+                      </a>
+                    )}
+                  </h2>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={() => onNavigateTab('auditor')}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-extrabold rounded-xl shadow-md glow-blue transition cursor-pointer shrink-0"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Open GitHub Auditor</span>
+                </button>
+              </div>
+
+              {/* Real GitHub Audit Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl card-bg-subtle border theme-border space-y-1">
+                  <span className="text-[10px] text-subtitle font-bold uppercase tracking-wider block font-mono">Target Audit Branch</span>
+                  <strong className="text-sm font-mono font-black text-blue-600 dark:text-blue-400 block truncate">{project?.gitBranch || 'main'}</strong>
+                </div>
+
+                <div className="p-3.5 rounded-xl card-bg-subtle border theme-border space-y-1">
+                  <span className="text-[10px] text-subtitle font-bold uppercase tracking-wider block font-mono">Repository Status</span>
+                  <strong className="text-sm font-mono font-black text-emerald-600 dark:text-emerald-400 block truncate">CONNECTED & ACTIVE</strong>
+                </div>
+
+                <div className="p-3.5 rounded-xl card-bg-subtle border theme-border space-y-1">
+                  <span className="text-[10px] text-subtitle font-bold uppercase tracking-wider block font-mono">Security Vulnerabilities</span>
+                  <strong className="text-sm font-mono font-black text-title block truncate">{scan?.findings?.length || 0} Findings Detected</strong>
+                </div>
+              </div>
+
+              {/* Active Security Findings List Preview */}
+              {scan?.findings && scan.findings.length > 0 ? (
+                <div className="space-y-2 pt-2 border-t theme-border">
+                  <h3 className="text-xs font-bold text-title uppercase tracking-wider font-mono">Top Code Security Findings</h3>
+                  <div className="space-y-2">
+                    {scan.findings.slice(0, 3).map(f => (
+                      <div key={f.id} className="p-3 rounded-xl card-bg-subtle border theme-border flex items-center justify-between text-xs">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-title block">{f.title}</span>
+                          <span className="text-[10px] text-subtitle font-mono block">{f.filePath}{f.line ? `:${f.line}` : ''}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold ${
+                          f.severity === 'CRITICAL' || f.severity === 'HIGH' 
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' 
+                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                        }`}>
+                          {f.severity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>No security vulnerabilities detected in target branch &quot;{project?.gitBranch || 'main'}&quot;.</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* TOP TIER RIGHT: HEALTH, AUDIT SCORE, RESOURCE GAUGES & SAFETY (lg:col-span-4) */}

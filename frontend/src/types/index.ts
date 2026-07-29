@@ -8,6 +8,7 @@ export interface Project {
   testCommand?: string;
   restartCommand?: string;
   gitUrl?: string;
+  gitBranch?: string;
   serverHost?: string;
   serverPort?: number;
   serverUser?: string;
