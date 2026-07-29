@@ -27,17 +27,18 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { Incident } from '../types';
+import { Incident, Project } from '../types';
 import { startIncident, approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
 import { TerminalConsole } from '../components/TerminalConsole';
 
 interface CommandCenterProps {
   incidents: Incident[];
+  project?: Project | null;
   onRefreshIncidents: () => void;
 }
 
-export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefreshIncidents }) => {
+export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project, onRefreshIncidents }) => {
   const [promptText, setPromptText] = useState<string>('');
   const [selectedScenarioKey, setSelectedScenarioKey] = useState<string>('DATABASE_STOPPED');
   const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
@@ -250,7 +251,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, onRefre
             </span>
             <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Docker Healthy</span>
+              <span>{Boolean(project?.serverHost?.trim()) ? 'Docker Healthy' : 'GitHub Live Protection'}</span>
             </div>
           </div>
 

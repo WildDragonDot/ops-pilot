@@ -214,6 +214,7 @@ export function AppRoutes() {
             element={
               <CommandCenter
                 incidents={incidents}
+                project={project}
                 onRefreshIncidents={loadData}
               />
             }
