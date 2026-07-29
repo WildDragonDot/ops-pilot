@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from './db.service.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';
+const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error('CRITICAL: JWT_SECRET environment variable is required'); })();
 
 export interface UserPayload {
   userId: string;
