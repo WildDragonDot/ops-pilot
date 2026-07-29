@@ -408,25 +408,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* Row 1: Environment Pills + Top-Right Action Buttons */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 relative z-10">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Environment Toggle Pills */}
-            <div className="flex items-center p-1 rounded-xl card-bg-subtle border theme-border font-mono text-[10px]">
-              {(['PROD', 'STAGING', 'DEV'] as const).map(envName => (
-                <button
-                  key={envName}
-                  onClick={() => setActiveEnv(envName)}
-                  className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                    activeEnv === envName
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-subtitle hover:text-title'
-                  }`}
-                >
-                  {envName === 'PROD' ? '⚡ PROD (us-east-1)' : envName === 'STAGING' ? '🧪 STAGING' : '🛠️ DEV SANDBOX'}
-                </button>
-              ))}
-            </div>
+            {/* Environment Toggle Pills (Shown only when SSH Server is attached) */}
+            {Boolean(project?.serverHost?.trim()) ? (
+              <div className="flex items-center p-1 rounded-xl card-bg-subtle border theme-border font-mono text-[10px]">
+                {(['PROD', 'STAGING', 'DEV'] as const).map(envName => (
+                  <button
+                    key={envName}
+                    onClick={() => setActiveEnv(envName)}
+                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      activeEnv === envName
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-subtitle hover:text-title'
+                    }`}
+                  >
+                    {envName === 'PROD' ? '⚡ PROD (us-east-1)' : envName === 'STAGING' ? '🧪 STAGING' : '🛠️ DEV SANDBOX'}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 font-mono text-[10px]">
+                <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/30 font-extrabold flex items-center gap-1.5 shadow-sm">
+                  <GitBranch className="w-3.5 h-3.5 text-blue-400" />
+                  <span>GITHUB AST AUDIT MODE</span>
+                </span>
+                <span className="px-3 py-1 rounded-xl card-bg-subtle text-subtitle border theme-border font-bold flex items-center gap-1.5">
+                  <span>Branch:</span>
+                  <b className="text-blue-400 font-extrabold">{project?.gitBranch || 'main'}</b>
+                </span>
+              </div>
+            )}
 
             <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold font-mono flex items-center gap-1.5">
-              <Radio className="w-3 h-3 text-emerald-500 animate-pulse" /> {envContext.statusLabel}
+              <Radio className="w-3 h-3 text-emerald-500 animate-pulse" /> {Boolean(project?.serverHost?.trim()) ? envContext.statusLabel : 'LIVE REPO AUDIT ACTIVE'}
             </span>
           </div>
 
