@@ -430,49 +430,60 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                       <Key className="w-3.5 h-3.5 text-amber-500" />
                       <span>GitHub Personal Access Token (PAT)</span>
                       
-                      {/* Interactive Help Toggle Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowPatHelp(!showPatHelp)}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-[10px] font-extrabold transition cursor-pointer border border-blue-500/20 active:scale-95"
+                      {/* Floating Hover Tooltip Container */}
+                      <div 
+                        className="relative inline-block"
+                        onMouseEnter={() => setShowPatHelp(true)}
+                        onMouseLeave={() => setShowPatHelp(false)}
                       >
-                        <HelpCircle className="w-3 h-3 text-blue-400 shrink-0" />
-                        <span>{showPatHelp ? 'Hide Guide' : 'Where to get this?'}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowPatHelp(!showPatHelp)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-[10px] font-extrabold transition cursor-pointer border border-blue-500/20 active:scale-95"
+                        >
+                          <HelpCircle className="w-3 h-3 text-blue-400 shrink-0" />
+                          <span>Where to get this?</span>
+                        </button>
+
+                        {/* Floating Tooltip Card */}
+                        {showPatHelp && (
+                          <div className="absolute left-0 top-full mt-1.5 w-[330px] p-3.5 rounded-2xl bg-slate-950 border-2 border-blue-500/60 text-slate-100 shadow-[0_25px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl z-50 pointer-events-auto transition-all animate-in fade-in zoom-in-95">
+                            {/* Downward/Upward Caret Arrow */}
+                            <div className="absolute -top-2 left-6 w-3.5 h-3.5 bg-slate-950 border-t-2 border-l-2 border-blue-500/60 transform rotate-45 z-10" />
+
+                            <div className="relative z-20 space-y-2 text-[11px]">
+                              <div className="flex items-center justify-between text-blue-400 font-black text-xs border-b border-slate-800 pb-1.5">
+                                <span className="flex items-center gap-1.5">
+                                  <Info className="w-4 h-4 text-blue-400 shrink-0" />
+                                  <span>How to get GitHub Access Token:</span>
+                                </span>
+                                <button 
+                                  type="button" 
+                                  onClick={(e) => { e.stopPropagation(); setShowPatHelp(false); }} 
+                                  className="text-slate-400 hover:text-white p-0.5 font-bold"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+
+                              <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-200 font-mono leading-snug">
+                                <li>Open GitHub: <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold hover:text-blue-300">github.com/settings/tokens</a></li>
+                                <li>Click <strong className="text-white font-bold">Generate new token (classic)</strong>.</li>
+                                <li>Check <strong className="text-emerald-400 font-bold">repo</strong> scope permission.</li>
+                                <li>Copy generated <code className="text-amber-400 font-bold bg-amber-500/20 px-1 rounded border border-amber-500/40">ghp_...</code> key & paste below.</li>
+                              </ol>
+
+                              <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 border-t border-slate-800/80 pt-2 mt-1">
+                                <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                <span>Encrypted 100% in client vault. Never saved to DB.</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </span>
                     <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">Client-Side Vault Only</span>
                   </label>
-
-                  {/* Inline Expandable Step-by-Step PAT Guide Panel */}
-                  {showPatHelp && (
-                    <div className="my-2 p-3.5 rounded-2xl bg-blue-950/30 border border-blue-500/30 text-slate-200 space-y-2.5 shadow-md backdrop-blur-sm animate-in fade-in slide-in-from-top-1">
-                      <div className="flex items-center justify-between text-blue-400 font-extrabold border-b border-blue-500/20 pb-1.5">
-                        <span className="flex items-center gap-1.5 text-xs">
-                          <Info className="w-4 h-4 text-blue-400 shrink-0" />
-                          <span>How to get your GitHub Personal Access Token (PAT):</span>
-                        </span>
-                        <button 
-                          type="button" 
-                          onClick={() => setShowPatHelp(false)} 
-                          className="text-slate-400 hover:text-white px-1.5 py-0.5 rounded font-bold text-xs"
-                        >
-                          ✕
-                        </button>
-                      </div>
-
-                      <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-300 font-mono leading-relaxed pl-0.5">
-                        <li>Open GitHub Settings: <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold hover:text-blue-300">github.com/settings/tokens</a></li>
-                        <li>Click <strong className="text-white font-bold">Generate new token (classic)</strong>.</li>
-                        <li>Give a Note (e.g. <code className="text-blue-400">OpsPilot AI</code>) and check <strong className="text-emerald-400 font-bold">repo</strong> scope.</li>
-                        <li>Click <strong className="text-white font-bold">Generate token</strong>, copy your <code className="text-amber-400 font-bold bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">ghp_...</code> key & paste below.</li>
-                      </ol>
-
-                      <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 border-t border-slate-800/80 pt-2">
-                        <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span>Encrypted 100% in client-side vault. Never stored in database.</span>
-                      </div>
-                    </div>
-                  )}
 
                   <input
                     type="password"
