@@ -70,6 +70,14 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const [sshKey, setSshKey] = useState('');
   const [sshPassword, setSshPassword] = useState('');
 
+  const invalidateTest = () => {
+    setTestResult(null);
+  };
+
+  const isRemoteConfigured = Boolean(gitUrl.trim() || serverHost.trim());
+  const isTestPassed = testResult?.success === true;
+  const isSubmitDisabled = loading || !name.trim() || (isRemoteConfigured && !isTestPassed);
+
   if (!isOpen) return null;
 
   // Dynamic steps based on chosen scope
@@ -764,15 +772,28 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleCreateProject}
-                disabled={loading || !name.trim()}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition disabled:opacity-50 active:scale-[0.98]"
-              >
-                {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                <span>Create & Connect Project</span>
-              </button>
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  type="button"
+                  onClick={handleCreateProject}
+                  disabled={isSubmitDisabled}
+                  title={isSubmitDisabled && isRemoteConfigured && !isTestPassed ? "Please run 'Test Connection' and pass verification first" : ""}
+                  className={`flex items-center gap-1.5 px-5 py-2.5 text-xs font-extrabold rounded-xl transition shadow-md ${
+                    isSubmitDisabled
+                      ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700/60 opacity-60'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-[0.98] glow-emerald'
+                  }`}
+                >
+                  {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>Create & Connect Project</span>
+                </button>
+                {isSubmitDisabled && isRemoteConfigured && !isTestPassed && (
+                  <span className="text-[9px] text-amber-500 font-extrabold flex items-center gap-1">
+                    <AlertTriangle className="w-2.5 h-2.5 text-amber-500" />
+                    <span>Run &quot;Test Connection&quot; above to enable creation</span>
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </motion.div>
