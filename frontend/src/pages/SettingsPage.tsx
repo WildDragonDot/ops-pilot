@@ -167,7 +167,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
   const handleOpenEditProject = (proj: Project) => {
     setEditingProject(proj);
-    setEditHost(proj.serverHost || '34.224.80.31');
+    setEditHost(proj.serverHost || '');
     setEditPort(proj.serverPort ? String(proj.serverPort) : '22');
   };
 
@@ -1421,6 +1421,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     type="text"
                     value={editHost}
                     onChange={(e) => setEditHost(e.target.value)}
+                    placeholder="e.g. 34.224.80.31 (Leave empty for GitHub AST mode)"
                     className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>

@@ -25,6 +25,7 @@ export async function getProjects(req: Request, res: Response) {
   res.json({
     projects: projects.map(p => ({
       ...p,
+      serverHost: p.serverHost === '34.224.80.31' ? null : p.serverHost,
       environmentStatus: state.environmentStatus
     }))
   });
@@ -42,9 +43,12 @@ export async function getProject(req: Request, res: Response) {
     return res.status(404).json({ error: 'Project not found' });
   }
 
+  const cleanHost = project.serverHost === '34.224.80.31' ? null : project.serverHost;
+
   res.json({
     project: {
       ...project,
+      serverHost: cleanHost,
       environmentStatus: state.environmentStatus
     }
   });
