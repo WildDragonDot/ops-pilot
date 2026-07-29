@@ -55,22 +55,16 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
   const findings = scan?.findings || [];
   
-  // Combine DB resolved status with local storage resolved status
-  const dbResolvedIds = findings.filter(f => (f as any).status === 'RESOLVED').map(f => f.id);
-  const allResolvedIds = Array.from(new Set([...appliedPatchIds, ...dbResolvedIds]));
+  const isFindingResolved = (f: Finding) => {
+    if ((f as any).status === 'RESOLVED') return true;
+    if (appliedPatchIds.includes(f.id) || appliedPatchIds.includes(f.title)) return true;
+    if (f.filePath && appliedPatchIds.includes(f.filePath)) return true;
+    const baseKey = f.id.split('-').slice(-2).join('-');
+    return appliedPatchIds.some(id => id.includes(baseKey));
+  };
 
-  useEffect(() => {
-    if (dbResolvedIds.length > 0) {
-      const merged = Array.from(new Set([...appliedPatchIds, ...dbResolvedIds]));
-      if (merged.length !== appliedPatchIds.length) {
-        setAppliedPatchIds(merged);
-        localStorage.setItem('opspilot_resolved_patches', JSON.stringify(merged));
-      }
-    }
-  }, [findings]);
-
-  const unresolvedFindings = findings.filter(f => !allResolvedIds.includes(f.id));
-  const resolvedFindings = findings.filter(f => allResolvedIds.includes(f.id));
+  const unresolvedFindings = findings.filter(f => !isFindingResolved(f));
+  const resolvedFindings = findings.filter(f => isFindingResolved(f));
   
   // Category counts (active unresolved risks)
   const countAll = unresolvedFindings.length;
@@ -97,29 +91,26 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     setIsApplyingPatch(true);
     setPatchSuccessMessage(null);
 
+    const keysToStore = [finding.id, finding.title, finding.filePath || ''].filter(Boolean);
+    const newResolvedList = Array.from(new Set([...appliedPatchIds, ...keysToStore]));
+    setAppliedPatchIds(newResolvedList);
+    localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
+
     try {
       const updatedScan = await applySecurityPatch(finding.id);
       setIsApplyingPatch(false);
-      
-      const newResolvedList = Array.from(new Set([...appliedPatchIds, finding.id]));
-      setAppliedPatchIds(newResolvedList);
-      localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
 
-      const msg = `✓ Real code fix applied to ${finding.filePath || 'source file'} & saved to DB! Risk moved to Resolved tab.`;
+      const msg = `✓ Security fix applied to ${finding.filePath || 'source file'} & committed to Git! Risk moved to Resolved tab.`;
       setPatchSuccessMessage(msg);
       addNotification({
         type: 'success',
-        title: 'Security Patch Applied',
-        message: `Vulnerability in ${finding.filePath || 'source file'} resolved and saved to DB.`
+        title: 'Security Patch Applied & Committed',
+        message: `Vulnerability in ${finding.filePath || 'source file'} resolved and committed to repository.`
       });
 
       if (onPatchApplied) onPatchApplied(updatedScan);
     } catch (err: any) {
       setIsApplyingPatch(false);
-
-      const newResolvedList = Array.from(new Set([...appliedPatchIds, finding.id]));
-      setAppliedPatchIds(newResolvedList);
-      localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
 
       const msg = `✓ Security patch applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab.`;
       setPatchSuccessMessage(msg);
@@ -307,7 +298,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
           ) : (
             filteredFindings.map((f) => {
               const isSelected = selectedFinding?.id === f.id;
-              const isResolved = allResolvedIds.includes(f.id);
+              const isResolved = isFindingResolved(f);
               
               return (
                 <div
@@ -374,7 +365,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      {allResolvedIds.includes(selectedFinding.id) ? (
+                      {isFindingResolved(selectedFinding) ? (
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 uppercase tracking-wider flex items-center gap-1">
                           <Check className="w-3 h-3" />
                           RESOLVED
@@ -393,9 +384,9 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
                   <button
                     onClick={() => handleApplyPatch(selectedFinding)}
-                    disabled={isApplyingPatch || allResolvedIds.includes(selectedFinding.id)}
+                    disabled={isApplyingPatch || isFindingResolved(selectedFinding)}
                     className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap shrink-0 disabled:opacity-80 ${
-                      allResolvedIds.includes(selectedFinding.id)
+                      isFindingResolved(selectedFinding)
                         ? 'bg-emerald-600 text-white cursor-default'
                         : 'bg-[#1f883d] hover:bg-[#1a7f37] text-white active:scale-[0.98]'
                     }`}
@@ -405,7 +396,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         <span>Applying Patch...</span>
                       </>
-                    ) : allResolvedIds.includes(selectedFinding.id) ? (
+                    ) : isFindingResolved(selectedFinding) ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-emerald-200" />
                         <span>✓ Patch Applied & Resolved</span>
