@@ -260,10 +260,15 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
             <select
               value={activeIncidentId || ''}
               onChange={(e) => setActiveIncidentId(e.target.value)}
-              className="theme-input px-3 py-1.5 rounded-xl border theme-border text-xs text-title font-mono focus:outline-none max-w-[180px] sm:max-w-[220px] truncate"
+              className="bg-slate-100 dark:bg-[#161b22] text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[180px] sm:max-w-[240px] truncate shadow-xs"
             >
+              {incidents.length === 0 && (
+                <option value="" className="bg-white dark:bg-[#0d1117] text-slate-800 dark:text-slate-200">
+                  No Active Incident
+                </option>
+              )}
               {incidents.map(inc => (
-                <option key={inc.id} value={inc.id}>
+                <option key={inc.id} value={inc.id} className="bg-white dark:bg-[#0d1117] text-slate-800 dark:text-slate-200 py-1">
                   #{inc.id} — {inc.title}
                 </option>
               ))}
