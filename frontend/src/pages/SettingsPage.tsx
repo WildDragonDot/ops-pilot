@@ -56,7 +56,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
   // Editing Project Modal state
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [modalTab, setModalTab] = useState<'view' | 'edit'>('view');
+  const [modalTab, setModalTab] = useState<'github' | 'server'>('github');
   const [editGitUrl, setEditGitUrl] = useState<string>('https://github.com/WildDragonDot/ops-pilot');
   const [editGitBranch, setEditGitBranch] = useState<string>('main');
   const [editGitToken, setEditGitToken] = useState<string>('');
@@ -174,7 +174,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
   const handleOpenEditProject = (proj: Project) => {
     setEditingProject(proj);
-    setModalTab('view');
+    setModalTab('github');
     setEditGitUrl(proj.gitUrl || '');
     setEditGitBranch(proj.gitBranch || 'main');
     setEditGitToken('');
@@ -1497,43 +1497,43 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                 </button>
               </div>
 
-              {/* 2 Tabs Header */}
+              {/* 2 Tabs Header: GitHub vs Server */}
               <div className="flex items-center gap-2 p-1 rounded-xl card-bg-subtle border theme-border">
                 <button
                   type="button"
-                  onClick={() => setModalTab('view')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    modalTab === 'view'
+                  onClick={() => setModalTab('github')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    modalTab === 'github'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-subtitle hover:text-title'
                   }`}
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>View Connection Status</span>
+                  <Cpu className="w-4 h-4 text-blue-400" />
+                  <span>1. GitHub Repository</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setModalTab('edit')}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    modalTab === 'edit'
+                  onClick={() => setModalTab('server')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    modalTab === 'server'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-subtitle hover:text-title'
                   }`}
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  <span>Edit Credentials</span>
+                  <Server className="w-4 h-4 text-indigo-400" />
+                  <span>2. SSH Server Host</span>
                 </button>
               </div>
 
-              {/* TAB 1: VIEW MODE (ZERO-LEAK MASKED TOKEN) */}
-              {modalTab === 'view' ? (
+              {/* TAB 1: GITHUB REPOSITORY CONFIG & VIEW */}
+              {modalTab === 'github' ? (
                 <div className="space-y-4 text-xs max-h-[60vh] overflow-y-auto pr-1">
-                  {/* GitHub Status View */}
+                  {/* GitHub Status Summary Card (Masked Token for Zero-Leak Security) */}
                   <div className="p-4 rounded-xl card-bg-subtle border theme-border space-y-3">
                     <div className="flex items-center justify-between border-b theme-border pb-2">
                       <span className="font-extrabold text-blue-400 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-blue-500" /> GitHub Repository
+                        <Cpu className="w-3.5 h-3.5 text-blue-500" /> Active GitHub Connection
                       </span>
                       <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-extrabold">
                         ✓ AUTHENTICATED
@@ -1542,7 +1542,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
                     <div className="grid grid-cols-1 gap-2 font-mono">
                       <div>
-                        <span className="text-[10px] text-subtitle block font-sans font-bold">Repository URL</span>
+                        <span className="text-[10px] text-subtitle block font-sans font-bold">Repository Target</span>
                         <span className="text-title font-bold text-xs">{editingProject.gitUrl || 'https://github.com/WildDragonDot/ops-pilot'}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-1">
@@ -1560,72 +1560,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     </div>
                   </div>
 
-                  {/* SSH Server Status View */}
-                  <div className="p-4 rounded-xl card-bg-subtle border theme-border space-y-3">
-                    <div className="flex items-center justify-between border-b theme-border pb-2">
-                      <span className="font-extrabold text-indigo-400 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                        <Server className="w-3.5 h-3.5 text-indigo-500" /> SSH Server Host
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border ${
-                        editingProject.serverHost 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                          : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                      }`}>
-                        {editingProject.serverHost ? '✓ HYBRID CONNECTED' : 'ℹ GITHUB AST MODE'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2 font-mono">
-                      <div>
-                        <span className="text-[10px] text-subtitle block font-sans font-bold">SSH Server Host</span>
-                        <span className="text-title font-bold text-xs">
-                          {editingProject.serverHost || 'Not Attached (GitHub AST Audit Active)'}
-                        </span>
-                      </div>
-                      {Boolean(editingProject.serverHost) && (
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          <div>
-                            <span className="text-[10px] text-subtitle block font-sans font-bold">SSH Port</span>
-                            <span className="text-title font-bold">{editingProject.serverPort || 22}</span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] text-subtitle block font-sans font-bold">SSH User</span>
-                            <span className="text-title font-bold">{editingProject.serverUser || 'root'}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t theme-border">
-                    <button
-                      onClick={() => setEditingProject(null)}
-                      className="px-3.5 py-1.5 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
-                    >
-                      Close
-                    </button>
-                    <button
-                      onClick={() => setModalTab('edit')}
-                      className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>Edit Credentials</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* TAB 2: EDIT MODE */
-                <div className="space-y-4 text-xs max-h-[60vh] overflow-y-auto pr-1">
-                  {/* SECTION 1: GITHUB REPOSITORY */}
-                  <div className="space-y-3 p-3.5 rounded-xl card-bg-subtle border theme-border">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-blue-400 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-blue-500" /> 1. GitHub Repository Target
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
-                        REQUIRED
-                      </span>
-                    </div>
+                  {/* GitHub Edit Inputs */}
+                  <div className="space-y-3 p-4 rounded-xl border theme-border space-y-3">
+                    <h4 className="font-bold text-title text-xs flex items-center gap-1.5">
+                      <Edit2 className="w-3.5 h-3.5 text-blue-500" /> Update GitHub Settings
+                    </h4>
 
                     <div className="space-y-1">
                       <label className="text-subtitle font-bold block">GitHub Repository URL</label>
@@ -1662,16 +1601,113 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     </div>
                   </div>
 
-                  {/* SECTION 2: SSH SERVER INFRASTRUCTURE */}
-                  <div className="space-y-3 p-3.5 rounded-xl card-bg-subtle border theme-border">
-                    <div className="flex items-center justify-between">
+                  {/* TEST CONNECTION BUTTON & VERIFICATION BADGES */}
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleTestEditConnection}
+                      disabled={isTestingEdit}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
+                    >
+                      {isTestingEdit ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                          <span>Verifying GitHub & Credentials...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="w-4 h-4 text-emerald-400" />
+                          <span>Test Connection & Verify Credentials</span>
+                        </>
+                      )}
+                    </button>
+
+                    {testResult && (
+                      <div className={`p-3 rounded-xl border font-mono text-[11px] space-y-1 ${
+                        testResult.success 
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                      }`}>
+                        <div className="flex items-center gap-1.5 font-extrabold">
+                          {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
+                          <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
+                        </div>
+                        {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
+                        {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between border-t theme-border pt-3">
+                    <span className="text-[10px] text-subtitle font-mono">
+                      {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to save' : '❌ Verification failed'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditingProject(null)}
+                        className="px-3.5 py-2 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveProjectEdit}
+                        disabled={!testResult?.tested || !testResult?.success}
+                        className={`px-5 py-2 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer ${
+                          testResult?.tested && testResult?.success
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white glow-emerald'
+                            : 'bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed'
+                        }`}
+                      >
+                        Save Connection
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* TAB 2: SSH SERVER INFRASTRUCTURE CONFIG & VIEW */
+                <div className="space-y-4 text-xs max-h-[60vh] overflow-y-auto pr-1">
+                  {/* SSH Server Status Summary Card */}
+                  <div className="p-4 rounded-xl card-bg-subtle border theme-border space-y-3">
+                    <div className="flex items-center justify-between border-b theme-border pb-2">
                       <span className="font-extrabold text-indigo-400 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                        <Server className="w-3.5 h-3.5 text-indigo-500" /> 2. Remote SSH Infrastructure (Optional)
+                        <Server className="w-3.5 h-3.5 text-indigo-500" /> SSH Server Status
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-mono card-bg-subtle text-subtitle border theme-border font-bold">
-                        HYBRID MODE ONLY
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border ${
+                        editingProject.serverHost 
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                          : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                      }`}>
+                        {editingProject.serverHost ? '✓ SSH CONNECTED' : 'ℹ GITHUB AST MODE'}
                       </span>
                     </div>
+
+                    <div className="grid grid-cols-1 gap-2 font-mono">
+                      <div>
+                        <span className="text-[10px] text-subtitle block font-sans font-bold">SSH Host Address</span>
+                        <span className="text-title font-bold text-xs">
+                          {editingProject.serverHost || 'Not Attached (GitHub AST Mode Active)'}
+                        </span>
+                      </div>
+                      {Boolean(editingProject.serverHost) && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div>
+                            <span className="text-[10px] text-subtitle block font-sans font-bold">SSH Port</span>
+                            <span className="text-title font-bold">{editingProject.serverPort || 22}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-subtitle block font-sans font-bold">SSH User</span>
+                            <span className="text-title font-bold">{editingProject.serverUser || 'root'}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* SSH Edit Inputs */}
+                  <div className="space-y-3 p-4 rounded-xl border theme-border space-y-3">
+                    <h4 className="font-bold text-title text-xs flex items-center gap-1.5">
+                      <Edit2 className="w-3.5 h-3.5 text-indigo-500" /> Update SSH Server Settings
+                    </h4>
 
                     <div className="space-y-1">
                       <label className="text-subtitle font-bold block">SSH Server Host IP / Domain</label>
@@ -1719,7 +1755,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       {isTestingEdit ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                          <span>Testing GitHub & Server Credentials...</span>
+                          <span>Testing Server Connection...</span>
                         </>
                       ) : (
                         <>
@@ -1747,11 +1783,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
                   <div className="flex items-center justify-between border-t theme-border pt-3">
                     <span className="text-[10px] text-subtitle font-mono">
-                      {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to attach' : '❌ Fix connection errors'}
+                      {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to save' : '❌ Verification failed'}
                     </span>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setModalTab('view')}
+                        onClick={() => setEditingProject(null)}
                         className="px-3.5 py-2 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
                       >
                         Cancel
