@@ -9,11 +9,11 @@ let projectState = {
   id: 'opspilot-workspace',
   name: 'OpsPilot Workspace',
   rootPath: process.cwd(),
-  runtimeType: 'Docker Compose (Node.js + PostgreSQL + Redis + Nginx)',
-  healthCheckUrl: 'http://localhost:8080/health',
+  runtimeType: 'Git Repository (Node.js + AST Auditor)',
+  healthCheckUrl: 'https://api.github.com/repos/WildDragonDot/ops-pilot/branches/main',
   composeFile: 'docker-compose.yml',
   testCommand: 'npm test',
-  restartCommand: 'docker compose restart postgres api',
+  restartCommand: 'git pull origin main && npm run build',
   environmentStatus: {
     overall: 'HEALTHY' as 'HEALTHY' | 'DEGRADED' | 'DOWN',
     postgres: 'RUNNING' as 'RUNNING' | 'STOPPED' | 'ERROR',
@@ -33,7 +33,7 @@ let activeScenarios: Record<string, any> = {
     confidence: 96,
     rootCause: 'PostgreSQL container is stopped. Node.js API failed to initialize Prisma database client and exited. Nginx returns 502 Bad Gateway due to dead upstream container.',
     evidence: [
-      { source: 'Health Endpoint Check', detail: 'HTTP 502 Bad Gateway from http://localhost:8080/health' },
+      { source: 'Health Endpoint Check', detail: 'HTTP 502 Bad Gateway from target environment API gateway' },
       { source: 'Docker Container Status', detail: 'api_server exited with code 1; postgres_db status is STOPPED' },
       { source: 'Nginx Access Logs', detail: '[error] connect() failed (111: Connection refused) while connecting to upstream http://api:3000' },
       { source: 'Application Error Trace', detail: 'PrismaClientInitializationError: Can\'t reach database server at postgres:5432' }
@@ -45,7 +45,7 @@ let activeScenarios: Record<string, any> = {
       commands: [
         'docker compose start postgres',
         'sleep 2 && docker compose restart api',
-        'curl -s http://localhost:8080/health'
+        'curl -s https://api.github.com/repos/WildDragonDot/ops-pilot'
       ],
       riskLevel: 'LOW',
       rollbackPlan: 'If health check fails, capture container logs and issue docker compose logs api --tail=100.',
@@ -235,7 +235,19 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
 
 async function executeAgentReasoning(incidentId: string, scenarioKey: string) {
   const scenario = activeScenarios[scenarioKey] || activeScenarios['DATABASE_STOPPED'];
-  
+  const project = await prisma.project.findFirst();
+  const serverHost = (project as any)?.serverHost?.trim();
+  const gitUrl = (project as any)?.gitUrl ? (project as any).gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot';
+  const gitBranch = (project as any)?.gitBranch || 'main';
+
+  const toolCallCmd = serverHost 
+    ? `curl -i http://${serverHost}:8080/health` 
+    : `git audit scan https://github.com/${gitUrl} (branch: ${gitBranch})`;
+
+  const toolOutput = serverHost 
+    ? 'HTTP/1.1 502 Bad Gateway\nServer: nginx/1.25.3' 
+    : `Verified remote GitHub repository ${gitUrl} on branch ${gitBranch}. AST static vulnerability scan completed.`;
+
   const addEvent = async (type: string, title: string, detailsObj: any, status: string = 'SUCCESS') => {
     const evt = await prisma.incidentEvent.create({
       data: {
@@ -257,17 +269,17 @@ async function executeAgentReasoning(incidentId: string, scenarioKey: string) {
   await new Promise(r => setTimeout(r, 600));
   await addEvent('PLAN', 'Investigation Plan Formulated', {
     steps: [
-      '1. Inspect API health endpoints and HTTP status codes',
-      '2. Check Docker container status and process logs',
+      `1. Inspect target environment (${serverHost ? serverHost : gitUrl})`,
+      '2. Run automated static code audit & security checks',
       '3. Analyze application stack traces for database/config errors',
       '4. Formulate root cause & proposed recovery patch'
     ]
   });
 
   await new Promise(r => setTimeout(r, 900));
-  await addEvent('TOOL_CALL', 'Executing `curl -i http://localhost:8080/health`', {
-    command: 'curl -i http://localhost:8080/health',
-    output: 'HTTP/1.1 502 Bad Gateway\nServer: nginx/1.25.3'
+  await addEvent('TOOL_CALL', `Executing \`${toolCallCmd}\``, {
+    command: toolCallCmd,
+    output: toolOutput
   }, 'WARNING');
 
   await new Promise(r => setTimeout(r, 1000));
