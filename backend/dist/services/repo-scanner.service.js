@@ -19,12 +19,12 @@ async function checkRealDiskFilePatchStatus(filePath, patchType) {
         const fullPath = path.resolve(process.cwd(), filePath);
         const content = await readFile(fullPath, 'utf-8');
         if (patchType === 'JWT') {
-            if (content.includes('if (!process.env.JWT_SECRET) throw new Error')) {
+            if (content.includes('if (!process.env.JWT_SECRET) throw new Error') || !content.includes("'opspilot-secret-jwt-key-2026'")) {
                 return 'RESOLVED';
             }
         }
         else if (patchType === 'BUG') {
-            if (content.includes('const userId = Number(req.params.id)')) {
+            if (content.includes('String(req.user?.userId)') || content.includes('const userId = Number(req.params.id)')) {
                 return 'RESOLVED';
             }
         }
@@ -65,8 +65,8 @@ export async function executeRepoScan() {
         repo = await prisma.repository.create({
             data: {
                 id: 'opspilot-demo-repo',
-                name: 'company/production-backend-api',
-                url: 'https://github.com/company/production-backend-api',
+                name: 'WildDragonDot/ops-pilot',
+                url: 'https://github.com/WildDragonDot/ops-pilot',
                 defaultBranch: 'main'
             }
         });
@@ -128,10 +128,10 @@ export async function executeRepoScan() {
             category: 'BUG',
             title: 'Unsanitized Route Parameter String in Integer Query',
             filePath: 'backend/src/controllers/auth.controller.ts',
-            line: 42,
+            line: 82,
             impact: 'Raw string ID triggers unhandled Prisma Client validation exception.',
-            recommendation: 'Sanitize route parameter with Number(req.params.id) and return 400 Bad Request.',
-            patch: `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -41,1 +41,2 @@\n-const user = await prisma.user.findUnique({ where: { id: req.params.id } });\n+const userId = Number(req.params.id);\n+const user = await prisma.user.findUnique({ where: { id: userId } });`,
+            recommendation: 'Sanitize route parameter with String(req.user?.userId) and return 400 Bad Request.',
+            patch: `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -82,1 +82,2 @@\n-const user = await prisma.user.findUnique({ where: { id: req.user.userId } });\n+const userId = String(req.user?.userId);\n+const user = await prisma.user.findUnique({ where: { id: userId } });`,
             status: bugStatus
         }
     ];
@@ -195,24 +195,38 @@ export async function applyFindingPatch(findingId) {
             if (finding.title.includes('JWT') || finding.filePath.includes('auth.service.ts')) {
                 content = content.replace(/const JWT_SECRET = process\.env\.JWT_SECRET \|\| 'opspilot-secret-jwt-key-2026';/g, 'if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET required");\nconst JWT_SECRET = process.env.JWT_SECRET;');
                 await writeFile(fullPath, content, 'utf-8');
-                // Execute real git commit for resolved security patch
+                // Execute real git commit & push for resolved security patch
                 try {
                     const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
                     execSync(`git add "${finding.filePath}" && git commit -m "${commitMsg}"`, { cwd: process.cwd() });
                     console.log(`[Git Commit] Security patch for ${finding.filePath} committed successfully`);
+                    try {
+                        execSync(`git push origin main`, { cwd: process.cwd() });
+                        console.log(`[Git Push] Successfully pushed security patch commit to origin main`);
+                    }
+                    catch (pErr) {
+                        console.warn(`[Git Push Notice] ${pErr}`);
+                    }
                 }
                 catch (gitErr) {
                     console.warn(`[Git Commit] ${gitErr}`);
                 }
             }
             else if (finding.title.includes('Unsanitized') || finding.filePath.includes('auth.controller.ts')) {
-                content = content.replace(/const user = await prisma\.user\.findUnique\(\{ where: \{ id: req\.params\.id \} \}\);/g, 'const userId = Number(req.params.id);\nconst user = await prisma.user.findUnique({ where: { id: userId } });');
+                content = content.replace(/where: \{ id: req\.user\.userId \}/g, 'where: { id: String(req.user?.userId || "") }');
                 await writeFile(fullPath, content, 'utf-8');
-                // Execute real git commit for resolved security patch
+                // Execute real git commit & push for resolved security patch
                 try {
                     const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
                     execSync(`git add "${finding.filePath}" && git commit -m "${commitMsg}"`, { cwd: process.cwd() });
                     console.log(`[Git Commit] Security patch for ${finding.filePath} committed successfully`);
+                    try {
+                        execSync(`git push origin main`, { cwd: process.cwd() });
+                        console.log(`[Git Push] Successfully pushed security patch commit to origin main`);
+                    }
+                    catch (pErr) {
+                        console.warn(`[Git Push Notice] ${pErr}`);
+                    }
                 }
                 catch (gitErr) {
                     console.warn(`[Git Commit] ${gitErr}`);
