@@ -94,6 +94,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Header
           project={project}
           projects={projects}
+          scan={scan}
           onSelectProject={onSelectProject}
           onOpenSetupModal={onOpenSetupModal}
           onOpenShortcuts={() => setShortcutsModalOpen(true)}

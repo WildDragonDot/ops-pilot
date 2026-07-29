@@ -15,7 +15,7 @@ import {
   Layers,
   Globe
 } from 'lucide-react';
-import { Project } from '../types';
+import { Project, Scan } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { CommandPalette } from './CommandPalette';
 import { ProjectSwitcher } from './ProjectSwitcher';
@@ -23,6 +23,7 @@ import { ProjectSwitcher } from './ProjectSwitcher';
 interface HeaderProps {
   project: Project | null;
   projects?: Project[];
+  scan?: Scan | null;
   onSelectProject?: (project: Project) => void;
   onOpenSetupModal?: () => void;
   onOpenShortcuts?: () => void;
@@ -34,6 +35,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   project,
   projects = [],
+  scan,
   onSelectProject = () => {},
   onOpenSetupModal = () => {},
   onOpenShortcuts = () => {},
@@ -45,14 +47,40 @@ export const Header: React.FC<HeaderProps> = ({
   const [showStatusPopover, setShowStatusPopover] = useState<boolean>(false);
   const { theme, toggleTheme } = useTheme();
 
+  let savedResolved: string[] = [];
+  try {
+    const raw = localStorage.getItem('opspilot_resolved_patches');
+    if (raw) savedResolved = JSON.parse(raw);
+  } catch {}
+
+  const findings = scan?.findings || [];
+  const unresolvedCount = findings.filter(f => {
+    if ((f as any).status === 'RESOLVED') return false;
+    if (savedResolved.includes(f.id) || savedResolved.includes(f.title)) return false;
+    if (f.filePath && savedResolved.includes(f.filePath)) return false;
+    const baseKey = f.id.split('-').slice(-2).join('-');
+    return !savedResolved.some(id => id.includes(baseKey));
+  }).length;
+
+  const isServerConfigured = Boolean(project?.serverHost?.trim());
   const rawEnv = project?.environmentStatus;
   const allNodesHealthy = rawEnv && rawEnv.postgres === 'RUNNING' && rawEnv.redis === 'RUNNING' && rawEnv.api === 'RUNNING' && rawEnv.nginx === 'HEALTHY';
-  const status = allNodesHealthy ? 'HEALTHY' : (rawEnv?.overall || 'HEALTHY');
 
-  const statusColor = 
-    status === 'HEALTHY' ? 'status-healthy glow-emerald' :
-    status === 'DEGRADED' ? 'status-warning glow-amber' :
-    'status-danger glow-rose animate-pulse';
+  let status = 'HEALTHY';
+  let statusColor = 'status-healthy glow-emerald';
+
+  if (!isServerConfigured) {
+    if (unresolvedCount > 0) {
+      status = 'RISKS DETECTED';
+      statusColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 glow-amber font-extrabold';
+    } else {
+      status = 'REPO PROTECTED';
+      statusColor = 'status-healthy glow-emerald font-extrabold';
+    }
+  } else {
+    status = allNodesHealthy ? 'HEALTHY' : (rawEnv?.overall || 'HEALTHY');
+    statusColor = status === 'HEALTHY' ? 'status-healthy glow-emerald' : status === 'DEGRADED' ? 'status-warning glow-amber' : 'status-danger glow-rose animate-pulse';
+  }
 
   const nodes = [
     { name: 'PostgreSQL DB', port: 5432, state: rawEnv?.postgres || 'RUNNING', icon: Database },
