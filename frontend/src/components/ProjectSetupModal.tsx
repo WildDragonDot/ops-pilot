@@ -404,48 +404,11 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
 
             {/* Step 2 in BOTH/GITHUB_ONLY mode: GitHub Form */}
             {((setupScope === 'BOTH' && step === 2) || (setupScope === 'GITHUB_ONLY' && step === 2)) && (
-              <div className="space-y-4">
-                
-                {/* Quick Select Repository Pills */}
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                      <Github className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Quick Select GitHub Repository</span>
-                    </span>
-                    <span className="text-[10px] text-blue-400 font-mono font-bold">1-Click Auto-Fill</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {[
-                      { label: 'WildDragonDot/ops-pilot', url: 'https://github.com/WildDragonDot/ops-pilot' },
-                      { label: 'WildDragonDot/opspilot-ai-backend', url: 'https://github.com/WildDragonDot/opspilot-ai-backend' },
-                      { label: 'WildDragonDot/opspilot-ai-frontend', url: 'https://github.com/WildDragonDot/opspilot-ai-frontend' }
-                    ].map((repo, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setGitUrl(repo.url)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono transition flex items-center gap-1.5 border active:scale-95 ${
-                          gitUrl === repo.url
-                            ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-bold shadow-sm glow-blue'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-                        }`}
-                      >
-                        <Github className="w-3 h-3 text-slate-400" />
-                        <span>{repo.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
+              <div className="space-y-3.5">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Custom GitHub Repository URL <span className="text-rose-500">*</span></span>
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">Or paste any public / private repo link</span>
+                  <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
+                    <Github className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
+                    <span>GitHub Repository URL <span className="text-rose-500">*</span></span>
                   </label>
                   <input
                     type="text"
