@@ -662,14 +662,18 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                             <ExternalLink className="w-3 h-3 text-blue-400 shrink-0" />
                           </a>
                         ) : (
-                          <span className="text-[10.5px] font-mono font-bold text-slate-400 italic">Not specified (Local AST Engine)</span>
+                          <span className="text-[10.5px] font-mono font-bold text-slate-400 italic">Not configured</span>
                         )}
                       </div>
                     )}
                     {setupScope !== 'GITHUB_ONLY' && (
                       <div className="col-span-2 flex items-center justify-between gap-2 text-xs pt-1 border-t border-slate-200 dark:border-slate-800/80">
                         <span className="text-slate-400 text-[10px] font-bold shrink-0">Server SSH Endpoint</span> 
-                        <span className="text-[10.5px] font-mono font-bold text-slate-800 dark:text-slate-200 truncate text-right">{serverHost ? `${serverUser}@${serverHost}:${serverPort}` : 'Local Sandbox Engine'}</span>
+                        {serverHost.trim() ? (
+                          <span className="text-[10.5px] font-mono font-bold text-slate-800 dark:text-slate-200 truncate text-right">{serverUser}@{serverHost}:{serverPort}</span>
+                        ) : (
+                          <span className="text-[10.5px] font-mono font-bold text-slate-400 italic text-right">Not configured</span>
+                        )}
                       </div>
                     )}
                   </div>
