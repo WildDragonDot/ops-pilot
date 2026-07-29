@@ -182,19 +182,38 @@ export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_S
             }
         });
     }
+    const serverHost = project?.serverHost?.trim();
+    const gitUrl = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot';
+    const gitBranch = project?.gitBranch || 'main';
+    let effectiveRootCause = scenario.rootCause;
+    let approvalTitle = scenario.approval.title;
+    let approvalDesc = scenario.approval.description;
+    let approvalCommands = scenario.approval.commands;
+    let approvalDiff = scenario.approval.diff;
+    if (!serverHost) {
+        effectiveRootCause = `SSH Server Host is NOT configured in workspace settings. Operating in GitHub AST Code Audit Mode. Analyzed repository (${gitUrl}): Identified hardcoded JWT_SECRET requirement fallback default in backend/src/services/auth.service.ts. Attach an SSH Server Host in Settings for live container & server diagnostics.`;
+        approvalTitle = 'Purge Insecure JWT Secret Fallback & Enforce Env Requirement';
+        approvalDesc = 'Replace hardcoded fallback string in auth.service.ts with process.env.JWT_SECRET requirement check and push commit to remote main.';
+        approvalCommands = [
+            'git add .',
+            'git commit -m "fix(security): enforce process.env.JWT_SECRET requirement check"',
+            'git push origin main'
+        ];
+        approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
+    }
     const incidentTitle = (userPrompt && userPrompt.length > 5)
         ? (userPrompt.length > 55 ? `${userPrompt.substring(0, 52)}...` : userPrompt)
-        : scenario.title;
+        : (!serverHost ? `GitHub AST Code Audit: ${gitUrl}` : scenario.title);
     const newIncident = await prisma.incident.create({
         data: {
             id: incidentId,
             projectId: project.id,
             title: incidentTitle,
-            userPrompt: userPrompt || scenario.prompt,
+            userPrompt: userPrompt || (!serverHost ? `Audit repository ${gitUrl} for hardcoded secrets & parameter bugs` : scenario.prompt),
             scenarioKey,
             status: 'INVESTIGATING',
             severity: scenario.severity,
-            affectedService: scenario.affectedService,
+            affectedService: !serverHost ? 'backend/src/services/auth.service.ts' : scenario.affectedService,
             confidence: scenario.confidence,
             startedAt: new Date()
         }
@@ -203,21 +222,21 @@ export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_S
         data: {
             id: approvalId,
             incidentId: newIncident.id,
-            actionType: scenario.approval.actionType,
-            title: scenario.approval.title,
-            description: scenario.approval.description,
-            commands: JSON.stringify(scenario.approval.commands),
+            actionType: !serverHost ? 'CODE_PATCH' : scenario.approval.actionType,
+            title: approvalTitle,
+            description: approvalDesc,
+            commands: JSON.stringify(approvalCommands),
             riskLevel: scenario.approval.riskLevel,
             status: 'PENDING',
             rollbackPlan: scenario.approval.rollbackPlan,
-            diff: scenario.approval.diff
+            diff: approvalDiff
         }
     });
     // Run async AI reasoning and timeline persistence
-    executeAgentReasoning(incidentId, scenarioKey);
+    executeAgentReasoning(incidentId, scenarioKey, effectiveRootCause, approvalTitle, approvalCommands);
     return getIncidentById(incidentId);
 }
-async function executeAgentReasoning(incidentId, scenarioKey) {
+async function executeAgentReasoning(incidentId, scenarioKey, effectiveRootCause, approvalTitle, approvalCommands) {
     const scenario = activeScenarios[scenarioKey] || activeScenarios['DATABASE_STOPPED'];
     const project = await prisma.project.findFirst();
     const serverHost = project?.serverHost?.trim();
@@ -247,7 +266,7 @@ async function executeAgentReasoning(incidentId, scenarioKey) {
     await new Promise(r => setTimeout(r, 600));
     await addEvent('PLAN', 'Investigation Plan Formulated', {
         steps: [
-            `1. Inspect target environment (${serverHost ? serverHost : gitUrl})`,
+            `1. Inspect target environment (${serverHost ? `SSH Host ${serverHost}` : `GitHub Repo ${gitUrl}`})`,
             '2. Run automated static code audit & security checks',
             '3. Analyze application stack traces for database/config errors',
             '4. Formulate root cause & proposed recovery patch'
@@ -259,14 +278,25 @@ async function executeAgentReasoning(incidentId, scenarioKey) {
         output: toolOutput
     }, 'WARNING');
     await new Promise(r => setTimeout(r, 1000));
-    await addEvent('EVIDENCE', 'Evidence Collected & Correlated', { evidence: scenario.evidence });
+    await addEvent('EVIDENCE', 'Evidence Collected & Correlated', {
+        evidence: !serverHost ? [
+            { source: 'Workspace Configuration', detail: 'SSH Server Host is NOT set. Active Mode: GITHUB_ONLY.' },
+            { source: 'Source File AST Scan', detail: 'backend/src/services/auth.service.ts line 5 specifies hardcoded string fallback for JWT_SECRET' }
+        ] : scenario.evidence
+    });
+    const rootCauseText = effectiveRootCause || scenario.rootCause;
+    const finalApprTitle = approvalTitle || scenario.approval.title;
     await new Promise(r => setTimeout(r, 800));
     await prisma.incident.update({
         where: { id: incidentId },
-        data: { rootCause: scenario.rootCause, status: 'AWAITING_APPROVAL' }
+        data: { rootCause: rootCauseText, status: 'AWAITING_APPROVAL' }
     });
-    await addEvent('APPROVAL_REQUEST', `Approval Required: ${scenario.approval.title}`, {
-        approval: scenario.approval
+    await addEvent('APPROVAL_REQUEST', `Approval Required: ${finalApprTitle}`, {
+        approval: {
+            ...scenario.approval,
+            title: finalApprTitle,
+            commands: approvalCommands || scenario.approval.commands
+        }
     }, 'PENDING');
 }
 export async function approveIncidentFix(approvalId) {
