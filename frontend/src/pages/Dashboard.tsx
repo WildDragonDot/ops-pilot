@@ -752,8 +752,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       </div>
 
-      {/* TIER 2: CHAOS TESTING ENGINE & STREAMING TERMINAL CONSOLE */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      {/* TIER 2: CHAOS TESTING ENGINE & STREAMING TERMINAL CONSOLE (ONLY FOR SERVER-ATTACHED PROJECTS) */}
+      {Boolean(project?.serverHost?.trim()) && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         
         {/* BOTTOM TIER LEFT: CHAOS TESTING ENGINE (lg:col-span-4) */}
         <div className="lg:col-span-4">
@@ -1048,8 +1049,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
           </div>
         </div>
-
       </div>
+    )}
 
       {/* SERVICE INSPECTOR MODAL DRAWER */}
       <AnimatePresence>
