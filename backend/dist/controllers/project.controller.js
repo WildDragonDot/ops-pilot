@@ -31,16 +31,7 @@ export async function getProject(req, res) {
         : await prisma.project.findFirst({ include: { repositories: true } });
     const state = getProjectState();
     if (!project) {
-        project = await prisma.project.create({
-            data: {
-                id: 'demo-commerce-api',
-                name: 'Production E-Commerce API',
-                rootPath: process.cwd(),
-                runtimeType: 'Docker Compose',
-                environmentType: 'Docker Compose'
-            },
-            include: { repositories: true }
-        });
+        return res.status(404).json({ error: 'Project not found' });
     }
     res.json({
         project: {

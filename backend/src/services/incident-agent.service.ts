@@ -6,8 +6,8 @@ import { broadcastEvent } from '../controllers/stream.controller.js';
 export const incidentEmitter = new EventEmitter();
 
 let projectState = {
-  id: 'demo-commerce-api',
-  name: 'Production E-Commerce API',
+  id: 'opspilot-workspace',
+  name: 'OpsPilot Workspace',
   rootPath: process.cwd(),
   runtimeType: 'Docker Compose (Node.js + PostgreSQL + Redis + Nginx)',
   healthCheckUrl: 'http://localhost:8080/health',
