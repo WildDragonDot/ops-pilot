@@ -70,18 +70,18 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
 
   // Dynamic steps based on chosen scope
   const steps = setupScope === 'BOTH' ? [
-    { num: 1, label: 'General' },
-    { num: 2, label: 'GitHub' },
-    { num: 3, label: 'Server SSH' },
-    { num: 4, label: 'Verify' }
+    { num: 1, label: 'General', isOptional: false },
+    { num: 2, label: 'GitHub', isOptional: true },
+    { num: 3, label: 'Server SSH', isOptional: true },
+    { num: 4, label: 'Verify', isOptional: false }
   ] : setupScope === 'GITHUB_ONLY' ? [
-    { num: 1, label: 'General' },
-    { num: 2, label: 'GitHub Repo' },
-    { num: 3, label: 'Verify' }
+    { num: 1, label: 'General', isOptional: false },
+    { num: 2, label: 'GitHub Repo', isOptional: true },
+    { num: 3, label: 'Verify', isOptional: false }
   ] : [
-    { num: 1, label: 'General' },
-    { num: 2, label: 'Server SSH' },
-    { num: 3, label: 'Verify' }
+    { num: 1, label: 'General', isOptional: false },
+    { num: 2, label: 'Server SSH', isOptional: true },
+    { num: 3, label: 'Verify', isOptional: false }
   ];
 
   const maxSteps = steps.length;
@@ -260,7 +260,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
               <div
                 key={s.num}
                 onClick={() => handleStepClick(s.num)}
-                className={`py-1.5 px-2 rounded-xl border text-center cursor-pointer transition-all flex items-center justify-center gap-1 text-[11px] ${
+                className={`relative py-1.5 px-2 rounded-xl border text-center cursor-pointer transition-all flex items-center justify-center gap-1 text-[11px] ${
                   step === s.num
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-600 font-extrabold shadow-sm glow-blue'
                     : step > s.num
@@ -268,6 +268,15 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-500 font-medium hover:border-slate-300'
                 }`}
               >
+                {s.isOptional && (
+                  <span className={`absolute -top-2 right-1 text-[8px] font-extrabold font-mono px-1.5 py-0.2 rounded-full border shadow-2xs ${
+                    step === s.num
+                      ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs'
+                      : 'bg-slate-900 text-amber-400 border-amber-500/40 font-bold'
+                  }`}>
+                    Optional
+                  </span>
+                )}
                 {step > s.num ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <span>{s.num}.</span>}
                 <span className="truncate">{s.label}</span>
               </div>
