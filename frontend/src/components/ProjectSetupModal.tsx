@@ -23,7 +23,8 @@ import {
   CheckCircle2,
   HelpCircle,
   Info,
-  ExternalLink
+  ExternalLink,
+  GitBranch
 } from 'lucide-react';
 import { createNewProject, testConnection } from '../services/api';
 import { ProjectCredentials } from '../services/vault';
@@ -60,6 +61,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const [name, setName] = useState('');
   const [environmentType, setEnvironmentType] = useState('Docker Compose');
   const [gitUrl, setGitUrl] = useState('');
+  const [gitBranch, setGitBranch] = useState('main');
   const [githubToken, setGithubToken] = useState('');
   const [serverHost, setServerHost] = useState('');
   const [serverPort, setServerPort] = useState('22');
@@ -417,6 +419,24 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                   />
                 </div>
 
+                {/* Target Branch Name Field */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <GitBranch className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Target Branch Name</span>
+                    </span>
+                    <span className="text-[9px] text-blue-500 font-mono font-bold">Default: main</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={gitBranch}
+                    onChange={e => setGitBranch(e.target.value)}
+                    placeholder="main"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-blue-500 shadow-xs"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
@@ -604,7 +624,9 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     <div><span className="text-slate-400 block text-[9px]">Scope Mode</span> <strong className="text-blue-600 dark:text-blue-400 font-bold">{setupScope}</strong></div>
                     {setupScope !== 'SERVER_ONLY' && (
                       <div className="col-span-2 flex items-center justify-between gap-2 text-xs pt-1.5 border-t border-slate-200 dark:border-slate-800/80">
-                        <span className="text-slate-400 text-[10px] font-bold shrink-0">GitHub Repository</span> 
+                        <span className="text-slate-400 text-[10px] font-bold shrink-0">
+                          GitHub Repository <span className="text-blue-400 font-mono text-[9px]">({gitBranch.trim() || 'main'})</span>
+                        </span> 
                         {gitUrl.trim() ? (
                           <a 
                             href={gitUrl.startsWith('http') ? gitUrl : `https://${gitUrl}`} 
