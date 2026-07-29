@@ -122,8 +122,8 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     }
   };
 
-  const currentScore = scan?.overallScore || (countAll === 0 ? 100 : countAll === 1 ? 89 : 78);
-  const currentSecurityScore = scan?.securityScore || (countAll === 0 ? 100 : countAll === 1 ? 86 : 72);
+  const currentScore = countAll === 0 ? 100 : countAll === 1 ? 89 : (scan?.overallScore ?? 78);
+  const currentSecurityScore = countAll === 0 ? 100 : countAll === 1 ? 86 : (scan?.securityScore ?? 72);
 
   const scores = [
     { label: 'Security Score', value: currentSecurityScore, color: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' },

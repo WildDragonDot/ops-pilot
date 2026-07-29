@@ -64,7 +64,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <div className="h-screen flex font-sans antialiased overflow-hidden">
       
       {/* Left Collapsible Navigation Sidebar */}
-      <Sidebar incidents={incidents} scanScore={scan?.overallScore} project={project} />
+      {(() => {
+        const unresolvedCount = scan?.findings?.filter(f => (f as any).status !== 'RESOLVED').length ?? 0;
+        const effectiveScore = scan?.findings && scan.findings.length > 0
+          ? (unresolvedCount === 0 ? 100 : unresolvedCount === 1 ? 89 : scan.overallScore)
+          : scan?.overallScore;
+        return <Sidebar incidents={incidents} scanScore={effectiveScore} project={project} />;
+      })()}
 
       {/* Main Right Content Section — full height, scrollable */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
