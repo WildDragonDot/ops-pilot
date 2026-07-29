@@ -57,6 +57,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   // Editing Project Modal state
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [modalTab, setModalTab] = useState<'github' | 'server'>('github');
+  const [isEditingGit, setIsEditingGit] = useState<boolean>(false);
+  const [isEditingServer, setIsEditingServer] = useState<boolean>(false);
   const [editGitUrl, setEditGitUrl] = useState<string>('https://github.com/WildDragonDot/ops-pilot');
   const [editGitBranch, setEditGitBranch] = useState<string>('main');
   const [editGitToken, setEditGitToken] = useState<string>('');
@@ -175,6 +177,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const handleOpenEditProject = (proj: Project) => {
     setEditingProject(proj);
     setModalTab('github');
+    setIsEditingGit(false);
+    setIsEditingServer(false);
     setEditGitUrl(proj.gitUrl || '');
     setEditGitBranch(proj.gitBranch || 'main');
     setEditGitToken('');
@@ -1535,9 +1539,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       <span className="font-extrabold text-blue-400 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5">
                         <Cpu className="w-3.5 h-3.5 text-blue-500" /> Active GitHub Connection
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-extrabold">
-                        ✓ AUTHENTICATED
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-extrabold">
+                          ✓ AUTHENTICATED
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingGit(prev => !prev)}
+                          className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold shadow-sm transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>{isEditingGit ? 'Hide Form' : 'Edit Settings'}</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 font-mono">
@@ -1560,108 +1574,116 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     </div>
                   </div>
 
-                  {/* GitHub Edit Inputs */}
-                  <div className="space-y-3 p-4 rounded-xl border theme-border space-y-3">
-                    <h4 className="font-bold text-title text-xs flex items-center gap-1.5">
-                      <Edit2 className="w-3.5 h-3.5 text-blue-500" /> Update GitHub Settings
-                    </h4>
-
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">GitHub Repository URL</label>
-                      <input
-                        type="text"
-                        value={editGitUrl}
-                        onChange={(e) => setEditGitUrl(e.target.value)}
-                        placeholder="e.g. https://github.com/WildDragonDot/ops-pilot"
-                        className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-subtitle font-bold block">Target Branch</label>
-                        <input
-                          type="text"
-                          value={editGitBranch}
-                          onChange={(e) => setEditGitBranch(e.target.value)}
-                          placeholder="main"
-                          className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-subtitle font-bold block">Personal Access Token</label>
-                        <input
-                          type="password"
-                          value={editGitToken}
-                          onChange={(e) => setEditGitToken(e.target.value)}
-                          placeholder="Optional PAT (Leave blank if public)"
-                          className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TEST CONNECTION BUTTON & VERIFICATION BADGES */}
-                  <div className="space-y-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleTestEditConnection}
-                      disabled={isTestingEdit}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
+                  {/* GitHub Edit Inputs (Appears in-place on clicking blue Edit button) */}
+                  {isEditingGit && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4"
                     >
-                      {isTestingEdit ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                          <span>Verifying GitHub & Credentials...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Activity className="w-4 h-4 text-emerald-400" />
-                          <span>Test Connection & Verify Credentials</span>
-                        </>
-                      )}
-                    </button>
+                      <div className="space-y-3 p-4 rounded-xl border theme-border space-y-3 bg-blue-500/5">
+                        <h4 className="font-bold text-title text-xs flex items-center gap-1.5">
+                          <Edit2 className="w-3.5 h-3.5 text-blue-500" /> Update GitHub Settings
+                        </h4>
 
-                    {testResult && (
-                      <div className={`p-3 rounded-xl border font-mono text-[11px] space-y-1 ${
-                        testResult.success 
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                      }`}>
-                        <div className="flex items-center gap-1.5 font-extrabold">
-                          {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
-                          <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
+                        <div className="space-y-1">
+                          <label className="text-subtitle font-bold block">GitHub Repository URL</label>
+                          <input
+                            type="text"
+                            value={editGitUrl}
+                            onChange={(e) => setEditGitUrl(e.target.value)}
+                            placeholder="e.g. https://github.com/WildDragonDot/ops-pilot"
+                            className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                          />
                         </div>
-                        {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
-                        {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex items-center justify-between border-t theme-border pt-3">
-                    <span className="text-[10px] text-subtitle font-mono">
-                      {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to save' : '❌ Verification failed'}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setEditingProject(null)}
-                        className="px-3.5 py-2 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSaveProjectEdit}
-                        disabled={!testResult?.tested || !testResult?.success}
-                        className={`px-5 py-2 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer ${
-                          testResult?.tested && testResult?.success
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white glow-emerald'
-                            : 'bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed'
-                        }`}
-                      >
-                        Save Connection
-                      </button>
-                    </div>
-                  </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">Target Branch</label>
+                            <input
+                              type="text"
+                              value={editGitBranch}
+                              onChange={(e) => setEditGitBranch(e.target.value)}
+                              placeholder="main"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">Personal Access Token</label>
+                            <input
+                              type="password"
+                              value={editGitToken}
+                              onChange={(e) => setEditGitToken(e.target.value)}
+                              placeholder="Optional PAT (Leave blank if public)"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* TEST CONNECTION BUTTON & VERIFICATION BADGES */}
+                      <div className="space-y-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleTestEditConnection}
+                          disabled={isTestingEdit}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
+                        >
+                          {isTestingEdit ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                              <span>Verifying GitHub & Credentials...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Activity className="w-4 h-4 text-emerald-400" />
+                              <span>Test Connection & Verify Credentials</span>
+                            </>
+                          )}
+                        </button>
+
+                        {testResult && (
+                          <div className={`p-3 rounded-xl border font-mono text-[11px] space-y-1 ${
+                            testResult.success 
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                              : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                          }`}>
+                            <div className="flex items-center gap-1.5 font-extrabold">
+                              {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
+                              <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
+                            </div>
+                            {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
+                            {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between border-t theme-border pt-3">
+                        <span className="text-[10px] text-subtitle font-mono">
+                          {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to save' : '❌ Verification failed'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setIsEditingGit(false)}
+                            className="px-3.5 py-2 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveProjectEdit}
+                            disabled={!testResult?.tested || !testResult?.success}
+                            className={`px-5 py-2 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer ${
+                              testResult?.tested && testResult?.success
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white glow-emerald'
+                                : 'bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed'
+                            }`}
+                          >
+                            Save Connection
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               ) : (
                 /* TAB 2: SSH SERVER INFRASTRUCTURE CONFIG & VIEW */
@@ -1672,13 +1694,23 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       <span className="font-extrabold text-indigo-400 font-mono text-[11px] uppercase tracking-wider flex items-center gap-1.5">
                         <Server className="w-3.5 h-3.5 text-indigo-500" /> SSH Server Status
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border ${
-                        editingProject.serverHost 
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                          : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                      }`}>
-                        {editingProject.serverHost ? '✓ SSH CONNECTED' : 'ℹ GITHUB AST MODE'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border ${
+                          editingProject.serverHost 
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                            : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                        }`}>
+                          {editingProject.serverHost ? '✓ SSH CONNECTED' : 'ℹ GITHUB AST MODE'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingServer(prev => !prev)}
+                          className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold shadow-sm transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>{isEditingServer ? 'Hide Form' : 'Edit Settings'}</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 font-mono">
@@ -1703,108 +1735,116 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     </div>
                   </div>
 
-                  {/* SSH Edit Inputs */}
-                  <div className="space-y-3 p-4 rounded-xl border theme-border space-y-3">
-                    <h4 className="font-bold text-title text-xs flex items-center gap-1.5">
-                      <Edit2 className="w-3.5 h-3.5 text-indigo-500" /> Update SSH Server Settings
-                    </h4>
-
-                    <div className="space-y-1">
-                      <label className="text-subtitle font-bold block">SSH Server Host IP / Domain</label>
-                      <input
-                        type="text"
-                        value={editHost}
-                        onChange={(e) => setEditHost(e.target.value)}
-                        placeholder="e.g. 34.224.80.31 (Leave empty for GitHub AST Mode)"
-                        className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-subtitle font-bold block">SSH Port</label>
-                        <input
-                          type="text"
-                          value={editPort}
-                          onChange={(e) => setEditPort(e.target.value)}
-                          placeholder="22"
-                          className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-subtitle font-bold block">SSH User</label>
-                        <input
-                          type="text"
-                          value={editUser}
-                          onChange={(e) => setEditUser(e.target.value)}
-                          placeholder="root"
-                          className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TEST CONNECTION BUTTON & VERIFICATION BADGES */}
-                  <div className="space-y-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={handleTestEditConnection}
-                      disabled={isTestingEdit}
-                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
+                  {/* SSH Edit Inputs (Appears in-place on clicking blue Edit button) */}
+                  {isEditingServer && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4"
                     >
-                      {isTestingEdit ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                          <span>Testing Server Connection...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Activity className="w-4 h-4 text-emerald-400" />
-                          <span>Test Connection & Verify Credentials</span>
-                        </>
-                      )}
-                    </button>
+                      <div className="space-y-3 p-4 rounded-xl border theme-border space-y-3 bg-indigo-500/5">
+                        <h4 className="font-bold text-title text-xs flex items-center gap-1.5">
+                          <Edit2 className="w-3.5 h-3.5 text-indigo-500" /> Update SSH Server Settings
+                        </h4>
 
-                    {testResult && (
-                      <div className={`p-3 rounded-xl border font-mono text-[11px] space-y-1 ${
-                        testResult.success 
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                          : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                      }`}>
-                        <div className="flex items-center gap-1.5 font-extrabold">
-                          {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
-                          <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
+                        <div className="space-y-1">
+                          <label className="text-subtitle font-bold block">SSH Server Host IP / Domain</label>
+                          <input
+                            type="text"
+                            value={editHost}
+                            onChange={(e) => setEditHost(e.target.value)}
+                            placeholder="e.g. 34.224.80.31 (Leave empty for GitHub AST Mode)"
+                            className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                          />
                         </div>
-                        {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
-                        {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex items-center justify-between border-t theme-border pt-3">
-                    <span className="text-[10px] text-subtitle font-mono">
-                      {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to save' : '❌ Verification failed'}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setEditingProject(null)}
-                        className="px-3.5 py-2 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSaveProjectEdit}
-                        disabled={!testResult?.tested || !testResult?.success}
-                        className={`px-5 py-2 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer ${
-                          testResult?.tested && testResult?.success
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white glow-emerald'
-                            : 'bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed'
-                        }`}
-                      >
-                        Save Connection
-                      </button>
-                    </div>
-                  </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">SSH Port</label>
+                            <input
+                              type="text"
+                              value={editPort}
+                              onChange={(e) => setEditPort(e.target.value)}
+                              placeholder="22"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">SSH User</label>
+                            <input
+                              type="text"
+                              value={editUser}
+                              onChange={(e) => setEditUser(e.target.value)}
+                              placeholder="root"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* TEST CONNECTION BUTTON & VERIFICATION BADGES */}
+                      <div className="space-y-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleTestEditConnection}
+                          disabled={isTestingEdit}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition"
+                        >
+                          {isTestingEdit ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                              <span>Testing Server Connection...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Activity className="w-4 h-4 text-emerald-400" />
+                              <span>Test Connection & Verify Credentials</span>
+                            </>
+                          )}
+                        </button>
+
+                        {testResult && (
+                          <div className={`p-3 rounded-xl border font-mono text-[11px] space-y-1 ${
+                            testResult.success 
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                              : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                          }`}>
+                            <div className="flex items-center gap-1.5 font-extrabold">
+                              {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
+                              <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
+                            </div>
+                            {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
+                            {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between border-t theme-border pt-3">
+                        <span className="text-[10px] text-subtitle font-mono">
+                          {!testResult?.tested ? '⚠️ Test connection before saving' : testResult.success ? '✓ Ready to save' : '❌ Verification failed'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setIsEditingServer(false)}
+                            className="px-3.5 py-2 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveProjectEdit}
+                            disabled={!testResult?.tested || !testResult?.success}
+                            className={`px-5 py-2 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer ${
+                              testResult?.tested && testResult?.success
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white glow-emerald'
+                                : 'bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed'
+                            }`}
+                          >
+                            Save Connection
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               )}
             </motion.div>
