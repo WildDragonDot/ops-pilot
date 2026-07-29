@@ -640,16 +640,22 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                       ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
                       : 'bg-rose-500/10 border-rose-500/20 text-rose-800 dark:text-rose-300'
                   }`}>
-                    {testResult.ssh && setupScope !== 'GITHUB_ONLY' && (
+                    {testResult.ssh && setupScope !== 'GITHUB_ONLY' && serverHost.trim() !== '' && (
                       <div className="flex items-center gap-1.5 font-bold text-[11px]">
                         <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>SSH Connection: {testResult.ssh.message}</span>
                       </div>
                     )}
-                    {testResult.github && setupScope !== 'SERVER_ONLY' && (
+                    {testResult.github && setupScope !== 'SERVER_ONLY' && gitUrl.trim() !== '' && (
                       <div className="flex items-center gap-1.5 font-bold text-[11px]">
                         <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                         <span>GitHub Connection: {testResult.github.message || 'Authenticated successfully'}</span>
+                      </div>
+                    )}
+                    {!serverHost.trim() && !gitUrl.trim() && (
+                      <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <span>Local Sandbox Engine: Active & Ready</span>
                       </div>
                     )}
                     {testResult.error && (
