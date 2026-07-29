@@ -17,29 +17,31 @@ import {
   Cpu
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Incident } from '../types';
+import { Incident, Project } from '../types';
 
 interface SidebarProps {
   incidents: Incident[];
   scanScore?: number;
+  project?: Project | null;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore = 78 }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project }) => {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
 
   const pendingApprovalsCount = incidents.filter(i => i.status === 'AWAITING_APPROVAL').length;
   const activeIncidentsCount = incidents.filter(i => i.status === 'INVESTIGATING' || i.status === 'AWAITING_APPROVAL').length;
+  const isServerConfigured = Boolean(project?.serverHost?.trim());
 
   const navItems = [
     { path: '/dashboard', label: 'Overview', icon: Activity },
-    { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: `${scanScore}/100`, badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-extrabold' },
+    { path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: scanScore ? `${scanScore}/100` : 'READY', badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-extrabold' },
     { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-extrabold' },
     { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-extrabold' },
     { path: '/runbooks', label: 'Auto Runbooks', icon: BookOpen },
     { path: '/audit-logs', label: 'Audit Logs', icon: ShieldCheck },
     { path: '/reports', label: 'Post-Mortems', icon: FileText },
-    { path: '/sandbox', label: 'Failure Injector', icon: Zap },
+    { path: '/sandbox', label: 'Failure Injector', icon: Zap, badge: !isServerConfigured ? 'SSH Req' : undefined, badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px]' },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 

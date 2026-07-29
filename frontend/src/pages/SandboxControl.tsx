@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, RotateCcw, Activity, Server, Database, Cpu, Check, RefreshCw } from 'lucide-react';
+import { Play, RotateCcw, Activity, Server, Database, Cpu, Check, RefreshCw, Zap } from 'lucide-react';
 import { Project } from '../types';
 
 interface SandboxControlProps {
@@ -45,6 +45,26 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
     setInjectingKey(null);
     setActiveOutageBanner(key);
   };
+
+  if (!project?.serverHost?.trim()) {
+    return (
+      <div className="glass-panel p-8 rounded-2xl border border-amber-500/30 bg-amber-950/20 text-center space-y-4 max-w-2xl mx-auto my-12 font-sans shadow-lg">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-sm">
+          <Zap className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-bold text-title font-display tracking-tight">Failure Injector Requires Production SSH Server</h2>
+        <p className="text-xs text-subtitle leading-relaxed max-w-lg mx-auto">
+          Failure injection scenarios (such as PostgreSQL 502 Bad Gateway, DATABASE_URL host mismatch, and Redis latency spikes) run on live remote SSH container environments. Connect an SSH Server host in Settings to enable chaos injection testing.
+        </p>
+        <button 
+          onClick={() => onNavigateTab('settings')}
+          className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-md transition cursor-pointer"
+        >
+          Connect Production SSH Server
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div 

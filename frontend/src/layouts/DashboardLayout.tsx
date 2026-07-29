@@ -64,7 +64,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     <div className="h-screen flex font-sans antialiased overflow-hidden">
       
       {/* Left Collapsible Navigation Sidebar */}
-      <Sidebar incidents={incidents} scanScore={scan?.overallScore} />
+      <Sidebar incidents={incidents} scanScore={scan?.overallScore} project={project} />
 
       {/* Main Right Content Section — full height, scrollable */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
