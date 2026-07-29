@@ -173,7 +173,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
   const handleOpenEditProject = (proj: Project) => {
     setEditingProject(proj);
-    setEditGitUrl(proj.gitUrl || 'https://github.com/WildDragonDot/ops-pilot');
+    setEditGitUrl(proj.gitUrl || '');
     setEditGitBranch(proj.gitBranch || 'main');
     setEditGitToken('');
     setEditHost(proj.serverHost || '');
@@ -1512,7 +1512,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       type="text"
                       value={editGitUrl}
                       onChange={(e) => setEditGitUrl(e.target.value)}
-                      placeholder="https://github.com/WildDragonDot/ops-pilot"
+                      placeholder="e.g. https://github.com/WildDragonDot/ops-pilot"
                       className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
                     />
                   </div>
@@ -1534,7 +1534,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                         type="password"
                         value={editGitToken}
                         onChange={(e) => setEditGitToken(e.target.value)}
-                        placeholder="ghp_••••••••••••"
+                        placeholder="Optional PAT (Leave blank if public)"
                         className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
                       />
                     </div>
