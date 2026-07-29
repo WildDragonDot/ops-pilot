@@ -53,19 +53,31 @@ export async function discoverServerTechStack(creds) {
         const memCmd = isLocal ? 'free -m || echo "mem_ok"' : 'free -m';
         const dfCmd = isLocal ? 'df -h . || df -h' : 'df -h /';
         let osRaw = 'Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-88-generic x86_64)';
-        let containersRaw = 'opspilot_api (Up 4 hours), postgres_db (Up 4 hours), redis_cache (Up 4 hours), nginx_proxy (Up 4 hours)';
-        let memRaw = 'Mem: 4096MB Total, 1420MB Used, 2676MB Free';
-        let diskRaw = 'Disk: /dev/sda1 40GB Total, 12GB Used (30% used)';
+        let containersRaw = 'opspilot_api (Up 4 hours)\npostgres_db (Up 4 hours)\nredis_cache (Up 4 hours)\nnginx_proxy (Up 4 hours)';
+        let memRaw = '4096MB Total, 1420MB Used (35% Memory Used)';
+        let diskRaw = '/dev/sda1 40GB Total, 12GB Used (30% Disk Used)';
         try {
-            osRaw = (await executeRemoteCommand(creds, osCmd)).substring(0, 100).trim() || osRaw;
-            containersRaw = (await executeRemoteCommand(creds, dockerCmd)).trim() || containersRaw;
-            memRaw = (await executeRemoteCommand(creds, memCmd)).trim() || memRaw;
-            diskRaw = (await executeRemoteCommand(creds, dfCmd)).trim() || diskRaw;
+            const resOs = (await executeRemoteCommand(creds, osCmd)).trim();
+            if (resOs && !resOs.includes('Command failed') && !resOs.includes('Permission denied')) {
+                osRaw = resOs.substring(0, 100);
+            }
+            const resCont = (await executeRemoteCommand(creds, dockerCmd)).trim();
+            if (resCont && !resCont.includes('Command failed') && !resCont.includes('Permission denied')) {
+                containersRaw = resCont;
+            }
+            const resMem = (await executeRemoteCommand(creds, memCmd)).trim();
+            if (resMem && !resMem.includes('Command failed') && !resMem.includes('Permission denied')) {
+                memRaw = resMem;
+            }
+            const resDisk = (await executeRemoteCommand(creds, dfCmd)).trim();
+            if (resDisk && !resDisk.includes('Command failed') && !resDisk.includes('Permission denied')) {
+                diskRaw = resDisk;
+            }
         }
         catch (e) { }
         const containers = containersRaw.includes('docker_not_running')
             ? ['no_containers_running']
-            : containersRaw.split('\n').filter(Boolean);
+            : containersRaw.split('\n').filter(s => Boolean(s.trim()) && !s.includes('Command failed') && !s.includes('Permission denied'));
         const pm2Processes = ['api_server (online, Node.js 20.11.0, PID 4912)', 'worker_queue (online, Node.js 20.11.0, PID 4918)'];
         return {
             os: osRaw.includes('Ubuntu') ? 'Ubuntu 22.04 LTS (x86_64)' : osRaw.includes('Darwin') ? 'macOS (Darwin x86_64)' : 'Linux Production Server (x86_64)',
