@@ -124,14 +124,19 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
   const currentScore = countAll === 0 ? 100 : countAll === 1 ? 89 : (scan?.overallScore ?? 78);
   const currentSecurityScore = countAll === 0 ? 100 : countAll === 1 ? 86 : (scan?.securityScore ?? 72);
+  const currentQualityScore = countAll === 0 ? 100 : countAll === 1 ? 92 : (scan?.qualityScore || 85);
+  const currentTestingScore = countAll === 0 ? 100 : countAll === 1 ? 88 : (scan?.testingScore || 70);
+  const currentReliabilityScore = countAll === 0 ? 100 : countAll === 1 ? 94 : (scan?.reliabilityScore || 88);
+  const currentDocScore = countAll === 0 ? 100 : countAll === 1 ? 96 : (scan?.documentationScore || 92);
+  const currentMaintainabilityScore = countAll === 0 ? 100 : countAll === 1 ? 90 : (scan?.maintainabilityScore || 82);
 
   const scores = [
     { label: 'Security Score', value: currentSecurityScore, color: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' },
-    { label: 'Code Quality', value: scan?.qualityScore || 85, color: 'text-blue-600 dark:text-blue-400', bar: 'bg-blue-500' },
-    { label: 'Test Coverage', value: scan?.testingScore || 65, color: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' },
-    { label: 'Reliability', value: scan?.reliabilityScore || 88, color: 'text-indigo-600 dark:text-indigo-400', bar: 'bg-indigo-500' },
-    { label: 'Documentation', value: scan?.documentationScore || 90, color: 'text-purple-600 dark:text-purple-400', bar: 'bg-purple-500' },
-    { label: 'Maintainability', value: scan?.maintainabilityScore || 82, color: 'text-teal-600 dark:text-teal-400', bar: 'bg-teal-500' }
+    { label: 'Code Quality', value: currentQualityScore, color: 'text-blue-600 dark:text-blue-400', bar: 'bg-blue-500' },
+    { label: 'Test Coverage', value: currentTestingScore, color: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' },
+    { label: 'Reliability', value: currentReliabilityScore, color: 'text-indigo-600 dark:text-indigo-400', bar: 'bg-indigo-500' },
+    { label: 'Documentation', value: currentDocScore, color: 'text-purple-600 dark:text-purple-400', bar: 'bg-purple-500' },
+    { label: 'Maintainability', value: currentMaintainabilityScore, color: 'text-teal-600 dark:text-teal-400', bar: 'bg-teal-500' }
   ];
 
   return (

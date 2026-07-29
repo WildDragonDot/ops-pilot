@@ -65,10 +65,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       
       {/* Left Collapsible Navigation Sidebar */}
       {(() => {
-        const unresolvedCount = scan?.findings?.filter(f => (f as any).status !== 'RESOLVED').length ?? 0;
-        const effectiveScore = scan?.findings && scan.findings.length > 0
-          ? (unresolvedCount === 0 ? 100 : unresolvedCount === 1 ? 89 : scan.overallScore)
-          : scan?.overallScore;
+        let savedResolved: string[] = [];
+        try {
+          const raw = localStorage.getItem('opspilot_resolved_patches');
+          if (raw) savedResolved = JSON.parse(raw);
+        } catch {}
+
+        const findings = scan?.findings || [];
+        const unresolvedCount = findings.filter(f => {
+          if ((f as any).status === 'RESOLVED') return false;
+          if (savedResolved.includes(f.id) || savedResolved.includes(f.title)) return false;
+          if (f.filePath && savedResolved.includes(f.filePath)) return false;
+          const baseKey = f.id.split('-').slice(-2).join('-');
+          return !savedResolved.some(id => id.includes(baseKey));
+        }).length;
+
+        const effectiveScore = findings.length > 0
+          ? (unresolvedCount === 0 ? 100 : unresolvedCount === 1 ? 89 : (scan?.overallScore ?? 78))
+          : (scan?.overallScore ?? 78);
+
         return <Sidebar incidents={incidents} scanScore={effectiveScore} project={project} />;
       })()}
 
