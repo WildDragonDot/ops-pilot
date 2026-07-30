@@ -851,8 +851,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* TOP TIER RIGHT: HEALTH, AUDIT SCORE, RESOURCE GAUGES & SAFETY (lg:col-span-4) */}
             <div className="lg:col-span-4 space-y-4">
               
-              {/* COMPACT SIDE-BY-SIDE 2-COLUMN CARDS GRID */}
-              <div className="grid grid-cols-2 gap-3">
+	              {/* COMPACT CARDS GRID */}
+	              <div className="grid grid-cols-2 gap-3">
                 {/* Card 1: Cluster Health OR GitHub Sync Status */}
                 {Boolean(project?.serverHost?.trim()) ? (
 	                  <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
@@ -878,7 +878,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	                    </div>
 	                  </div>
                 ) : (
-                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 shadow-sm">
+	                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 shadow-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono">GitHub Health</span>
                       <GitBranch className="w-3.5 h-3.5 text-emerald-500" />
@@ -903,9 +903,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
 
                 {/* Card 2: Security & Quality Audit Score */}
-                <div 
-                  onClick={() => onNavigateTab('auditor')}
-                  className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 shadow-sm hover:border-blue-500/40 transition cursor-pointer"
+	                <div 
+	                  onClick={() => onNavigateTab('auditor')}
+	                  className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 shadow-sm hover:border-blue-500/40 transition cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono">Audit Score</span>
@@ -944,7 +944,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                 {/* System Resource Gauges Card (When Server SSH Host is connected) */}
                 {Boolean(project?.serverHost?.trim()) && (
-                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2.5 shadow-sm self-start">
+	                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2.5 shadow-sm self-start col-span-2">
                     <h3 className="text-[9px] font-mono font-bold uppercase tracking-wider text-title flex flex-col items-start gap-1 border-b theme-border pb-2">
                       <span className="flex items-center gap-1.5">
                         <Cpu className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span>System Resource Gauges</span>
@@ -997,7 +997,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* AI Safety & Guardrails Summary Card */}
           <div 
             onClick={() => navigate('/settings?tab=guardrails')}
-            className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 cursor-pointer hover:border-emerald-500/40 transition group self-start"
+	            className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 cursor-pointer hover:border-emerald-500/40 transition group self-start col-span-2"
           >
             <div className="flex flex-col items-start gap-1 border-b theme-border pb-2">
               <span className="text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono flex items-center gap-1">
@@ -1028,7 +1028,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {Boolean(project?.gitUrl?.trim()) && (
                   <div
                     onClick={() => navigate('/auditor')}
-                    className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 cursor-pointer hover:border-blue-500/50 transition group col-span-2"
+	                    className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 cursor-pointer hover:border-blue-500/50 transition group col-span-2"
                   >
                     <div className="flex items-center justify-between border-b theme-border pb-2.5">
                       <div className="flex items-center gap-2 text-blue-400 font-extrabold text-xs">
