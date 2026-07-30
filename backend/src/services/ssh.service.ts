@@ -70,7 +70,7 @@ export async function testSSHConnection(creds: SSHCredentials): Promise<{ succes
     }
 
     // Remote host connection test using ssh command timeout
-    const command = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -p ${port} ${user}@${host} "echo Connection_OK"`;
+    const command = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 -p ${port} ${user}@${host} "echo Connection_OK"`;
     const { stdout } = await execAsync(command);
 
     if (stdout.includes('Connection_OK')) {
@@ -79,10 +79,8 @@ export async function testSSHConnection(creds: SSHCredentials): Promise<{ succes
 
     return { success: true, message: `Server ${host}:${port} is reachable` };
   } catch (err: any) {
-    // If SSH key or password was provided, simulate or test fallback
-    if (creds.key || creds.password) {
-      const user = creds.user || 'root';
-      return { success: true, message: `SSH credential verification payload accepted for ${user}@${creds.host}:${creds.port || 22}` };
+    if (err.message && err.message.includes('Connection_OK')) {
+      return { success: true, message: `SSH credential verification payload accepted for ${creds.user || 'root'}@${creds.host}:${creds.port || 22}` };
     }
     return { success: false, message: err.message || `Failed to connect to ${creds.host}:${creds.port || 22}` };
   }
@@ -114,8 +112,7 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
   }
 
   const host = assertSafeHost(creds.host);
-  const rawUser = (creds.user && creds.user !== 'root') ? creds.user : (host === '34.224.80.31' ? 'ubuntu' : (creds.user || 'root'));
-  const user = assertSafeUser(rawUser);
+  const user = assertSafeUser(creds.user || 'root');
   const port = normalizePort(creds.port);
   const keyFlag = getSSHKeyFlag(creds);
 
@@ -140,7 +137,7 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
     safeCmd = `cd ${shellQuote(projectPath)} 2>/dev/null || true; ${safeCmd}`;
   }
 
-  const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
+  const sshCmd = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o LogLevel=ERROR ${keyFlag} -p ${port} ${user}@${host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
 
   try {
     const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'xterm-256color' } });
@@ -174,7 +171,7 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
 
   try {
     const osCmd = isLocal ? 'uname -a' : 'cat /etc/os-release || uname -a';
-    const dockerCmd = isLocal ? 'sudo docker ps --format "{{.Names}} ({{.Status}})" || docker ps --format "{{.Names}} ({{.Status}})" || echo "no_docker"' : 'sudo docker ps --format "{{.Names}} ({{.Status}})" || docker ps --format "{{.Names}} ({{.Status}})"';
+    const dockerCmd = 'sudo docker ps --format "{{.Names}} ({{.Status}})" 2>/dev/null || docker ps --format "{{.Names}} ({{.Status}})" 2>/dev/null || sudo docker ps --format "{{.Names}}" 2>/dev/null || docker ps --format "{{.Names}}" 2>/dev/null';
     const memCmd = isLocal ? 'free -m' : 'free -m';
     const dfCmd = isLocal ? 'df -h . || df -h' : 'df -h /';
     const uptimeCmd = 'uptime';
@@ -194,8 +191,9 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
       }
 
       const resCont = (await executeRemoteCommand(creds, dockerCmd)).trim();
-      if (resCont && !resCont.includes('Command failed') && !resCont.includes('Permission denied')) {
-        containersRaw = resCont;
+      if (resCont) {
+        const lines = resCont.split('\n').map(l => l.trim()).filter(l => l && !l.includes('Command failed') && !l.includes('Permission denied') && !l.includes('sudo:'));
+        containersRaw = lines.join('\n');
       }
 
       const resMem = (await executeRemoteCommand(creds, memCmd)).trim();
@@ -272,9 +270,9 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
   }
 }
 
-export async function listRemoteServerDirectories(creds: SSHCredentials, baseDir = '/home/ubuntu'): Promise<string[]> {
-  const safeBaseDir = assertSafeAbsolutePath(baseDir || '/home/ubuntu');
-  const scanCmd = `find ${shellQuote(safeBaseDir)} /var/www /opt -maxdepth 2 -type d 2>/dev/null | head -n 35`;
+export async function listRemoteServerDirectories(creds: SSHCredentials, baseDir = '/home'): Promise<string[]> {
+  const userBase = creds.user === 'root' ? '/root' : `/home/${creds.user || 'ubuntu'}`;
+  const scanCmd = `find ${shellQuote(userBase)} /root /home /var/www /opt -maxdepth 2 -mindepth 1 -type d 2>/dev/null | grep -v "/\\." | head -n 35`;
   try {
     const output = await executeRemoteCommand(creds, scanCmd);
     const rawDirs = output
@@ -282,10 +280,18 @@ export async function listRemoteServerDirectories(creds: SSHCredentials, baseDir
       .map(d => d.trim())
       .filter(d => d && !d.startsWith('[') && !d.includes(' ') && d.startsWith('/'));
 
-    const { filterProjectsWithAI } = await import('./openai.service.js');
-    const filtered = await filterProjectsWithAI(rawDirs, creds.host);
-    return Array.from(new Set(filtered)).slice(0, 10);
+    if (rawDirs.length > 0) {
+      try {
+        const { filterProjectsWithAI } = await import('./openai.service.js');
+        const filtered = await filterProjectsWithAI(rawDirs, creds.host);
+        if (filtered && filtered.length > 0) {
+          return Array.from(new Set(filtered)).slice(0, 15);
+        }
+      } catch (e) {}
+      return Array.from(new Set(rawDirs)).slice(0, 15);
+    }
+    return [userBase];
   } catch (e) {
-    return [];
+    return [userBase];
   }
 }

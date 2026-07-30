@@ -17,8 +17,8 @@ interface ApprovalsPageProps {
 
 export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project, onRefreshIncidents }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ec2-user/test-node-repo';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ec2-user/test-node-repo';
 
   const mode = getProjectOperatingMode(project);
   const hasGitUrl = mode === 'GITHUB_ONLY' || mode === 'HYBRID_BOTH';
@@ -99,7 +99,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project
         <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-mono flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
             <Folder className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Target Path <b>{activeTargetPath}</b> is vacant (0 active incidents/approvals). Active stack is at <b>/home/ubuntu/finance-lock</b>.</span>
+            <span>Target Path <b>{activeTargetPath}</b> selected.</span>
           </div>
         </div>
       )}

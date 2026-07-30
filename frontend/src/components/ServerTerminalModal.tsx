@@ -37,6 +37,7 @@ interface CommandHistoryItem {
   output: string;
   exitCode: number;
   time: string;
+  cwd?: string;
 }
 
 interface ProblemCommandItem {
@@ -216,13 +217,15 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       }
     }, 600);
   };
+  const [currentDir, setCurrentDir] = useState<string>('~');
   const [history, setHistory] = useState<CommandHistoryItem[]>([
     {
       id: 'init-1',
       command: 'opspilot --version',
       output: 'D-OpsPilot Real-Time Server SSH Shell v1.0.0 (Connected via AES-256 WebCrypto Vault)',
       exitCode: 0,
-      time: new Date().toTimeString().split(' ')[0]
+      time: new Date().toTimeString().split(' ')[0],
+      cwd: '~'
     }
   ]);
   const [cmdHistoryList, setCmdHistoryList] = useState<string[]>([]);
@@ -274,9 +277,10 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
         {
           id: Date.now().toString(),
           command: 'help',
-          output: `Available Quick Shell Commands:\n  - docker ps                 (Inspect container states)\n  - curl http://localhost:8080/health (Check HTTP proxy status)\n  - free -m                   (Inspect RAM memory allocation)\n  - uptime                    (Check server load average)\n  - git status                (Check git working tree)\n  - ls -la                    (List directory contents)\n  - clear                     (Clear terminal screen)`,
+          output: `Available Quick Shell Commands:\n  - docker ps                 (Inspect container states)\n  - curl http://localhost:8080/health (Check HTTP proxy status)\n  - free -m                   (Inspect RAM memory allocation)\n  - uptime                    (Check server load average)\n  - git status                (Check git working tree)\n  - ls -la                    (List directory contents)\n  - cd <folder>               (Change working directory)\n  - clear                     (Clear terminal screen)`,
           exitCode: 0,
-          time: timeStr
+          time: timeStr,
+          cwd: currentDir
         }
       ]);
       setCommandInput('');
@@ -296,7 +300,8 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
           command: 'history',
           output: historyOutput,
           exitCode: 0,
-          time: timeStr
+          time: timeStr,
+          cwd: currentDir
         }
       ]);
       setCommandInput('');
@@ -310,18 +315,40 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       setCmdHistoryList(prev => [...prev, targetCmd]);
       setHistoryIndex(-1);
 
-      const res = await executeCommandOnServer(targetCmd, projectId);
+      // Special handling for cd command to track working directory state
+      let execCmd = targetCmd;
+      let isCdCommand = targetCmd.startsWith('cd ') || targetCmd === 'cd' || targetCmd === 'cd ~' || targetCmd === 'cd ..';
+      if (isCdCommand) {
+        execCmd = `${targetCmd} && pwd`;
+      }
+
+      const res = await executeCommandOnServer(execCmd, projectId, currentDir);
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
+      let displayOutput = res.output;
+
+      if (isCdCommand && res.exitCode === 0) {
+        const lines = (res.output || '').trim().split('\n');
+        const pwdResult = lines[lines.length - 1]?.trim();
+        if (pwdResult && (pwdResult.startsWith('/') || pwdResult.startsWith('~'))) {
+          setCurrentDir(pwdResult);
+          displayOutput = `Changed directory to ${pwdResult}`;
+        } else if (!displayOutput || displayOutput.includes('Command executed successfully')) {
+          displayOutput = `Changed working directory`;
+        }
+      } else if (!displayOutput || displayOutput.trim() === '') {
+        displayOutput = `(Command executed successfully)`;
+      }
 
       setHistory(prev => [
         ...prev,
         {
           id: Date.now().toString(),
           command: targetCmd,
-          output: res.output,
+          output: displayOutput,
           exitCode: res.exitCode,
-          time: timeStr
+          time: timeStr,
+          cwd: currentDir
         }
       ]);
       setCommandInput('');
@@ -335,7 +362,8 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
           command: targetCmd,
           output: `[ERROR] ${err.message || 'Execution failed'}`,
           exitCode: 1,
-          time: timeStr
+          time: timeStr,
+          cwd: currentDir
         }
       ]);
       setCommandInput('');
@@ -564,7 +592,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                 <div key={item.id} className="space-y-1">
                   {/* Command Line Prompt */}
                   <div className="flex items-center gap-2 text-slate-700 flex-wrap dark:text-slate-300">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{serverUser}@{serverHost}:{item.cwd || '~'}$</span>
                     <span className="text-title font-bold">{item.command}</span>
                     <span className="text-[10px] text-subtitle font-mono ml-auto dark:text-slate-600">[{item.time}]</span>
                   </div>
@@ -584,7 +612,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
               {isExecuting && (
                 <div className="space-y-1.5 animate-pulse my-2">
                   <div className="flex items-center gap-2 text-slate-700 font-mono text-xs dark:text-slate-300">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{serverUser}@{serverHost}:{currentDir}$</span>
                     <span className="text-blue-700 dark:text-blue-400 font-bold">{executingCmd || commandInput}</span>
                   </div>
                   <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-300 text-blue-900 font-mono text-xs flex items-center gap-3 shadow-lg shadow-blue-100 dark:bg-blue-950/40 dark:border-blue-500/40 dark:text-blue-300 dark:shadow-none dark:glow-blue">
@@ -603,7 +631,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
               {/* Live Active Command Input Line */}
               <div className="flex items-center gap-2 pt-2 text-title font-mono dark:text-slate-200">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">{serverUser}@{serverHost}:~$</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">{serverUser}@{serverHost}:{currentDir}$</span>
                 <input
                   ref={inputRef}
                   type="text"

@@ -34,7 +34,7 @@ import {
   Edit2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { fetchProjects, removeProject, testConnection } from '../services/api';
+import { fetchProjects, removeProject, testConnection, updateProject } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { Project } from '../types';
 import { logger } from '../services/logger';
@@ -77,6 +77,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [editHost, setEditHost] = useState<string>('');
   const [editPort, setEditPort] = useState<string>('22');
   const [editUser, setEditUser] = useState<string>('root');
+  const [editRootPath, setEditRootPath] = useState<string>('');
   const [sshAuthMethod, setSshAuthMethod] = useState<'password' | 'key'>('password');
   const [editSshPassword, setEditSshPassword] = useState<string>('');
   const [editSshKey, setEditSshKey] = useState<string>('');
@@ -253,6 +254,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     setEditHost(proj.serverHost || '');
     setEditPort(proj.serverPort ? String(proj.serverPort) : '22');
     setEditUser(proj.serverUser || 'root');
+    setEditRootPath(proj.rootPath || '');
     setSshAuthMethod('password');
     setEditSshPassword('');
     setEditSshKey('');
@@ -268,7 +270,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
           gitBranch: editGitBranch,
           serverHost: editHost,
           serverPort: parseInt(editPort, 10) || 22,
-          serverUser: editUser
+          serverUser: editUser,
+          rootPath: editRootPath
         },
         { 
           githubToken: editGitToken,
@@ -286,7 +289,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
         gitMsg,
         sshMsg,
         gitSuccess: res.github?.connected,
-        sshSuccess: res.ssh?.connected
+        sshSuccess: res.ssh?.success
       });
 
       addNotification({
@@ -312,7 +315,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     }
   };
 
-  const handleSaveProjectEdit = () => {
+  const handleSaveProjectEdit = async () => {
     if (!editingProject) return;
     if (!testResult?.tested || !testResult?.success) {
       addNotification({
@@ -323,26 +326,43 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
       return;
     }
 
-    setProjectsList(prev => prev.map(p => {
-      if (p.id === editingProject.id) {
-        return { 
-          ...p, 
-          gitUrl: editGitUrl,
-          gitBranch: editGitBranch,
-          serverHost: editHost ? editHost : null, 
-          serverPort: parseInt(editPort, 10) || 22,
-          serverUser: editUser
-        };
-      }
-      return p;
-    }));
+    try {
+      await updateProject(editingProject.id, {
+        gitUrl: editGitUrl,
+        gitBranch: editGitBranch,
+        serverHost: editHost ? editHost : '',
+        serverPort: parseInt(editPort, 10) || 22,
+        serverUser: editUser,
+        rootPath: editRootPath
+      });
 
-    setEditingProject(null);
-    addNotification({
-      type: 'success',
-      title: 'Project Settings Saved',
-      message: `Updated project credentials & attached target (${editHost ? `SSH Host ${editHost}` : 'GitHub AST Mode'}).`
-    });
+      setProjectsList(prev => prev.map(p => {
+        if (p.id === editingProject.id) {
+          return { 
+            ...p, 
+            gitUrl: editGitUrl,
+            gitBranch: editGitBranch,
+            serverHost: editHost ? editHost : null, 
+            serverPort: parseInt(editPort, 10) || 22,
+            serverUser: editUser
+          };
+        }
+        return p;
+      }));
+
+      setEditingProject(null);
+      addNotification({
+        type: 'success',
+        title: 'Project Settings Saved',
+        message: `Updated project credentials & attached target (${editHost ? `SSH Host ${editHost}` : 'GitHub AST Mode'}).`
+      });
+    } catch (err: any) {
+      addNotification({
+        type: 'danger',
+        title: 'Save Failed',
+        message: err.message || 'Could not save project settings.'
+      });
+    }
   };
 
   const handleToggleGuardrail = (id: string) => {
@@ -1714,6 +1734,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                               className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
                             />
                           </div>
+                          <div className="space-y-1">
+                            <label className="text-subtitle font-bold block">Remote Target Directory</label>
+                            <input
+                              type="text"
+                              value={editRootPath}
+                              onChange={(e) => setEditRootPath(e.target.value)}
+                              placeholder="/var/www/my-app"
+                              className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -1946,7 +1976,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                               <textarea
                                 value={editSshKey}
                                 onChange={(e) => setEditSshKey(e.target.value)}
-                                placeholder="Paste -----BEGIN OPENSSH PRIVATE KEY----- here"
+                                placeholder="Paste -----BEGIN OPENSSH PRIVATE KEY----- here (Leave blank if already saved)"
                                 rows={3}
                                 className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono text-[11px] focus:outline-none focus:border-blue-500"
                               />

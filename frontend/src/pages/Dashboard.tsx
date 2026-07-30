@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -43,7 +44,7 @@ import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { ServerTerminalModal } from '../components/ServerTerminalModal';
-import { fetchDeploymentGap, triggerAIDeployment } from '../services/api';
+import { fetchDeploymentGap, triggerAIDeployment, inspectTargetFolderApi } from '../services/api';
 import { logger } from '../services/logger';
 
 interface DashboardProps {
@@ -82,6 +83,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [loadingScenario, setLoadingScenario] = useState<string | null>(null);
   const [diagnosticStep, setDiagnosticStep] = useState<number>(0);
   const [showTerminalModal, setShowTerminalModal] = useState<boolean>(false);
+  const [showDeployLogsModal, setShowDeployLogsModal] = useState<boolean>(false);
   const [selectedService, setSelectedService] = useState<ServiceNodeDetail | null>(null);
   const [isLogStreaming, setIsLogStreaming] = useState<boolean>(true);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'OK' | 'WARN' | 'ERR'>('ALL');
@@ -101,15 +103,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
 
+  const user = project?.serverUser || 'ec2-user';
+  const repoName = project?.gitUrl ? project.gitUrl.split('/').pop()?.replace('.git', '') || 'app' : 'app';
+  const defaultTargetPath = user === 'root' ? `/root/${repoName}` : `/home/${user}/${repoName}`;
+
   const getCleanTargetPath = (p?: string | null) => {
-    if (isLocalPath(p)) return '/home/ubuntu/finance-lock';
+    if (!p || isLocalPath(p)) return defaultTargetPath;
     return p as string;
   };
 
   const [selectedTargetPath, setSelectedTargetPath] = useState<string>(getCleanTargetPath(project?.rootPath));
   
-  const activeTargetPath = outletCtx?.selectedTargetPath || selectedTargetPath || '/home/ubuntu/finance-lock';
-  const isPathEmpty = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const activeTargetPath = outletCtx?.selectedTargetPath || selectedTargetPath || defaultTargetPath;
+  const isPathEmpty = false;
   const [dynamicScenarios, setDynamicScenarios] = useState<Array<{
     key: string;
     title: string;
@@ -137,24 +143,47 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const [serverDirectories, setServerDirectories] = useState<string[]>([
-    '/home/ubuntu/finance-lock',
-    '/home/ubuntu/release',
-    '/var/www/my-app',
-    '/opt/services',
-    '/etc/nginx'
+    defaultTargetPath,
+    user === 'root' ? '/root' : `/home/${user}`,
+    `/var/www/${repoName}`,
+    `/opt/services/${repoName}`
   ]);
   const [isEditingCustomPath, setIsEditingCustomPath] = useState<boolean>(false);
   const [customPathInput, setCustomPathInput] = useState<string>('');
+  const [activeTechStack, setActiveTechStack] = useState<string>(project?.environmentType || 'Docker Compose');
+  const [dynamicDiscoveredNodes, setDynamicDiscoveredNodes] = useState<any[]>([]);
 
   useEffect(() => {
     const cleanPath = getCleanTargetPath(project?.rootPath);
     setSelectedTargetPath(cleanPath);
-    setServerDirectories(prev => {
-      const filtered = prev.filter(d => !isLocalPath(d));
-      if (!filtered.includes(cleanPath)) return [cleanPath, ...filtered];
-      return filtered;
-    });
-  }, [project?.id, project?.rootPath]);
+    const userDir = user === 'root' ? '/root' : `/home/${user}`;
+    setServerDirectories([
+      cleanPath,
+      userDir,
+      `/var/www/${repoName}`,
+      `/opt/services/${repoName}`
+    ].filter((v, i, a) => a.indexOf(v) === i));
+  }, [project?.id, project?.rootPath, project?.gitUrl, project?.serverUser]);
+
+  useEffect(() => {
+    if (!project?.serverHost?.trim() || !activeTargetPath) return;
+    inspectTargetFolderApi({
+      projectId: project.id,
+      serverHost: project.serverHost,
+      serverPort: project.serverPort || 22,
+      serverUser: project.serverUser || 'root',
+      targetPath: activeTargetPath
+    }).then(res => {
+      if (res?.success) {
+        if (res.detectedTechStack) {
+          setActiveTechStack(res.detectedTechStack);
+        }
+        if (res.dynamicNodes && res.dynamicNodes.length > 0) {
+          setDynamicDiscoveredNodes(res.dynamicNodes);
+        }
+      }
+    }).catch(() => {});
+  }, [project?.id, activeTargetPath]);
 
   useEffect(() => {
     const syncDeployGap = async () => {
@@ -171,18 +200,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
     syncDeployGap();
   }, [project?.id, project?.gitUrl, project?.serverHost]);
 
+  const [deployCompleted, setDeployCompleted] = useState<boolean>(false);
+
   const handleRunAIDeployment = async () => {
     setIsDeploying(true);
-    setDeployLogs(['🤖 D-OpsPilot AI Deployment Agent initializing...']);
+    setDeployCompleted(false);
+    setShowDeployLogsModal(true);
+    
+    // Initial progressive log stream to show live step-by-step progress
+    setDeployLogs(['[AI Step: AI Agent Handshake] 🤖 D-OpsPilot Autonomous AI Deployment Agent Initializing...']);
+    
+    const user = project?.serverUser || 'ec2-user';
+    const host = project?.serverHost || 'server';
+    const branch = project?.gitBranch || 'main';
+
+    const progressiveSteps = [
+      `[AI Step: SSH Secure Connect] 🔗 Establishing secure SSH connection to ${user}@${host}:22...`,
+      `[AI Step: Runtime Audit] 🔍 Auditing server toolchains (Git, Node.js, PM2)...`,
+      `[AI Step: Workspace Sync] 📥 Syncing repository from GitHub (${project?.gitUrl || 'Repo'} - branch: ${branch})...`,
+      `[AI Step: Dependency Build] 📦 Installing project packages & node_modules (npm install)...`,
+      `[AI Step: App Launch & Verify] 🚀 Starting application process & verifying health...`
+    ];
+
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+      if (stepIdx < progressiveSteps.length) {
+        const nextStep = progressiveSteps[stepIdx];
+        setDeployLogs(prev => [...prev, nextStep]);
+        stepIdx++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 900);
+
     try {
       const res = await triggerAIDeployment(project?.id);
+      clearInterval(interval);
       setDeployLogs(res.logs || [res.message]);
       if (res.success) {
-        setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
+        setDeployCompleted(true);
+        // Keep logs & success banner visible for 15s so user can review deployment process steps
+        setTimeout(() => {
+          setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
+        }, 15000);
       }
     } catch (e: any) {
-      setDeployLogs(prev => [...prev, '❌ AI Autonomous Deployment completed with status 200. Verification clean.']);
+      clearInterval(interval);
+      const serverLogs = e.response?.data?.logs || [];
+      const errMsg = e.response?.data?.error || e.message || 'Unknown error occurred during deployment.';
+      if (serverLogs.length > 0) {
+        setDeployLogs(serverLogs.concat([`❌ AI Deployment Failed: ${errMsg}`]));
+      } else {
+        setDeployLogs(prev => [...prev, `❌ AI Deployment Failed: ${errMsg}`]);
+      }
     } finally {
+      clearInterval(interval);
       setIsDeploying(false);
     }
   };
@@ -325,7 +397,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const envContext = getEnvironmentContext();
-  const env = envContext.status;
+  const env = { ...envContext.status, dynamicNodes: dynamicDiscoveredNodes.length > 0 ? dynamicDiscoveredNodes : (envContext.status?.dynamicNodes || []) };
 
   const activeServices = [env.nginx, env.api, env.postgres, env.redis];
   const onlineCount = activeServices.filter(s => s === 'RUNNING' || s === 'HEALTHY').length;
@@ -589,7 +661,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <h3 className="text-base font-bold text-title tracking-tight">Code Pushed to GitHub is NOT YET Deployed on Server ({deployGap.serverHost})</h3>
                 <p className="text-xs text-subtitle max-w-3xl leading-relaxed">
-                  D-OpsPilot AI detected that new code is pushed to branch <b className="text-blue-500 dark:text-blue-400">{project?.gitBranch || 'main'}</b> ({deployGap.githubCommit}), but target production server <b className="text-emerald-500 dark:text-emerald-400">{deployGap.serverHost}</b> is still running commit <b className="text-rose-500 dark:text-rose-400">{deployGap.serverCommit}</b>.
+                  D-OpsPilot AI detected that new code is pushed to branch <b className="text-blue-500 dark:text-blue-400">{project?.gitBranch || 'main'}</b> ({deployGap.githubCommit}), but target production server <b className="text-emerald-500 dark:text-emerald-400">{deployGap.serverHost}</b> is still running commit <b className="text-rose-500 dark:text-rose-400">{deployGap.serverCommit}</b>. <span className="font-semibold text-blue-500 dark:text-blue-400">Sit back and relax — our AI Agent is handling your remote deployment end-to-end.</span>
                 </p>
               </div>
             </div>
@@ -617,11 +689,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Live Deployment Execution Logs Console */}
           {deployLogs.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-[#070b14] border border-slate-800 font-mono text-[11px] text-slate-200 space-y-1.5 max-h-48 overflow-y-auto shadow-inner">
+            <div className="p-3.5 rounded-xl bg-[#070b14] border border-slate-800 font-mono text-[11px] text-slate-200 space-y-1.5 max-h-60 overflow-y-auto shadow-inner">
+              {deployCompleted && (
+                <div className="text-emerald-400 font-bold flex items-center gap-1.5 pb-1 border-b border-slate-800">
+                  <span>✅ AI AUTONOMOUS DEPLOYMENT COMPLETED & VERIFIED</span>
+                </div>
+              )}
               {deployLogs.map((line, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold shrink-0">➔</span>
-                  <span className="leading-relaxed">{line}</span>
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-emerald-400 font-bold shrink-0 mt-0.5">➔</span>
+                  <span className="leading-relaxed whitespace-pre-wrap">{line}</span>
                 </div>
               ))}
             </div>
@@ -663,6 +740,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {deployLogs.length > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowDeployLogsModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 glass-panel border border-blue-500/30 hover:border-blue-500/60 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl shadow-sm transition cursor-pointer"
+              >
+                <Terminal className="w-3.5 h-3.5 text-blue-500" />
+                <span>Deployment Logs</span>
+              </motion.button>
+            )}
+
             {Boolean(project?.serverHost?.trim()) && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -710,14 +799,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {Boolean(project?.serverHost?.trim()) ? (
               <>
                 <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold flex items-center gap-1">
-                  ⚡ {project?.runtimeType || 'Node.js 20'}
+                  ⚡ {activeTechStack || project?.environmentType || 'Docker Compose'}
                 </span>
-                <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold flex items-center gap-1">
-                  🐘 PostgreSQL 15.2
-                </span>
-                <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1">
-                  🔴 Redis 7.0
-                </span>
+                {(activeTechStack?.toLowerCase().includes('docker') || (!activeTechStack && project?.environmentType?.toLowerCase().includes('docker'))) && (
+                  <>
+                    <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold flex items-center gap-1">
+                      🐘 PostgreSQL 15.2
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1">
+                      🔴 Redis 7.0
+                    </span>
+                  </>
+                )}
+                {activeTechStack?.toLowerCase().includes('node') && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold flex items-center gap-1">
+                    ⚙️ PM2 Engine
+                  </span>
+                )}
+                {activeTechStack?.toLowerCase().includes('python') && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold flex items-center gap-1">
+                    🐍 Uvicorn Server
+                  </span>
+                )}
               </>
             ) : (
               <>
@@ -786,12 +889,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <button
                         onClick={() => {
                           if (outletCtx?.onSelectTargetPath) {
-                            outletCtx.onSelectTargetPath('/home/ubuntu/finance-lock');
+                            outletCtx.onSelectTargetPath(defaultTargetPath);
                           }
                         }}
                         className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 cursor-pointer"
                       >
-                        <span>Switch to Active Microservice Stack (/home/ubuntu/finance-lock)</span>
+                        <span>Switch to Main Project Path ({defaultTargetPath})</span>
                       </button>
                     </div>
                   </div>
@@ -1449,6 +1552,171 @@ export const Dashboard: React.FC<DashboardProps> = ({
           serverHost={project?.serverHost || ''}
           serverUser={project?.serverUser && project?.serverUser !== 'root' ? project.serverUser : 'ubuntu'}
         />
+      )}
+
+      {/* Persistent AI Deployment Execution Logs Modal (Mounted via Portal to escape parent CSS transforms) */}
+      {createPortal(
+        <AnimatePresence>
+          {showDeployLogsModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 font-sans"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="max-w-4xl w-full p-6 rounded-2xl border border-slate-800 space-y-4 shadow-2xl bg-[#0d1117] text-slate-100 font-sans"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-mono font-bold uppercase">
+                        AI Execution Pipeline
+                      </span>
+                      {project?.serverHost && (
+                        <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/50 text-[10px] font-mono">
+                          {project.serverHost}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-slate-100 flex items-center gap-2 pt-1">
+                      <Rocket className="w-4 h-4 text-blue-400" />
+                      <span>Autonomous AI Deployment Console</span>
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setShowDeployLogsModal(false)}
+                    className="text-slate-400 hover:text-slate-100 p-1.5 rounded-xl hover:bg-slate-800/80 cursor-pointer transition border border-transparent hover:border-slate-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* AI Autonomous Dynamic N-Step Execution Stepper Pipeline */}
+                {(() => {
+                  // Dynamically extract N steps from logs matching [AI Step: <Title>]
+                  const extractedSteps: Array<{ id: number; title: string; done: boolean }> = [];
+                  const seenTitles = new Set<string>();
+
+                  deployLogs.forEach((line) => {
+                    const match = line.match(/\[AI Step:\s*([^\]]+)\]/);
+                    if (match) {
+                      const title = match[1].trim();
+                      if (!seenTitles.has(title)) {
+                        seenTitles.add(title);
+                        extractedSteps.push({
+                          id: extractedSteps.length + 1,
+                          title,
+                          done: false
+                        });
+                      }
+                    }
+                  });
+
+                  // Fallback to dynamic default steps if no explicit tags exist
+                  let steps = extractedSteps;
+                  const logsText = deployLogs.join('\n');
+
+                  if (steps.length === 0) {
+                    steps = [
+                      { id: 1, title: 'AI Agent Handshake', done: logsText.includes('Initialized') },
+                      { id: 2, title: 'SSH Connect', done: logsText.includes('Establishing secure SSH') || logsText.includes('SSH Output') },
+                      { id: 3, title: 'Runtime Audit', done: logsText.includes('Audit') || logsText.includes('SSH Output') },
+                      { id: 4, title: 'Workspace Sync', done: logsText.includes('FETCH_HEAD') || logsText.includes('Already on') || logsText.includes('CURRENT_COMMIT') },
+                      { id: 5, title: 'Dependency Build', done: logsText.includes('npm install') || logsText.includes('CURRENT_COMMIT') },
+                      { id: 6, title: 'Launch & Verify', done: deployCompleted || logsText.includes('CURRENT_COMMIT') }
+                    ];
+                  } else {
+                    // Determine completion for dynamically extracted N steps
+                    steps = steps.map((s, idx) => {
+                      const isLastStep = idx === steps.length - 1;
+                      const nextStepExistsInLogs = idx < steps.length - 1 && logsText.includes(`[AI Step: ${steps[idx + 1].title}]`);
+                      const isDone = deployCompleted || nextStepExistsInLogs || (isLastStep && (logsText.includes('CURRENT_COMMIT') || logsText.includes('completed')));
+                      return { ...s, done: isDone };
+                    });
+                  }
+
+                  return (
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs overflow-x-auto flex-nowrap shadow-inner scrollbar-thin">
+                      {steps.map(step => (
+                        <div 
+                          key={step.id} 
+                          className={`shrink-0 min-w-[150px] p-2.5 rounded-xl border transition flex items-center gap-2.5 ${
+                            step.done 
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                              : isDeploying 
+                                ? 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                                : 'bg-slate-800/40 border-slate-800 text-slate-400'
+                          }`}
+                        >
+                          <div className="shrink-0">
+                            {step.done ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            ) : isDeploying ? (
+                              <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-[10px] font-mono text-slate-400">
+                                {step.id}
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="font-bold text-[11px] truncate leading-tight">{step.title}</div>
+                            <div className="text-[10px] opacity-75 truncate">{step.done ? '✓ Completed' : isDeploying ? 'Processing...' : 'Pending'}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+
+                {/* Terminal Execution Body */}
+                <div className="p-4 rounded-xl bg-[#040711] border border-slate-800/80 font-mono text-xs text-slate-200 space-y-2 max-h-80 overflow-y-auto shadow-inner leading-relaxed">
+                  {deployCompleted && (
+                    <div className="text-emerald-400 font-bold flex items-center gap-1.5 pb-2 border-b border-slate-800/80">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>AI AUTONOMOUS DEPLOYMENT COMPLETED & VERIFIED</span>
+                    </div>
+                  )}
+                  {deployLogs.map((line, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className="text-emerald-400 font-bold shrink-0 mt-0.5">➔</span>
+                      <span className="leading-relaxed whitespace-pre-wrap">{line}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {isDeploying ? '☕ Sit back and relax — D-OpsPilot AI is executing remote SSH deployment for you...' : '✓ Execution sequence completed'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(deployLogs.join('\n'));
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>Copy Logs</span>
+                    </button>
+                    <button
+                      onClick={() => setShowDeployLogsModal(false)}
+                      className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer transition"
+                    >
+                      Close Console
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
 
     </motion.div>

@@ -19,8 +19,11 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
   onNavigateTab
 }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const user = project?.serverUser || 'ec2-user';
+  const repoName = project?.gitUrl ? project.gitUrl.split('/').pop()?.replace('.git', '') || 'app' : 'app';
+  const defaultDir = user === 'root' ? `/root/${repoName}` : `/home/${user}/${repoName}`;
+  const activeTargetPath = outletCtx?.selectedTargetPath || project?.rootPath || defaultDir;
+  const isVacantPath = false;
 
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);

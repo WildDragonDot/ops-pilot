@@ -30,13 +30,21 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Log to console — in production you could send to Sentry / Datadog here
     console.error('[ErrorBoundary] Uncaught render error:', error, info.componentStack);
+    if (error?.message && error.message.includes('Failed to fetch dynamically imported module')) {
+      const storageKey = 'vite_hmr_reload_attempt';
+      const lastAttempt = sessionStorage.getItem(storageKey);
+      if (!lastAttempt) {
+        sessionStorage.setItem(storageKey, String(Date.now()));
+        window.location.reload();
+      }
+    }
   }
 
   handleReset = () => {
+    sessionStorage.removeItem('vite_hmr_reload_attempt');
     this.setState({ hasError: false, error: null });
-    window.location.href = '/';
+    window.location.href = '/dashboard';
   };
 
   render() {

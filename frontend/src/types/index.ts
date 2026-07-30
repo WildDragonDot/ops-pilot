@@ -22,6 +22,7 @@ export interface Project {
     redis: 'RUNNING' | 'STOPPED' | 'ERROR';
     api: 'RUNNING' | 'CRASHED' | 'STOPPED';
     nginx: 'UPSTREAM_502' | 'HEALTHY';
+    dynamicNodes?: any[];
   };
 }
 

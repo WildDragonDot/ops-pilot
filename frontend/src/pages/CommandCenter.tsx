@@ -48,8 +48,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onRefreshIncidents
 }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ec2-user/test-node-repo';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ec2-user/test-node-repo';
   const mode = getProjectOperatingMode(project);
   const modeBadge = getModeBadgeInfo(mode);
   const [promptText, setPromptText] = useState<string>('');
@@ -339,10 +339,10 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               No active outages or diagnostic traces are registered for this target server path. Switch back to the active microservice stack to inspect container logs & incident streams.
             </p>
             <button
-              onClick={() => outletCtx?.onSelectTargetPath?.('/home/ubuntu/finance-lock')}
+              onClick={() => outletCtx?.onSelectTargetPath?.(project?.rootPath || '/root')}
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
             >
-              Switch to Active Microservice Stack (/home/ubuntu/finance-lock) →
+              Switch to Main Project Target Path →
             </button>
           </div>
         ) : activeIncident ? (

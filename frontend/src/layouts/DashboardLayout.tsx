@@ -36,16 +36,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [terminalModalOpen, setTerminalModalOpen] = useState<boolean>(false);
 
   const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
-  const getCleanTargetPath = (p?: string | null) => {
-    if (isLocalPath(p)) return '/home/ubuntu/finance-lock';
-    return p as string;
+  const getCleanTargetPath = (p?: string | null, gitUrl?: string | null, serverUser?: string | null) => {
+    if (p && !isLocalPath(p)) return p;
+    const user = serverUser || 'ec2-user';
+    const repoName = gitUrl ? gitUrl.split('/').pop()?.replace('.git', '') || 'app' : 'app';
+    if (user === 'root') {
+      return `/root/${repoName}`;
+    }
+    return `/home/${user}/${repoName}`;
   };
 
-  const [selectedTargetPath, setSelectedTargetPath] = useState<string>(getCleanTargetPath(project?.rootPath));
+  const [selectedTargetPath, setSelectedTargetPath] = useState<string>(getCleanTargetPath(project?.rootPath, project?.gitUrl, project?.serverUser));
 
   useEffect(() => {
-    setSelectedTargetPath(getCleanTargetPath(project?.rootPath));
-  }, [project?.id, project?.rootPath]);
+    setSelectedTargetPath(getCleanTargetPath(project?.rootPath, project?.gitUrl, project?.serverUser));
+  }, [project?.id, project?.rootPath, project?.gitUrl, project?.serverUser]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -159,7 +164,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           onClose={() => setTerminalModalOpen(false)}
           projectId={project.id}
           serverHost={project.serverHost || ''}
-          serverUser={project.serverUser && project.serverUser !== 'root' ? project.serverUser : 'ubuntu'}
+          serverUser={project.serverUser || 'root'}
         />
       )}
 

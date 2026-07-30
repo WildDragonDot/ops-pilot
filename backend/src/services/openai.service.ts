@@ -239,7 +239,7 @@ export async function filterProjectsWithAI(rawDirectories: string[], serverHost?
   });
 
   if (!hasOpenAIKey() || !openai) {
-    return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
+    return cleaned.length > 0 ? cleaned : ['/root', '/var/www'];
   }
 
   try {
@@ -247,7 +247,7 @@ export async function filterProjectsWithAI(rawDirectories: string[], serverHost?
 ${JSON.stringify(rawDirectories)}
 
 Return ONLY a JSON object with key "projects" containing a list of actual application/project root directories. Exclude hidden dot-files (.npm, .cache, .ssh), npm logs, node_modules, temp files, and system cache folders.
-Example JSON: {"projects": ["/home/ubuntu/finance-lock", "/var/www"]}`;
+Example JSON: {"projects": ["/var/www/app", "/root/service"]}`;
 
     const completion = await openai.chat.completions.create({
       model: openaiModel,
@@ -262,11 +262,13 @@ Example JSON: {"projects": ["/home/ubuntu/finance-lock", "/var/www"]}`;
         return parsed.projects;
       }
     }
-  } catch (err) {
-    logger.warn('OpenAI directory filter notice', err);
+  } catch (err: any) {
+    if (!err?.message?.includes('429') && !err?.status === 429) {
+      logger.warn('OpenAI directory filter notice:', err?.message || err);
+    }
   }
 
-  return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
+  return cleaned.length > 0 ? cleaned : ['/root', '/var/www'];
 }
 
 export async function summarizeLogsWithAI(rawLogs: string): Promise<{

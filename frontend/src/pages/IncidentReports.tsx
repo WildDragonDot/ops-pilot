@@ -12,8 +12,8 @@ interface IncidentReportsProps {
 
 export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/root';
+  const isVacantPath = false;
 
   const filteredIncidents = isVacantPath ? [] : incidents;
   const resolvedIncidents = filteredIncidents.filter(i => i.report);

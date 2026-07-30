@@ -40,8 +40,11 @@ interface RunbooksPageProps {
 
 export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const user = project?.serverUser || 'ec2-user';
+  const repoName = project?.gitUrl ? project.gitUrl.split('/').pop()?.replace('.git', '') || 'app' : 'app';
+  const defaultDir = user === 'root' ? `/root/${repoName}` : `/home/${user}/${repoName}`;
+  const activeTargetPath = outletCtx?.selectedTargetPath || project?.rootPath || defaultDir;
+  const isVacantPath = false;
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [runningId, setRunningId] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, string[]>>({});
@@ -50,7 +53,7 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
   const mode = getProjectOperatingMode(project);
   const isServerConfigured = mode === 'SERVER_ONLY' || mode === 'HYBRID_BOTH';
   const isGitConfigured = mode === 'GITHUB_ONLY' || mode === 'HYBRID_BOTH';
-  const repoName = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured';
+  const fullRepoPath = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured';
 
   const serverRunbooks: Runbook[] = [
     {

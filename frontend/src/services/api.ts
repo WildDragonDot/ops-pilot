@@ -163,7 +163,7 @@ export async function createNewProject(
 }
 
 export async function testConnection(
-  payload: { gitUrl?: string; gitBranch?: string; serverHost?: string; serverPort?: number; serverUser?: string },
+  payload: { gitUrl?: string; gitBranch?: string; serverHost?: string; serverPort?: number; serverUser?: string; rootPath?: string },
   creds?: ProjectCredentials
 ): Promise<any> {
   const headers = getAuthHeaders();
@@ -330,11 +330,54 @@ export async function fetchPostMortemReport(incidentId: string): Promise<string>
   return data.report;
 }
 
-export async function executeCommandOnServer(command: string, projectId?: string): Promise<{ success: boolean; command: string; output: string; exitCode: number; cwd?: string }> {
+export async function executeCommandOnServer(command: string, projectId?: string, cwd?: string): Promise<{ success: boolean; command: string; output: string; exitCode: number; cwd?: string }> {
   return apiFetch(`${API_BASE}/projects/exec`, {
     method: 'POST',
     headers: getAuthHeaders(projectId),
-    body: JSON.stringify({ command, projectId }),
+    body: JSON.stringify({ command, projectId, cwd }),
+  });
+}
+
+export async function scanServerDirectoriesApi(params: {
+  serverHost: string;
+  serverPort?: number;
+  serverUser?: string;
+  baseDir?: string;
+}): Promise<{ success: boolean; directories: string[]; error?: string }> {
+  return apiFetch(`${API_BASE}/projects/scan-directories`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+}
+
+export async function inspectTargetFolderApi(params: {
+  projectId?: string;
+  serverHost?: string;
+  serverPort?: number;
+  serverUser?: string;
+  targetPath?: string;
+}): Promise<{
+  success: boolean;
+  targetPath: string;
+  detectedTechStack: string;
+  hasDockerCompose: boolean;
+  hasPackageJson: boolean;
+  containersCount: number;
+  dynamicNodes: Array<{ id: string; label: string; status: 'RUNNING' | 'STOPPED'; raw: string }>;
+}> {
+  return apiFetch(`${API_BASE}/projects/inspect-folder`, {
+    method: 'POST',
+    headers: getAuthHeaders(params.projectId),
+    body: JSON.stringify(params),
+  });
+}
+
+export async function updateProject(id: string, projectData: Partial<Project>): Promise<Project> {
+  return apiFetch(`${API_BASE}/projects/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(id),
+    body: JSON.stringify(projectData),
   });
 }
 

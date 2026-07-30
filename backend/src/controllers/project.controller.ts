@@ -58,15 +58,16 @@ export async function getProject(req: Request, res: Response) {
     return res.status(404).json({ error: 'Project not found' });
   }
 
-  const cleanHost = project.serverHost === '34.224.80.31' ? null : project.serverHost;
+  const user = project.serverUser || 'ec2-user';
+  const repoName = project.gitUrl ? project.gitUrl.split('/').pop()?.replace('.git', '') || 'app' : 'app';
+  const defaultDir = user === 'root' ? `/root/${repoName}` : `/home/${user}/${repoName}`;
   const isLocalMacPath = project.rootPath?.startsWith('/Users/') || project.rootPath?.includes('Desktop');
-  const cleanRootPath = (project.serverHost || cleanHost) && isLocalMacPath ? '/home/ubuntu/finance-lock' : project.rootPath;
+  const cleanRootPath = isLocalMacPath ? defaultDir : (project.rootPath || defaultDir);
 
   res.json({
     project: {
       ...project,
       rootPath: cleanRootPath,
-      serverHost: cleanHost,
       environmentStatus: state.environmentStatus
     }
   });
@@ -277,11 +278,12 @@ export async function getProjectHealth(req: Request, res: Response) {
       services = {
         overall: 'HEALTHY',
         dynamicNodes: discovery.containers.map(c => {
-          const match = c.match(/^([\w-]+)\s*\((.*?)\)$/);
+          const namePart = c.includes('(') ? c.split('(')[0]?.trim() : c.trim();
+          const statusPart = c.includes('(') ? c.split('(')[1]?.replace(')', '')?.trim() : 'Up';
           return {
-            id: match ? match[1] : c.replace(/\s+/g, '_').toLowerCase(),
-            label: match ? match[1] : c,
-            status: c.includes('Up') ? 'RUNNING' : 'STOPPED',
+            id: namePart.replace(/[^\w-]/g, '_').toLowerCase(),
+            label: namePart,
+            status: statusPart?.toLowerCase().includes('up') ? 'RUNNING' : 'STOPPED',
             raw: c
           };
         })
@@ -367,7 +369,7 @@ export async function resetEnv(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function executeServerCommand(req: AuthenticatedRequest, res: Response) {
-  const { command, projectId } = req.body;
+  const { command, projectId, cwd } = req.body;
   const user = req.user;
   if (!command || typeof command !== 'string') {
     return res.status(400).json({ error: 'Command string is required' });
@@ -422,9 +424,14 @@ export async function executeServerCommand(req: AuthenticatedRequest, res: Respo
     password: headerSshPass
   };
 
+  let cmdToExec = trimmed;
+  if (cwd && typeof cwd === 'string' && cwd.trim() !== '' && cwd !== '~') {
+    cmdToExec = `cd ${shellQuote(cwd)} 2>/dev/null && ${trimmed}`;
+  }
+
   try {
     const { executeRemoteCommand } = await import('../services/ssh.service.js');
-    const output = await executeRemoteCommand(creds, trimmed);
+    const output = await executeRemoteCommand(creds, cmdToExec);
     const success = !output.includes('Command failed') && !output.includes('Permission denied');
 
     // Audit: server command executed
@@ -500,18 +507,24 @@ export async function getServerLogs(req: Request, res: Response) {
 
       const rawLogs = await executeRemoteCommand(
         creds,
-        `(docker ps --format '{{.Names}}' | head -n 1 | xargs -r -I{} docker logs --tail 20 {} 2>&1) || journalctl -n 20 --no-pager || tail -n 20 /var/log/syslog`
+        `(for c in $(sudo docker ps --format '{{.Names}}' 2>/dev/null || docker ps --format '{{.Names}}' 2>/dev/null); do echo "=== CONTAINER: $c ==="; sudo docker logs --tail 10 $c 2>&1 || docker logs --tail 10 $c 2>&1; done) || journalctl -n 20 --no-pager 2>/dev/null`
       );
       
-      if (rawLogs && !rawLogs.includes('Command failed') && !rawLogs.includes('Permission denied')) {
-        const lines = rawLogs.split('\n').filter(Boolean);
-        const formatted = lines.map((msg, i) => ({
-          id: `log-${Date.now()}-${i}`,
-          time: new Date(now.getTime() - (lines.length - i) * 2000).toTimeString().split(' ')[0],
-          level: (msg.includes('ERR') || msg.includes('error') ? 'ERR' : msg.includes('WARN') ? 'WARN' : 'INFO') as 'INFO' | 'OK' | 'WARN' | 'ERR',
-          message: msg.substring(0, 150)
-        }));
-        return res.json({ logs: formatted, host: serverHost, realRemote: true });
+      if (rawLogs && !rawLogs.includes('Command failed')) {
+        const lines = rawLogs
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l && !l.includes('permission denied while trying to connect to the docker API'));
+
+        if (lines.length > 0) {
+          const formatted = lines.map((msg, i) => ({
+            id: `log-${Date.now()}-${i}`,
+            time: new Date(now.getTime() - (lines.length - i) * 2000).toTimeString().split(' ')[0],
+            level: (msg.toLowerCase().includes('err') || msg.toLowerCase().includes('fail') ? 'ERR' : msg.toLowerCase().includes('warn') ? 'WARN' : 'INFO') as 'INFO' | 'OK' | 'WARN' | 'ERR',
+            message: msg.substring(0, 150)
+          }));
+          return res.json({ logs: formatted, host: serverHost, realRemote: true });
+        }
       }
     } catch (e) {
       logger.warn('Remote log stream error', e);
@@ -572,8 +585,8 @@ export async function scanServerDirectories(req: Request, res: Response) {
   const creds = {
     host: serverHost,
     port: Number(serverPort) || 22,
-    user: serverUser || 'ubuntu',
-    sshKey,
+    user: serverUser || 'root',
+    key: sshKey,
     password: sshPassword
   };
 
@@ -583,10 +596,106 @@ export async function scanServerDirectories(req: Request, res: Response) {
 
   try {
     const { listRemoteServerDirectories } = await import('../services/ssh.service.js');
-    const directories = await listRemoteServerDirectories(creds, baseDir || '/home/ubuntu');
+    const userDefault = creds.user === 'root' ? '/root' : `/home/${creds.user}`;
+    const directories = await listRemoteServerDirectories(creds, baseDir || userDefault);
     res.json({ success: true, directories });
   } catch (err: any) {
     res.status(502).json({ success: false, directories: [], error: err.message || 'Unable to scan remote server directories.' });
+  }
+}
+
+export async function inspectTargetFolder(req: Request, res: Response) {
+  const { projectId, serverHost, serverPort, serverUser, targetPath } = req.body;
+  const sshKey = getHeaderString(req.headers['x-server-ssh-key']);
+  const sshPassword = getHeaderString(req.headers['x-server-pass']) || getHeaderString(req.headers['x-server-ssh-pass']);
+
+  let host = serverHost;
+  let port = Number(serverPort) || 22;
+  let user = serverUser || 'root';
+
+  if (projectId) {
+    try {
+      const proj = await prisma.project.findUnique({ where: { id: String(projectId) } });
+      if (proj?.serverHost) {
+        host = proj.serverHost;
+        port = proj.serverPort || 22;
+        user = proj.serverUser || 'root';
+      }
+    } catch (e) {}
+  }
+
+  if (!host) {
+    return res.status(400).json({ error: 'Inspection requires a server host.' });
+  }
+
+  const creds = { host, port, user, key: sshKey, password: sshPassword };
+  const folder = targetPath || (user === 'root' ? '/root' : `/home/${user}`);
+
+  try {
+    const { executeRemoteCommand } = await import('../services/ssh.service.js');
+    const inspectScript = `
+      cd ${shellQuote(folder)} 2>/dev/null || exit 0
+      echo "=== PWD ==="
+      pwd
+      echo "=== FILES ==="
+      ls -1a | head -n 30
+      echo "=== DOCKER ==="
+      sudo docker ps --format "{{.Names}} ({{.Status}})" 2>/dev/null || docker ps --format "{{.Names}} ({{.Status}})" 2>/dev/null || echo "no_docker"
+      echo "=== PM2 ==="
+      pm2 jlist 2>/dev/null || echo "no_pm2"
+    `;
+
+    const rawOutput = await executeRemoteCommand(creds, inspectScript);
+    
+    const hasDockerCompose = rawOutput.includes('docker-compose') || rawOutput.includes('compose.yml');
+    const hasPackageJson = rawOutput.includes('package.json');
+    const hasRequirementsTxt = rawOutput.includes('requirements.txt') || rawOutput.includes('Pipfile') || rawOutput.includes('pyproject.toml');
+    const hasGoMod = rawOutput.includes('go.mod');
+
+    let containers: string[] = [];
+    if (rawOutput.includes('=== DOCKER ===')) {
+      const dockerSection = rawOutput.split('=== DOCKER ===')[1]?.split('=== PM2 ===')[0] || '';
+      containers = dockerSection
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.includes('no_docker') && !l.includes('===') && !l.includes('Command failed') && !l.includes('Permission denied') && !l.includes('sudo:'));
+    }
+
+    let detectedTechStack = 'Docker Compose';
+    if (containers.length > 0 || hasDockerCompose) {
+      detectedTechStack = 'Docker Compose';
+    } else if (hasPackageJson) {
+      detectedTechStack = 'Node.js API';
+    } else if (hasRequirementsTxt) {
+      detectedTechStack = 'Python / FastAPI';
+    } else if (hasGoMod) {
+      detectedTechStack = 'Go / Microservice';
+    }
+
+    const dynamicNodes = containers.map(c => {
+      const namePart = c.includes('(') ? c.split('(')[0]?.trim() : c.trim();
+      const statusPart = c.includes('(') ? c.split('(')[1]?.replace(')', '')?.trim() : 'Up';
+      return {
+        id: namePart.replace(/[^\w-]/g, '_').toLowerCase(),
+        label: namePart,
+        status: statusPart?.toLowerCase().includes('up') ? 'RUNNING' : 'STOPPED',
+        raw: c
+      };
+    });
+
+    res.json({
+      success: true,
+      targetPath: folder,
+      detectedTechStack,
+      hasDockerCompose,
+      hasPackageJson,
+      hasRequirementsTxt,
+      hasGoMod,
+      containersCount: containers.length,
+      dynamicNodes
+    });
+  } catch (err: any) {
+    res.status(502).json({ success: false, error: err.message || 'Inspection failed' });
   }
 }
 
@@ -696,21 +805,35 @@ export async function executeAIDeployment(req: Request, res: Response) {
 
   const serverHost = project?.serverHost?.trim();
   const gitUrl = project?.gitUrl?.trim();
-  const targetPath = project?.rootPath || '';
+  let targetPath = project?.rootPath || '';
   const now = new Date().toISOString();
 
   if (!serverHost || !gitUrl) {
     return res.status(400).json({ error: 'AI deployment requires both a GitHub repository and an SSH server host.' });
   }
-  if (!targetPath || targetPath.startsWith('/Users/') || targetPath.includes('Desktop')) {
-    return res.status(400).json({ error: 'AI deployment requires a real remote target path for this server project.' });
+
+  // Determine clean remote directory name (e.g. test-node-repo)
+  const repoName = gitUrl.split('/').pop()?.replace('.git', '') || 'app';
+  let dirName = repoName;
+  if (targetPath && !targetPath.startsWith('/Users/') && !targetPath.includes('Desktop')) {
+    dirName = targetPath.startsWith('~/') ? targetPath.replace(/^~\//, '') : targetPath;
+  }
+
+  const branch = (project as any)?.gitBranch || 'main';
+  const user = project?.serverUser || 'ec2-user';
+  const gitToken = (project as any)?.gitToken;
+  const headerGitToken = getHeaderString(req.headers['x-github-token']);
+  const tokenToUse = gitToken || headerGitToken;
+  let cloneUrl = gitUrl;
+
+  if (tokenToUse && gitUrl.startsWith('https://')) {
+    cloneUrl = gitUrl.replace('https://', `https://${tokenToUse}@`);
   }
 
   const logs: string[] = [
-    `[${now}] 🤖 D-OpsPilot Autonomous AI Deployment Agent Initialized`,
-    `[${now}] 🔗 Establishing secure SSH connection to ubuntu@${serverHost}:22...`,
-    `[${now}] 📂 Navigating to target application directory: ${targetPath}`,
-    `[${now}] 📥 Executing git pull origin ${(project as any)?.gitBranch || 'main'}...`
+    `[AI Step: AI Agent Handshake] 🤖 D-OpsPilot Autonomous AI Deployment Agent Initialized`,
+    `[AI Step: SSH Secure Connect] 🔗 Establishing secure SSH connection to ${user}@${serverHost}:${project?.serverPort || 22}...`,
+    `[AI Step: Workspace Directory Check] 📂 Target directory on server: ${dirName}`,
   ];
 
   try {
@@ -721,25 +844,110 @@ export async function executeAIDeployment(req: Request, res: Response) {
     const creds = {
       host: serverHost,
       port: project?.serverPort || 22,
-      user: project?.serverUser || 'ubuntu',
+      user,
       key: headerSshKey,
       password: headerSshPass
     };
 
-    const branch = (project as any)?.gitBranch || 'main';
-    const remoteOut = await executeRemoteCommand(creds, `cd ${shellQuote(targetPath)} && git pull origin ${shellQuote(branch)} 2>&1 && git rev-parse --short HEAD && (docker compose ps || docker ps)`);
+    const deployScript = `
+      export GIT_TERMINAL_PROMPT=0
+
+      echo "[AI Step: Git Toolchain Audit]"
+      if ! command -v git &> /dev/null; then
+        echo "Git not detected on remote server. Installing Git..."
+        sudo dnf install -y git || sudo yum install -y git || (sudo apt-get update && sudo apt-get install -y git)
+      fi
+
+      echo "[AI Step: Node & NPM Runtime Audit]"
+      if ! command -v node &> /dev/null; then
+        echo "Node.js not detected on remote server. Installing Node.js & npm..."
+        sudo dnf install -y nodejs npm || sudo yum install -y nodejs npm || (curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs)
+      fi
+
+      echo "[AI Step: PM2 Process Manager Audit]"
+      if ! command -v pm2 &> /dev/null; then
+        echo "PM2 process manager not detected. Installing PM2 globally..."
+        sudo npm install -g pm2 2>&1 || true
+      fi
+
+      echo "[AI Step: Git Repo Workspace Sync]"
+      if [ ! -d ${shellQuote(dirName)}/.git ]; then
+        echo "Cloning repository into ${shellQuote(dirName)}..."
+        mkdir -p ${shellQuote(dirName)}
+        git clone --depth 1 ${shellQuote(cloneUrl)} ${shellQuote(dirName)} 2>&1
+      fi
+      cd ${shellQuote(dirName)}
+      echo "Fetching latest changes for branch ${shellQuote(branch)}..."
+      git fetch origin ${shellQuote(branch)} 2>&1
+      git checkout ${shellQuote(branch)} 2>&1
+      git pull origin ${shellQuote(branch)} 2>&1
+
+      echo "[AI Step: Dependency Installation]"
+      if [ -f "package.json" ]; then
+        echo "Running npm install for project dependencies (node_modules)..."
+        npm install 2>&1
+      fi
+
+      echo "[AI Step: Process Launch & Verification]"
+      if command -v pm2 &> /dev/null; then
+        echo "Launching application process with PM2..."
+        pm2 restart ${shellQuote(dirName)} 2>&1 || pm2 start npm --name ${shellQuote(dirName)} -- start 2>&1 || pm2 start index.js --name ${shellQuote(dirName)} 2>&1 || pm2 start server.js --name ${shellQuote(dirName)} 2>&1 || true
+        pm2 save 2>&1 || true
+      fi
+
+      echo "CURRENT_COMMIT:\\$(git rev-parse --short HEAD)"
+    `;
+
+    const remoteOut = await executeRemoteCommand(creds, deployScript);
+    let deployedCommit = '';
+    let success = false;
+
     if (remoteOut) {
-      logs.push(`[SSH Output] ${remoteOut.substring(0, 1200)}`);
+      logs.push(`[SSH Output]\n${remoteOut.substring(0, 2000)}`);
+      const commitMatch = remoteOut.match(/CURRENT_COMMIT:([a-f0-9]+)/);
+      if (commitMatch) {
+        deployedCommit = commitMatch[1];
+        success = true;
+      }
     }
+
+    if (!success) {
+      return res.status(400).json({
+        success: false,
+        error: 'Git deployment failed on remote server. Verify git permissions or check SSH logs below.',
+        logs
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'AI deployment command completed successfully on remote server.',
+      deployedCommit,
+      serverHost,
+      logs
+    });
   } catch (e: any) {
     return res.status(502).json({ error: e.message || 'Remote deployment command failed.', logs });
   }
+}
 
-  res.json({
-    success: true,
-    message: 'AI deployment command completed on the configured server.',
-    deployedCommit: '',
-    serverHost,
-    logs
-  });
+export async function updateProject(req: AuthenticatedRequest, res: Response) {
+  const id = String(req.params.id);
+  const { gitUrl, gitBranch, serverHost, serverPort, serverUser, rootPath } = req.body;
+  try {
+    const updated = await prisma.project.update({
+      where: { id },
+      data: {
+        gitUrl,
+        gitBranch,
+        serverHost,
+        serverPort: serverPort ? parseInt(serverPort, 10) : 22,
+        serverUser,
+        ...(rootPath && { rootPath })
+      }
+    });
+    res.json(updated);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
 }

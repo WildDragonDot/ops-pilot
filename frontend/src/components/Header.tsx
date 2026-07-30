@@ -22,6 +22,7 @@ import { useNotification } from '../context/NotificationContext';
 import { CommandPalette } from './CommandPalette';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
+import { scanServerDirectoriesApi } from '../services/api';
 
 interface HeaderProps {
   project: Project | null;
@@ -114,15 +115,46 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
-  const targetPath = (selectedTargetPath && !isLocalPath(selectedTargetPath)) ? selectedTargetPath : '/home/ubuntu/finance-lock';
+  const user = project?.serverUser || 'ec2-user';
+  const repoName = project?.gitUrl ? project.gitUrl.split('/').pop()?.replace('.git', '') || 'app' : 'app';
+  const defaultTargetPath = user === 'root' ? `/root/${repoName}` : `/home/${user}/${repoName}`;
+  const targetPath = (selectedTargetPath && !isLocalPath(selectedTargetPath)) ? selectedTargetPath : (project?.rootPath && !isLocalPath(project.rootPath) ? project.rootPath : defaultTargetPath);
 
   const [serverDirectories, setServerDirectories] = useState<string[]>([
-    '/home/ubuntu/finance-lock',
-    '/home/ubuntu/release',
-    '/var/www/my-app',
-    '/opt/services',
-    '/etc/nginx'
+    defaultTargetPath,
+    user === 'root' ? '/root' : `/home/${user}`,
+    `/var/www/${repoName}`,
+    `/opt/services/${repoName}`
   ]);
+
+  React.useEffect(() => {
+    const primaryPath = project?.rootPath && !isLocalPath(project.rootPath) ? project.rootPath : defaultTargetPath;
+    const initialList = [
+      primaryPath,
+      user === 'root' ? '/root' : `/home/${user}`,
+      defaultTargetPath,
+      `/var/www/${repoName}`,
+      `/opt/services/${repoName}`
+    ].filter((v, i, a) => a.indexOf(v) === i);
+    setServerDirectories(initialList);
+
+    if (project?.serverHost) {
+      scanServerDirectoriesApi({
+        serverHost: project.serverHost,
+        serverPort: project.serverPort || 22,
+        serverUser: project.serverUser || 'root',
+        baseDir: user === 'root' ? '/root' : `/home/${user}`
+      }).then(res => {
+        if (res?.success && res.directories && res.directories.length > 0) {
+          const combined = Array.from(new Set([primaryPath, ...res.directories])).filter(d => !isLocalPath(d));
+          setServerDirectories(combined);
+          if (!selectedTargetPath || isLocalPath(selectedTargetPath)) {
+            onSelectTargetPath?.(combined[0]);
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [project?.id, project?.serverHost, project?.serverUser, project?.gitUrl, project?.rootPath]);
   const [isEditingCustomPath, setIsEditingCustomPath] = useState<boolean>(false);
   const [customPathInput, setCustomPathInput] = useState<string>('');
 

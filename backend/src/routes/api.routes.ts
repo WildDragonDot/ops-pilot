@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { register, login, firebaseAuth, getMe } from '../controllers/auth.controller.js';
-import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv, suggestAICommand, scanServerDirectories, analyzeLogsWithAIController, checkDeploymentGap, executeAIDeployment } from '../controllers/project.controller.js';
+import { getProject, getProjects, createProject, updateProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv, suggestAICommand, scanServerDirectories, inspectTargetFolder, analyzeLogsWithAIController, checkDeploymentGap, executeAIDeployment } from '../controllers/project.controller.js';
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
@@ -32,9 +32,11 @@ router.post('/projects/ai-deploy', requireAuth, asyncHandler(executeAIDeployment
 // ─── Protected Project & Environment Routes ───────────────────────────────────
 router.get('/projects', requireAuth, asyncHandler(getProjects));
 router.post('/projects', requireAuth, asyncHandler(createProject));
+router.put('/projects/:id', requireAuth, asyncHandler(updateProject));
 router.post('/projects/exec', requireAuth, asyncHandler(executeServerCommand));
 router.post('/projects/test-connection', requireAuth, asyncHandler(testProjectConnection));
 router.post('/projects/scan-directories', requireAuth, asyncHandler(scanServerDirectories));
+router.post('/projects/inspect-folder', requireAuth, asyncHandler(inspectTargetFolder));
 router.delete('/projects/:id', requireAuth, requireAdmin, asyncHandler(deleteProject));       // ADMIN only
 router.get('/projects/:id', requireAuth, asyncHandler(getProject));
 router.get('/projects/:id/health', requireAuth, asyncHandler(getProjectHealth));
