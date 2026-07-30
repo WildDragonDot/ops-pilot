@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, 
@@ -72,6 +73,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateTab,
   onInjectFailure
 }) => {
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (path: string) => void }>();
+
   const [activeEnv, setActiveEnv] = useState<'PROD' | 'STAGING' | 'DEV'>('PROD');
   const [loadingScenario, setLoadingScenario] = useState<string | null>(null);
   const [diagnosticStep, setDiagnosticStep] = useState<number>(0);
@@ -101,6 +104,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const [selectedTargetPath, setSelectedTargetPath] = useState<string>(getCleanTargetPath(project?.rootPath));
+  
+  const activeTargetPath = outletCtx?.selectedTargetPath || selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isPathEmpty = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
   const [serverDirectories, setServerDirectories] = useState<string[]>([
     '/home/ubuntu/finance-lock',
     '/home/ubuntu/release',
@@ -687,11 +693,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {/* TOP TIER LEFT: TOPOLOGY GRAPH CANVAS OR GITHUB AUDIT CARD (lg:col-span-8) */}
             <div className="lg:col-span-8 space-y-5">
               {Boolean(project?.serverHost?.trim()) && (
-                <TopologyGraph 
-                  project={project} 
-                  environmentStatus={env} 
-                  onSelectNode={(nodeKey) => setSelectedService(nodeDataMap[nodeKey])}
-                />
+                isPathEmpty ? (
+                  <div className="glass-panel p-8 rounded-2xl theme-border border text-center space-y-4 shadow-sm font-sans">
+                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-500 inline-block">
+                      <Folder className="w-8 h-8 text-blue-500 mx-auto animate-bounce" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-300 font-mono text-[10px] font-extrabold border border-amber-500/30 uppercase">
+                          TARGET PATH VACANT
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-title">0 Active Microservices in Target Path</h3>
+                      <p className="text-xs text-subtitle font-mono max-w-xl mx-auto leading-relaxed">
+                        Path <b className="text-blue-500 dark:text-blue-400 font-bold">{activeTargetPath}</b> has no active microservices or docker-compose running on server <b className="text-emerald-500">{project?.serverHost || '34.224.80.31'}</b>.
+                      </p>
+                    </div>
+                    <div className="pt-2 flex justify-center gap-3">
+                      <button
+                        onClick={() => {
+                          if (outletCtx?.onSelectTargetPath) {
+                            outletCtx.onSelectTargetPath('/home/ubuntu/finance-lock');
+                          }
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-md transition flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>Switch to Active Microservice Stack (/home/ubuntu/finance-lock)</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <TopologyGraph 
+                    project={project} 
+                    environmentStatus={env} 
+                    onSelectNode={(nodeKey) => setSelectedService(nodeDataMap[nodeKey])}
+                  />
+                )
               )}
 
               {Boolean(project?.gitUrl?.trim() || !project?.serverHost?.trim()) && (
