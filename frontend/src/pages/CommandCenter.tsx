@@ -57,7 +57,25 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
   const [showTerminalModal, setShowTerminalModal] = useState<boolean>(false);
   const [isInvestigating, setIsInvestigating] = useState<boolean>(false);
+  const [pendingPromptText, setPendingPromptText] = useState<string>('');
+  const [loadingStepText, setLoadingStepText] = useState<string>('Parsing prompt intent & auditing repository AST graph...');
   const [showReasoningTimeline, setShowReasoningTimeline] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isInvestigating) return;
+    const steps = [
+      '🔍 Parsing prompt intent & auditing repository AST graph...',
+      '🤖 Invoking OpenAI GPT-4o reasoning model for root cause diagnosis...',
+      '🛡️ Verifying AST code fix safety & generating automated git patch...'
+    ];
+    let idx = 0;
+    setLoadingStepText(steps[0]);
+    const interval = setInterval(() => {
+      idx = (idx + 1) % steps.length;
+      setLoadingStepText(steps[idx]);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [isInvestigating]);
   const [showDiffDetails, setShowDiffDetails] = useState<boolean>(false);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [copiedSlackReport, setCopiedSlackReport] = useState<boolean>(false);
@@ -179,15 +197,22 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }
 
     try {
+      setPendingPromptText(textToSend);
+      setPromptText('');
       setIsInvestigating(true);
+
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+
       const newInc = await startIncident(textToSend, targetScenarioKey, project?.id);
       setActiveIncidentId(newInc.id);
-      setPromptText('');
       onRefreshIncidents();
     } catch (err) {
       logger.error('Approval failed', err);
     } finally {
       setIsInvestigating(false);
+      setPendingPromptText('');
     }
   };
 
@@ -526,18 +551,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   </motion.div>
                 )}
 
-                {/* Animated Typing Indicator */}
-                {isInvestigating && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex items-center gap-3 text-xs font-mono text-blue-400 card-bg-subtle p-3 rounded-xl border theme-border"
-                  >
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                    <span>D-OpsPilot AI is inspecting container logs & running OpenAI tool calls...</span>
-                  </motion.div>
-                )}
-
                 {/* Resolved Banner */}
                 {activeIncident.status === 'RESOLVED' && (
                   <motion.div 
@@ -552,6 +565,73 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
               </div>
             </motion.div>
+
+            {/* OPTIMISTIC PENDING USER BUBBLE + AI REASONING LOADER CARD */}
+            {isInvestigating && (
+              <div className="space-y-6 pt-4 w-full">
+                {pendingPromptText && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-row-reverse items-start gap-3 ml-auto max-w-xl"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                      You
+                    </div>
+                    <div className="theme-chat-user border p-4 rounded-2xl rounded-tr-none flex-1 space-y-1 text-right shadow-md">
+                      <div className="flex items-center justify-end gap-2 text-[11px] text-blue-500 font-mono">
+                        <span className="font-extrabold text-blue-700 dark:text-blue-200">You</span>
+                        <span className="text-blue-600/80 dark:text-blue-200/70">[{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                      </div>
+                      <p className="text-xs text-blue-950 dark:text-blue-50 font-mono font-semibold leading-relaxed">
+                        "{pendingPromptText}"
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* AI Reasoning Engine Loading Card */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex flex-row items-start gap-3 mr-auto max-w-2xl w-full"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                    <Bot className="w-4 h-4 animate-spin text-white" />
+                  </div>
+
+                  <div className="theme-chat-ai border p-5 rounded-2xl rounded-tl-none flex-1 space-y-4 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 animate-pulse" />
+
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <div className="flex items-center gap-2">
+                        <Brain className="w-4 h-4 text-purple-500 animate-bounce" />
+                        <span className="font-bold text-purple-700 dark:text-purple-300">D-OpsPilot AI Reasoning Engine</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-extrabold animate-pulse">
+                        ANALYZING...
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs font-mono">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span className="font-semibold text-blue-900 dark:text-blue-200">{loadingStepText}</span>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 rounded-full animate-pulse w-3/4" />
+                      </div>
+                      <p className="text-[11px] text-subtitle font-mono">
+                        ⚡ Invoking AST Code Auditor & OpenAI GPT-4o Model. Real-time diagnosis in progress...
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
           </>
