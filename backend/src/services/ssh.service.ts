@@ -75,7 +75,7 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
 
   let safeCmd = cmd.trim();
   if (safeCmd === 'htop' || safeCmd.includes('htop')) {
-    safeCmd = 'htop -b -n 1 || top -b -n 1';
+    safeCmd = 'top -b -n 1';
   } else if (safeCmd === 'top') {
     safeCmd = 'top -b -n 1';
   }

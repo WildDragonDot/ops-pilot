@@ -40,6 +40,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 }) => {
   const [commandInput, setCommandInput] = useState<string>('');
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [executingCmd, setExecutingCmd] = useState<string>('');
   const [isMaximized, setIsMaximized] = useState<boolean>(false);
   const [history, setHistory] = useState<CommandHistoryItem[]>([
     {
@@ -98,6 +99,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
     try {
       setIsExecuting(true);
+      setExecutingCmd(targetCmd);
       setCmdHistoryList(prev => [...prev, targetCmd]);
       setHistoryIndex(-1);
 
@@ -132,6 +134,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       setCommandInput('');
     } finally {
       setIsExecuting(false);
+      setExecutingCmd('');
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
@@ -288,6 +291,27 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                 </pre>
               </div>
             ))}
+
+            {/* Glowing Thinking & Execution Loader Block */}
+            {isExecuting && (
+              <div className="space-y-1.5 animate-pulse my-2">
+                <div className="flex items-center gap-2 text-slate-300 font-mono text-xs">
+                  <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                  <span className="text-blue-400 font-bold">{executingCmd || commandInput}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-blue-300 font-mono text-xs flex items-center gap-3 shadow-lg glow-blue">
+                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-extrabold text-blue-400 tracking-wide uppercase text-[10px] block">
+                      ⚡ SSH COMMAND EXECUTING ON REMOTE SERVER...
+                    </span>
+                    <span className="text-slate-200 text-[11px] font-semibold">
+                      Thinking & Fetching live response from <b className="text-blue-300 font-bold">{serverUser}@{serverHost}</b>...
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Live Active Command Input Line */}
             <div className="flex items-center gap-2 pt-2 text-slate-200 font-mono">
