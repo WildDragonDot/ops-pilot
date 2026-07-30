@@ -1082,17 +1082,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </button>
               </div>
 
-              <div>
-                <h3 className="text-xs font-bold text-title tracking-tight flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-xs font-bold text-title tracking-tight flex items-center gap-1.5 shrink-0">
                     <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>Simulate Outage Scenarios</span>
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-bold whitespace-nowrap shrink-0 shadow-xs">
+                    Stack: Docker • Go • PG • Redis
                   </span>
-                  <span className="text-[9px] font-mono text-emerald-500 font-bold">
-                    Stack: {project?.runtimeType || 'Node.js'} • Go • PG • Redis
-                  </span>
-                </h3>
-                <p className="text-[10px] text-subtitle leading-tight mt-0.5">
+                </div>
+                <p className="text-[10px] text-subtitle leading-relaxed">
                   Click a scenario to trigger live failure state tailored to your tech stack.
                 </p>
               </div>
