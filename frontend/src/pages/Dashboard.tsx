@@ -935,92 +935,100 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span className="text-cyan-400 font-bold text-[8px] uppercase tracking-wider">Qual</span>
                       <span className="text-cyan-300 font-extrabold text-[11px]">{realQualityPct}%</span>
                     </div>
-                    <div className="flex flex-col items-center">
                       <span className="text-indigo-400 font-bold text-[8px] uppercase tracking-wider">Test</span>
                       <span className="text-indigo-300 font-extrabold text-[11px]">{realTestingPct}%</span>
                     </div>
                   </div>
                 </div>
-              </div>
 
-          {/* System Resource Gauges Card OR Local Sandbox Notice Card */}
-          {Boolean(project?.serverHost?.trim()) ? (
-            <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
-              <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-title flex items-center justify-between border-b theme-border pb-2">
-                <span className="flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-blue-500" /> System Resource Gauges
-                </span>
-                <span className="text-[9px] text-emerald-500 font-extrabold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> HTOP STREAM
-                </span>
-              </h3>
+                {/* System Resource Gauges Card (When Server SSH Host is connected) */}
+                {Boolean(project?.serverHost?.trim()) && (
+                  <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
+                    <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-title flex items-center justify-between border-b theme-border pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-blue-500" /> System Resource Gauges
+                      </span>
+                      <span className="text-[9px] text-emerald-500 font-extrabold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> HTOP STREAM
+                      </span>
+                    </h3>
 
-              <div className="space-y-3 text-[10px] font-mono">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-subtitle">
-                    <span className="flex items-center gap-1"><Cpu className="w-3 h-3 text-blue-500" /> CPU Load</span>
-                    <span className="font-bold text-title">{cpuUsage}%</span>
-                  </div>
-                  <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
-                    <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${cpuUsage}%` }} />
-                  </div>
-                </div>
+                    <div className="space-y-3 text-[10px] font-mono">
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-subtitle">
+                          <span className="flex items-center gap-1"><Cpu className="w-3 h-3 text-blue-500" /> CPU Load</span>
+                          <span className="font-bold text-title">{cpuUsage}%</span>
+                        </div>
+                        <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                          <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${cpuUsage}%` }} />
+                        </div>
+                      </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-subtitle">
-                    <span className="flex items-center gap-1"><HardDrive className="w-3 h-3 text-indigo-500" /> RAM Memory</span>
-                    <span className="font-bold text-title">{memoryMB} MB ({memoryPct}%)</span>
-                  </div>
-                  <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
-                    <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${memoryPct}%` }} />
-                  </div>
-                </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-subtitle">
+                          <span className="flex items-center gap-1"><HardDrive className="w-3 h-3 text-indigo-500" /> RAM Memory</span>
+                          <span className="font-bold text-title">{memoryMB} MB ({memoryPct}%)</span>
+                        </div>
+                        <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                          <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${memoryPct}%` }} />
+                        </div>
+                      </div>
 
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-subtitle">
-                    <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-emerald-500" /> Network Throughput</span>
-                    <span className="font-bold text-title">{networkMBs} MB/s</span>
-                  </div>
-                  <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
-                    <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, networkMBs * 15)}%` }} />
-                  </div>
-                </div>
-              </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-subtitle">
+                          <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-emerald-500" /> Network Throughput</span>
+                          <span className="font-bold text-title">{networkMBs} MB/s</span>
+                        </div>
+                        <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+                          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, networkMBs * 15)}%` }} />
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="pt-2 border-t theme-border flex items-center justify-between text-[10px] text-subtitle font-mono">
-                <span>Vault Crypto: <b className="text-emerald-500">WebCrypto AES-256</b></span>
-                <span className="text-emerald-500 font-bold">● VERIFIED</span>
-              </div>
-            </div>
-          ) : (
-            <div className="glass-panel p-4 rounded-xl border border-blue-500/30 card-bg-subtle space-y-2.5 shadow-sm font-sans">
-              <div className="flex items-center justify-between border-b theme-border pb-2">
-                <div className="flex items-center gap-2 text-blue-400 font-extrabold text-xs">
-                  <GitBranch className="w-4 h-4 text-blue-400" />
-                  <span>GitHub Repository Engine</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-extrabold">
-                  PROTECTED
-                </span>
-              </div>
-              <div className="space-y-1.5 font-mono text-[10px]">
-                <div className="flex justify-between items-center text-subtitle">
-                  <span>Target Audit Branch:</span>
-                  <b className="text-blue-400 font-bold">{project?.gitBranch || 'main'}</b>
-                </div>
-                <div className="flex justify-between items-center text-subtitle">
-                  <span>AST Code Vulnerabilities:</span>
-                  <b className={activeRisksCount === 0 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-                    {activeRisksCount === 0 ? '0 Risks (100% Clean)' : `${activeRisksCount} Risks Active`}
-                  </b>
-                </div>
-                <div className="flex justify-between items-center text-subtitle">
-                  <span>Security Audit Webhook:</span>
-                  <b className="text-emerald-400 font-bold">● ACTIVE</b>
-                </div>
-              </div>
-            </div>
-          )}
+                    <div className="pt-2 border-t theme-border flex items-center justify-between text-[10px] text-subtitle font-mono">
+                      <span>Vault Crypto: <b className="text-emerald-500">WebCrypto AES-256</b></span>
+                      <span className="text-emerald-500 font-bold">● VERIFIED</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* GitHub Repository Engine Card (When GitHub is connected) */}
+                {Boolean(project?.gitUrl?.trim()) && (
+                  <div 
+                    onClick={() => navigate('/auditor')}
+                    className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 cursor-pointer hover:border-blue-500/50 transition group"
+                  >
+                    <div className="flex items-center justify-between border-b theme-border pb-2.5">
+                      <div className="flex items-center gap-2 text-blue-400 font-extrabold text-xs">
+                        <GitBranch className="w-4 h-4 text-blue-400" />
+                        <span>GitHub Repository Engine</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-extrabold flex items-center gap-1">
+                        PROTECTED <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+                      </span>
+                    </div>
+                    <div className="space-y-1.5 font-mono text-[10px]">
+                      <div className="flex justify-between items-center text-subtitle">
+                        <span>Repository:</span>
+                        <b className="text-title font-bold truncate max-w-[150px]">{project?.gitUrl?.replace('https://github.com/', '')}</b>
+                      </div>
+                      <div className="flex justify-between items-center text-subtitle">
+                        <span>Target Audit Branch:</span>
+                        <b className="text-blue-400 font-bold">{project?.gitBranch || 'main'}</b>
+                      </div>
+                      <div className="flex justify-between items-center text-subtitle">
+                        <span>AST Code Vulnerabilities:</span>
+                        <b className={activeRisksCount === 0 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                          {activeRisksCount === 0 ? '0 Risks (100% Clean)' : `${activeRisksCount} Risks Active`}
+                        </b>
+                      </div>
+                      <div className="flex justify-between items-center text-subtitle">
+                        <span>Security Audit Webhook:</span>
+                        <b className="text-emerald-400 font-bold">● ACTIVE</b>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
           {/* AI Safety & Guardrails Summary Card */}
           <div 
