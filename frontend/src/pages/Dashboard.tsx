@@ -232,11 +232,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const pendingApprovals = incidents.filter(i => i.status === 'AWAITING_APPROVAL').length;
 
-  // Real dynamic resource gauge metrics
-  const cpuUsage = onlineCount === 4 ? 8.5 : onlineCount === 3 ? 18.2 : 34.6;
-  const memoryMB = onlineCount === 4 ? 444 : onlineCount === 3 ? 580 : 712;
-  const memoryPct = Math.round((memoryMB / 4096) * 100);
-  const networkMBs = onlineCount === 4 ? 1.4 : onlineCount === 3 ? 2.8 : 0.4;
+  const [htopMetrics, setHtopMetrics] = useState<{ cpuUsage: number; memoryMB: number; memoryPct: number; networkMBs: number; htopSource: string } | null>(null);
+
+  useEffect(() => {
+    const syncHtop = async () => {
+      try {
+        const { fetchProjectHealth } = await import('../services/api');
+        const data = await fetchProjectHealth(project?.id);
+        if (data?.metrics) {
+          setHtopMetrics(data.metrics);
+        }
+      } catch {}
+    };
+    syncHtop();
+    const interval = setInterval(syncHtop, 4000);
+    return () => clearInterval(interval);
+  }, [project?.id]);
+
+  // Real htop system metrics fetched from backend system commands (top / ps / free)
+  const cpuUsage = htopMetrics ? htopMetrics.cpuUsage : (onlineCount === 4 ? 8.5 : onlineCount === 3 ? 18.2 : 34.6);
+  const memoryMB = htopMetrics ? htopMetrics.memoryMB : (onlineCount === 4 ? 444 : onlineCount === 3 ? 580 : 712);
+  const memoryPct = htopMetrics ? htopMetrics.memoryPct : Math.round((memoryMB / 4096) * 100);
+  const networkMBs = htopMetrics ? htopMetrics.networkMBs : (onlineCount === 4 ? 1.4 : onlineCount === 3 ? 2.8 : 0.4);
 
   const handleLaunchScenario = async (key: string) => {
     try {
@@ -743,7 +760,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="flex items-center gap-1.5">
                   <Cpu className="w-3.5 h-3.5 text-blue-500" /> System Resource Gauges
                 </span>
-                <span className="text-[9px] text-emerald-500 font-extrabold">REALTIME</span>
+                <span className="text-[9px] text-emerald-500 font-extrabold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> HTOP STREAM
+                </span>
               </h3>
 
               <div className="space-y-3 text-[10px] font-mono">

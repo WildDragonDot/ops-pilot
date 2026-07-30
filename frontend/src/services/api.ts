@@ -121,6 +121,18 @@ export async function removeProject(id: string): Promise<any> {
   return res.json();
 }
 
+export async function fetchProjectHealth(projectId?: string): Promise<{
+  status: string;
+  services: any;
+  metrics?: { cpuUsage: number; memoryMB: number; memoryPct: number; memoryTotalMB: number; networkMBs: number; htopSource: string };
+  timestamp: string;
+}> {
+  const id = projectId || 'demo-project';
+  const res = await fetch(`${API_BASE}/projects/${id}/health`, { headers: getAuthHeaders(id) });
+  if (!res.ok) throw new Error('Failed to fetch project health');
+  return res.json();
+}
+
 export async function fetchRepositoryScan(): Promise<Scan> {
   const res = await fetch(`${API_BASE}/repositories`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch repository');
