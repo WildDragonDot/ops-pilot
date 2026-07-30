@@ -207,8 +207,9 @@ export async function applySecurityPatch(findingId: string): Promise<Scan> {
   return data.scan;
 }
 
-export async function fetchIncidents(): Promise<Incident[]> {
-  const res = await fetch(`${API_BASE}/incidents`, { headers: getAuthHeaders() });
+export async function fetchIncidents(projectId?: string): Promise<Incident[]> {
+  const url = projectId ? `${API_BASE}/incidents?projectId=${encodeURIComponent(projectId)}` : `${API_BASE}/incidents`;
+  const res = await fetch(url, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch incidents');
   const data = await res.json();
   return data.incidents;

@@ -5,7 +5,8 @@ export async function createIncident(req, res) {
     res.json({ incident });
 }
 export async function getIncidents(req, res) {
-    const incidents = await getAllIncidents();
+    const projectId = req.query.projectId;
+    const incidents = await getAllIncidents(projectId);
     res.json({ incidents });
 }
 export async function getIncident(req, res) {

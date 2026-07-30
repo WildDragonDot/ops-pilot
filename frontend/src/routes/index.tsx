@@ -39,20 +39,30 @@ export function AppRoutes() {
   const loadData = async () => {
     if (!user) return;
     try {
+      const savedId = localStorage.getItem('opspilot_selected_project_id');
+      const currentProjectId = project?.id || savedId || undefined;
+
       const [allProjects, scanData, incData] = await Promise.all([
         fetchProjects(),
         fetchRepositoryScan(),
-        fetchIncidents()
+        fetchIncidents(currentProjectId)
       ]);
       setProjects(allProjects);
       
-      const savedId = localStorage.getItem('opspilot_selected_project_id');
       const found = allProjects.find(p => p.id === (project?.id || savedId)) || allProjects[0];
       if (found) {
         setProject({ ...found });
+        // Re-fetch incidents scoped to the resolved project if it differed
+        if (found.id !== currentProjectId && allProjects.length > 0) {
+          const scopedInc = await fetchIncidents(found.id);
+          setIncidents(scopedInc);
+        } else {
+          setIncidents(incData);
+        }
+      } else {
+        setIncidents(incData);
       }
       setScan(scanData);
-      setIncidents(incData);
     } catch (err) {
       console.error('Error loading API data:', err);
     }
@@ -72,6 +82,7 @@ export function AppRoutes() {
 
   const handleSelectProject = (selectedP: Project) => {
     setProject(selectedP);
+    setIncidents([]); // Clear stale incidents immediately before re-fetch
     localStorage.setItem('opspilot_selected_project_id', selectedP.id);
   };
 

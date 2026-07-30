@@ -130,10 +130,13 @@ export function resetEnvironmentState() {
     projectState.environmentStatus = { overall: 'HEALTHY', postgres: 'RUNNING', redis: 'RUNNING', api: 'RUNNING', nginx: 'HEALTHY' };
     return projectState;
 }
-export async function getAllIncidents() {
+export async function getAllIncidents(projectId) {
+    const where = projectId ? { projectId } : {};
     const dbIncidents = await prisma.incident.findMany({
+        where,
         orderBy: { startedAt: 'desc' },
-        include: { events: true, approvals: true }
+        include: { events: true, approvals: true },
+        take: 50
     });
     return dbIncidents.map(inc => ({
         ...inc,

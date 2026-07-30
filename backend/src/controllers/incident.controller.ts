@@ -13,7 +13,8 @@ export async function createIncident(req: Request, res: Response) {
 }
 
 export async function getIncidents(req: Request, res: Response) {
-  const incidents = await getAllIncidents();
+  const projectId = req.query.projectId as string | undefined;
+  const incidents = await getAllIncidents(projectId);
   res.json({ incidents });
 }
 
