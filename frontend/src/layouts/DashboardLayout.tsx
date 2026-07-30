@@ -120,7 +120,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           
           {/* Footer inside scroll area */}
           <footer className="border-t theme-border card-bg-subtle py-4 px-8 text-xs text-subtitle flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
-            <span>OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
+            <span>D-OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
             <span className="font-mono font-semibold">Project: {project.name}</span>
           </footer>
         </main>
