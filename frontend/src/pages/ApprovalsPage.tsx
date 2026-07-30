@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Check, ShieldAlert, CheckCircle2, CheckSquare } from 'lucide-react';
+import { Clock, Check, ShieldAlert, CheckCircle2, CheckSquare, Folder } from 'lucide-react';
 import { Incident } from '../types';
 import { approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
+import { useOutletContext } from 'react-router-dom';
 
 interface ApprovalsPageProps {
   incidents: Incident[];
@@ -11,7 +12,13 @@ interface ApprovalsPageProps {
 }
 
 export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefreshIncidents }) => {
-  const allApprovals = incidents
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+
+  const filteredIncidents = isVacantPath ? [] : incidents;
+
+  const allApprovals = filteredIncidents
     .filter(i => i.activeApproval)
     .map(i => ({ incident: i, approval: i.activeApproval! }));
 
@@ -48,6 +55,16 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
           D-OpsPilot AI pauses execution before taking write actions, service restarts, database updates, or code patches. Review diffs and risk metrics below.
         </p>
       </div>
+
+      {/* Vacant Path Banner */}
+      {isVacantPath && (
+        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-mono flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2">
+            <Folder className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>Target Path <b>{activeTargetPath}</b> is vacant (0 active incidents/approvals). Active stack is at <b>/home/ubuntu/finance-lock</b>.</span>
+          </div>
+        </div>
+      )}
 
       {/* Pending Approvals Section */}
       <div className="space-y-4">

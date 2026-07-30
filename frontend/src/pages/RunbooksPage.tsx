@@ -31,11 +31,16 @@ interface Runbook {
   successRate: string;
 }
 
+import { useOutletContext } from 'react-router-dom';
+
 interface RunbooksPageProps {
   project?: Project | null;
 }
 
 export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [runningId, setRunningId] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, string[]>>({});

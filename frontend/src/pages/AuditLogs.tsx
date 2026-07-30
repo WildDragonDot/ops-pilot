@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { fetchAuditLogs } from '../services/api';
+import { useOutletContext } from 'react-router-dom';
 
 interface AuditLogEntry {
   id: string;
@@ -31,6 +32,10 @@ interface AuditLogEntry {
 }
 
 export const AuditLogs: React.FC = () => {
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -43,7 +48,7 @@ export const AuditLogs: React.FC = () => {
     try {
       setIsLoading(true);
       const data = await fetchAuditLogs();
-      setLogs(data);
+      setLogs(isVacantPath ? [] : data);
     } catch (err) {
       console.error('Failed to load audit logs:', err);
     } finally {
