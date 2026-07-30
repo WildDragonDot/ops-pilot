@@ -59,6 +59,97 @@ const PROBLEM_COMMAND_DATABASE: ProblemCommandItem[] = [
   { problem: 'Check system authentication logs', command: 'sudo tail -n 20 /var/log/auth.log', description: 'Inspect SSH logins and sudo privileges log', category: 'LOGS' }
 ];
 
+interface SecurityRiskResult {
+  isDangerous: boolean;
+  threatLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  title: string;
+  reason: string;
+  recommendation: string;
+}
+
+const checkCommandSecurityRisk = (cmd: string): SecurityRiskResult | null => {
+  const c = cmd.toLowerCase().trim();
+
+  // 1. File System Destruction
+  if (c.includes('rm -rf') || c.includes('rm -r /') || c.includes('rm -rf /') || c.includes('rm -f /') || c.includes('rm -rf *') || c.includes('rm -rf ~')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'CRITICAL',
+      title: '🚨 Catastrophic File System Deletion Blocked',
+      reason: 'This command performs unrecoverable recursive file deletion across server directories.',
+      recommendation: 'Use targeted file removal e.g. "rm filename" or inspect directories first with "ls -la".'
+    };
+  }
+
+  // 2. Server Shutdown or Reboot
+  if (c === 'reboot' || c === 'shutdown' || c.includes('shutdown -h') || c.includes('init 0') || c.includes('poweroff') || c.includes('halt')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'CRITICAL',
+      title: '⚠️ Remote Server Shutdown / Reboot Intercepted',
+      reason: 'Executing shutdown or reboot will immediately kill all production workloads and terminate SSH access.',
+      recommendation: 'If restarting a service, use "sudo docker restart <container>" or "sudo systemctl restart <service>".'
+    };
+  }
+
+  // 3. Disk Formatting / Wipe
+  if (c.includes('mkfs') || c.includes('dd if=') || c.includes('fdisk') || c.includes('parted')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'CRITICAL',
+      title: '🚨 Disk Partition Wipe / Format Intercepted',
+      reason: 'Disk formatting operations overwrite partition block tables causing total data loss.',
+      recommendation: 'Inspect disk storage safely with "df -h" or "lsblk".'
+    };
+  }
+
+  // 4. System Permission Corruption
+  if (c.includes('chmod -r 777') || c.includes('chmod -r 000') || c.includes('chown -r root /')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'HIGH',
+      title: '⚠️ System Permission Corruption Intercepted',
+      reason: 'Recursive permission modification on root "/" corrupts Linux security policies and breaks SSH login.',
+      recommendation: 'Apply file permissions strictly to specific target application folders.'
+    };
+  }
+
+  // 5. Mass Docker Destruction
+  if (c.includes('docker system prune -a') || c.includes('docker volume prune') || c.includes('docker kill $(docker ps')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'HIGH',
+      title: '⚡ Mass Docker Container & Volume Destruction Intercepted',
+      reason: 'This command forcefully terminates and wipes all Docker containers, images, and persistent database volumes.',
+      recommendation: 'Stop or inspect individual containers using "sudo docker stop <name>" or "sudo docker ps".'
+    };
+  }
+
+  // 6. Security Firewall Deactivation
+  if (c.includes('iptables -f') || c.includes('ufw disable') || c.includes('systemctl stop firewalld')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'HIGH',
+      title: '🛡️ Firewall Security Deactivation Intercepted',
+      reason: 'Disabling firewall rules exposes all internal server ports to unauthorized external intrusion.',
+      recommendation: 'Inspect active firewall rules safely with "sudo ufw status" or "sudo iptables -L".'
+    };
+  }
+
+  // 7. Fork Bomb
+  if (c.includes(':(){ :|:& };:') || c.includes('fork bomb')) {
+    return {
+      isDangerous: true,
+      threatLevel: 'CRITICAL',
+      title: '💣 Malicious Fork Bomb Execution Intercepted',
+      reason: 'Fork bombs exhaust all system CPU process IDs forcing kernel panic and freeze.',
+      recommendation: 'Command execution has been permanently blocked.'
+    };
+  }
+
+  return null;
+};
+
 export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
   isOpen,
   onClose,
@@ -148,9 +239,23 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history, isExecuting]);
 
-  const handleRunCommand = async (cmdToRun?: string) => {
+  const [pendingDangerousCmd, setPendingDangerousCmd] = useState<string>('');
+  const [securityRiskAlert, setSecurityRiskAlert] = useState<SecurityRiskResult | null>(null);
+  const [confirmInput, setConfirmInput] = useState<string>('');
+
+  const handleRunCommand = async (cmdToRun?: string, forceExecute = false) => {
     const targetCmd = (cmdToRun || commandInput).trim();
     if (!targetCmd || isExecuting) return;
+
+    if (!forceExecute) {
+      const risk = checkCommandSecurityRisk(targetCmd);
+      if (risk && risk.isDangerous) {
+        setPendingDangerousCmd(targetCmd);
+        setSecurityRiskAlert(risk);
+        setConfirmInput('');
+        return;
+      }
+    }
 
     if (targetCmd.toLowerCase() === 'clear') {
       setHistory([]);
@@ -558,6 +663,102 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
         </motion.div>
       </motion.div>
       )}
+
+      {/* Dangerous Command Security Intercept Modal */}
+      <AnimatePresence>
+        {securityRiskAlert && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="glass-panel w-full max-w-lg rounded-2xl border border-rose-500/50 bg-[#0c0406] shadow-2xl p-6 space-y-5 text-slate-100 font-sans"
+            >
+              <div className="flex items-start justify-between border-b border-rose-900/50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                    <ShieldCheck className="w-6 h-6 text-rose-500 animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-extrabold text-rose-400 tracking-wider uppercase block">
+                      SECURITY SHIELD INTERCEPT
+                    </span>
+                    <h3 className="font-extrabold text-base text-rose-200">
+                      {securityRiskAlert.title}
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setSecurityRiskAlert(null); setPendingDangerousCmd(''); }}
+                  className="text-slate-500 hover:text-slate-300 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 font-mono text-xs space-y-1">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase block">Target Command:</span>
+                  <code className="text-rose-400 font-bold text-xs break-all block">
+                    {pendingDangerousCmd}
+                  </code>
+                </div>
+
+                <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-900/50 text-xs text-rose-200 space-y-1">
+                  <span className="font-bold text-rose-400 block uppercase text-[10px]">Threat Assessment:</span>
+                  <p className="leading-relaxed">{securityRiskAlert.reason}</p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-900/40 text-xs text-emerald-300 space-y-1">
+                  <span className="font-bold text-emerald-400 block uppercase text-[10px]">Safe Recommendation:</span>
+                  <p className="leading-relaxed">{securityRiskAlert.recommendation}</p>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <label className="text-[11px] font-mono text-slate-400 block font-semibold">
+                    To override safety and force execution, type <b className="text-rose-400 font-bold">CONFIRM</b> below:
+                  </label>
+                  <input
+                    type="text"
+                    value={confirmInput}
+                    onChange={(e) => setConfirmInput(e.target.value)}
+                    placeholder="Type CONFIRM to override..."
+                    className="w-full bg-slate-950 border border-rose-900/60 rounded-xl px-3 py-2 text-xs font-mono text-rose-300 placeholder-slate-600 focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => { setSecurityRiskAlert(null); setPendingDangerousCmd(''); }}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5 shadow-lg shadow-emerald-950/50"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Cancel Execution (Safe & Recommended)</span>
+                </button>
+
+                <button
+                  disabled={confirmInput.trim() !== 'CONFIRM'}
+                  onClick={() => {
+                    const cmd = pendingDangerousCmd;
+                    setSecurityRiskAlert(null);
+                    setPendingDangerousCmd('');
+                    handleRunCommand(cmd, true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-rose-600/20 border border-rose-500/50 text-rose-300 hover:bg-rose-600 hover:text-white font-bold text-xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span>Force Override & Execute</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };
