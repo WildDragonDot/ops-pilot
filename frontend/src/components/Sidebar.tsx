@@ -19,14 +19,25 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { Incident, Project } from '../types';
 import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
+import { ProjectSwitcher } from './ProjectSwitcher';
 
 interface SidebarProps {
   incidents: Incident[];
   scanScore?: number;
   project?: Project | null;
+  projects?: Project[];
+  onSelectProject?: (project: Project) => void;
+  onOpenSetupModal?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  incidents, 
+  scanScore, 
+  project, 
+  projects = [], 
+  onSelectProject = () => {}, 
+  onOpenSetupModal = () => {} 
+}) => {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
 
@@ -90,16 +101,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ incidents, scanScore, project 
           )}
         </div>
 
-        {/* Organization Glass Card */}
-        {!collapsed && user && (
-          <div className="glass-panel p-3 rounded-xl flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-500">
-              <Building className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <span className="text-xs font-bold text-title block truncate">{user.organizationName}</span>
-              <span className="text-[10px] text-subtitle font-mono block">Production Org</span>
-            </div>
+        {/* Active Project / Server Switcher Dropdown in Sidebar */}
+        {!collapsed && (
+          <div className="my-1">
+            <ProjectSwitcher
+              projects={projects}
+              activeProject={project || null}
+              onSelectProject={onSelectProject}
+              onOpenSetupModal={onOpenSetupModal}
+            />
           </div>
         )}
 

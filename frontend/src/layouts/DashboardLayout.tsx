@@ -84,7 +84,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           ? (unresolvedCount === 0 ? 100 : unresolvedCount === 1 ? 89 : (scan?.overallScore ?? 78))
           : (scan?.overallScore ?? 78);
 
-        return <Sidebar incidents={incidents} scanScore={effectiveScore} project={project} />;
+        return (
+          <Sidebar 
+            incidents={incidents} 
+            scanScore={effectiveScore} 
+            project={project} 
+            projects={projects}
+            onSelectProject={onSelectProject}
+            onOpenSetupModal={onOpenSetupModal}
+          />
+        );
       })()}
 
       {/* Main Right Content Section — full height, scrollable */}
