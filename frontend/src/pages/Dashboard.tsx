@@ -926,38 +926,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full" style={{ width: `${realScore}%` }} />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-1 font-mono pt-2 border-t theme-border text-center">
-                    <div className="flex flex-col items-center">
-                      <span className="text-emerald-400 font-bold text-[8px] uppercase tracking-wider">Sec</span>
-                      <span className="text-emerald-300 font-extrabold text-[11px]">{realSecurityPct}%</span>
+                  <div className="grid grid-cols-3 font-mono pt-2 border-t theme-border text-center divide-x theme-border">
+                    <div className="flex min-w-0 flex-col items-center px-1">
+                      <span className="text-emerald-500 font-bold text-[8px] uppercase leading-tight">Sec</span>
+                      <span className="text-emerald-500 font-extrabold text-[11px] leading-tight">{realSecurityPct}%</span>
                     </div>
-                    <div className="flex flex-col items-center border-x theme-border">
-                      <span className="text-cyan-400 font-bold text-[8px] uppercase tracking-wider">Qual</span>
-                      <span className="text-cyan-300 font-extrabold text-[11px]">{realQualityPct}%</span>
+                    <div className="flex min-w-0 flex-col items-center px-1">
+                      <span className="text-cyan-500 font-bold text-[8px] uppercase leading-tight">Qual</span>
+                      <span className="text-cyan-500 font-extrabold text-[11px] leading-tight">{realQualityPct}%</span>
                     </div>
-                      <span className="text-indigo-400 font-bold text-[8px] uppercase tracking-wider">Test</span>
-                      <span className="text-indigo-300 font-extrabold text-[11px]">{realTestingPct}%</span>
+                    <div className="flex min-w-0 flex-col items-center px-1">
+                      <span className="text-indigo-500 font-bold text-[8px] uppercase leading-tight">Test</span>
+                      <span className="text-indigo-500 font-extrabold text-[11px] leading-tight">{realTestingPct}%</span>
                     </div>
                   </div>
                 </div>
 
                 {/* System Resource Gauges Card (When Server SSH Host is connected) */}
                 {Boolean(project?.serverHost?.trim()) && (
-                  <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
-                    <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-title flex items-center justify-between border-b theme-border pb-2">
+                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2.5 shadow-sm self-start">
+                    <h3 className="text-[9px] font-mono font-bold uppercase tracking-wider text-title flex flex-col items-start gap-1 border-b theme-border pb-2">
                       <span className="flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-blue-500" /> System Resource Gauges
+                        <Cpu className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span>System Resource Gauges</span>
                       </span>
-                      <span className="text-[9px] text-emerald-500 font-extrabold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> HTOP STREAM
+                      <span className="text-[8px] text-emerald-500 font-extrabold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping shrink-0" /> HTOP STREAM
                       </span>
                     </h3>
 
-                    <div className="space-y-3 text-[10px] font-mono">
+                    <div className="space-y-2.5 text-[9px] font-mono">
                       <div className="space-y-1">
-                        <div className="flex justify-between items-center text-subtitle">
-                          <span className="flex items-center gap-1"><Cpu className="w-3 h-3 text-blue-500" /> CPU Load</span>
-                          <span className="font-bold text-title">{cpuUsage}%</span>
+                        <div className="space-y-0.5 text-subtitle">
+                          <span className="flex items-center gap-1 whitespace-nowrap"><Cpu className="w-3 h-3 text-blue-500 shrink-0" /> CPU Load</span>
+                          <span className="block font-bold text-title">{cpuUsage}%</span>
                         </div>
                         <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
                           <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${cpuUsage}%` }} />
@@ -965,9 +966,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
 
                       <div className="space-y-1">
-                        <div className="flex justify-between items-center text-subtitle">
-                          <span className="flex items-center gap-1"><HardDrive className="w-3 h-3 text-indigo-500" /> RAM Memory</span>
-                          <span className="font-bold text-title">{memoryMB} MB ({memoryPct}%)</span>
+                        <div className="space-y-0.5 text-subtitle">
+                          <span className="flex items-center gap-1 whitespace-nowrap"><HardDrive className="w-3 h-3 text-indigo-500 shrink-0" /> RAM</span>
+                          <span className="block font-bold text-title">{memoryMB} MB ({memoryPct}%)</span>
                         </div>
                         <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
                           <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `${memoryPct}%` }} />
@@ -975,9 +976,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
 
                       <div className="space-y-1">
-                        <div className="flex justify-between items-center text-subtitle">
-                          <span className="flex items-center gap-1"><Wifi className="w-3 h-3 text-emerald-500" /> Network Throughput</span>
-                          <span className="font-bold text-title">{networkMBs} MB/s</span>
+                        <div className="space-y-0.5 text-subtitle">
+                          <span className="flex items-center gap-1 whitespace-nowrap"><Wifi className="w-3 h-3 text-emerald-500 shrink-0" /> Network</span>
+                          <span className="block font-bold text-title">{networkMBs} MB/s</span>
                         </div>
                         <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
                           <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, networkMBs * 15)}%` }} />
@@ -985,18 +986,49 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t theme-border flex items-center justify-between text-[10px] text-subtitle font-mono">
-                      <span>Vault Crypto: <b className="text-emerald-500">WebCrypto AES-256</b></span>
-                      <span className="text-emerald-500 font-bold">● VERIFIED</span>
+                    <div className="pt-2 border-t theme-border space-y-1 text-[9px] text-subtitle font-mono">
+                      <span className="block">Vault Crypto:</span>
+                      <b className="block text-emerald-500">WebCrypto AES-256</b>
+                      <span className="block text-emerald-500 font-bold">● VERIFIED</span>
                     </div>
                   </div>
                 )}
 
+          {/* AI Safety & Guardrails Summary Card */}
+          <div 
+            onClick={() => navigate('/settings?tab=guardrails')}
+            className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 cursor-pointer hover:border-emerald-500/40 transition group self-start"
+          >
+            <div className="flex flex-col items-start gap-1 border-b theme-border pb-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono flex items-center gap-1">
+                <Lock className="w-3 h-3 text-emerald-500 shrink-0" /> <span>AI Safety Policies</span>
+              </span>
+              <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold flex items-center gap-1">
+                ARMED <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+              </span>
+            </div>
+
+            <div className="space-y-1.5 text-[9px] font-mono">
+              <div className="space-y-0.5 text-subtitle">
+                <span className="block">Human Sign-off</span>
+                <span className="block text-emerald-500 font-bold">REQUIRED</span>
+              </div>
+              <div className="space-y-0.5 text-subtitle">
+                <span className="block">Auto-Rollback</span>
+                <span className="block text-emerald-500 font-bold">READY</span>
+              </div>
+              <div className="space-y-0.5 text-subtitle">
+                <span className="block">Audit Trail</span>
+                <span className="block text-emerald-500 font-bold">ENCRYPTED</span>
+              </div>
+            </div>
+          </div>
+
                 {/* GitHub Repository Engine Card (When GitHub is connected) */}
                 {Boolean(project?.gitUrl?.trim()) && (
-                  <div 
+                  <div
                     onClick={() => navigate('/auditor')}
-                    className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 cursor-pointer hover:border-blue-500/50 transition group"
+                    className="glass-panel p-4 rounded-xl theme-border border space-y-2.5 cursor-pointer hover:border-blue-500/50 transition group col-span-2"
                   >
                     <div className="flex items-center justify-between border-b theme-border pb-2.5">
                       <div className="flex items-center gap-2 text-blue-400 font-extrabold text-xs">
@@ -1030,39 +1062,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 )}
 
-          {/* AI Safety & Guardrails Summary Card */}
-          <div 
-            onClick={() => navigate('/settings?tab=guardrails')}
-            className="glass-panel p-4 rounded-xl theme-border border space-y-2 cursor-pointer hover:border-emerald-500/40 transition group"
-          >
-            <div className="flex items-center justify-between border-b theme-border pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-subtitle font-mono flex items-center gap-1">
-                <Lock className="w-3 h-3 text-emerald-500" /> AI Safety Policies
-              </span>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold flex items-center gap-1">
-                ARMED <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
-              </span>
-            </div>
-
-            <div className="space-y-1 text-[10px] font-mono">
-              <div className="flex justify-between items-center text-subtitle">
-                <span>Human Sign-off</span>
-                <span className="text-emerald-500 font-bold">REQUIRED</span>
-              </div>
-              <div className="flex justify-between items-center text-subtitle">
-                <span>Auto-Rollback</span>
-                <span className="text-emerald-500 font-bold">READY</span>
-              </div>
-              <div className="flex justify-between items-center text-subtitle">
-                <span>Audit Trail</span>
-                <span className="text-emerald-500 font-bold">ENCRYPTED</span>
-              </div>
-            </div>
-          </div>
-
         </div>
 
       </div>
+    </div>
       );
     })()}
 
