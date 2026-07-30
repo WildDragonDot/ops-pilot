@@ -93,7 +93,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [deployLogs, setDeployLogs] = useState<string[]>([]);
 
-  const [selectedTargetPath, setSelectedTargetPath] = useState<string>(project?.rootPath || '/home/ubuntu/finance-lock');
+  const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
+
+  const getCleanTargetPath = (p?: string | null) => {
+    if (isLocalPath(p)) return '/home/ubuntu/finance-lock';
+    return p as string;
+  };
+
+  const [selectedTargetPath, setSelectedTargetPath] = useState<string>(getCleanTargetPath(project?.rootPath));
   const [serverDirectories, setServerDirectories] = useState<string[]>([
     '/home/ubuntu/finance-lock',
     '/home/ubuntu/release',
@@ -105,12 +112,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [customPathInput, setCustomPathInput] = useState<string>('');
 
   useEffect(() => {
-    if (project?.rootPath) {
-      setSelectedTargetPath(project.rootPath);
-      if (!serverDirectories.includes(project.rootPath)) {
-        setServerDirectories(prev => [project.rootPath, ...prev]);
-      }
-    }
+    const cleanPath = getCleanTargetPath(project?.rootPath);
+    setSelectedTargetPath(cleanPath);
+    setServerDirectories(prev => {
+      const filtered = prev.filter(d => !isLocalPath(d));
+      if (!filtered.includes(cleanPath)) return [cleanPath, ...filtered];
+      return filtered;
+    });
   }, [project?.id, project?.rootPath]);
 
   useEffect(() => {

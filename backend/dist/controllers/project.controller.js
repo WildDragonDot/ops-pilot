@@ -40,9 +40,12 @@ export async function getProject(req, res) {
         return res.status(404).json({ error: 'Project not found' });
     }
     const cleanHost = project.serverHost === '34.224.80.31' ? null : project.serverHost;
+    const isLocalMacPath = project.rootPath?.startsWith('/Users/') || project.rootPath?.includes('Desktop');
+    const cleanRootPath = (project.serverHost || cleanHost) && isLocalMacPath ? '/home/ubuntu/finance-lock' : project.rootPath;
     res.json({
         project: {
             ...project,
+            rootPath: cleanRootPath,
             serverHost: cleanHost,
             environmentStatus: state.environmentStatus
         }
