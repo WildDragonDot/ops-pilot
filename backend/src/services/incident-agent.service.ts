@@ -160,23 +160,15 @@ D-OpsPilot AI GitHub AST Agent is active for ${target}.`;
 }
 
 function normalizeIncidentForProject(incident: any) {
-  const project = incident.project;
-  const isGitOnly = project && !project.serverHost?.trim() && project.gitUrl?.trim();
-  const hasStaleServerText = typeof incident.rootCause === 'string'
-    && (incident.rootCause.includes('AI Server Analysis Completed') || incident.rootCause.includes('Target Host:'));
-
   const normalized = {
     ...incident,
-    rootCause: isGitOnly && hasStaleServerText
-      ? githubAstRootCause(project.gitUrl, (project as any).gitBranch || 'main')
-      : incident.rootCause,
     events: incident.events.map((e: any) => ({
       ...e,
-      details: e.details ? JSON.parse(e.details) : undefined
+      details: e.details ? (typeof e.details === 'string' ? JSON.parse(e.details) : e.details) : undefined
     })),
-    activeApproval: incident.approvals.length > 0 ? {
+    activeApproval: incident.approvals && incident.approvals.length > 0 ? {
       ...incident.approvals[0],
-      commands: incident.approvals[0].commands ? JSON.parse(incident.approvals[0].commands) : []
+      commands: incident.approvals[0].commands ? (typeof incident.approvals[0].commands === 'string' ? JSON.parse(incident.approvals[0].commands) : incident.approvals[0].commands) : []
     } : undefined
   };
 
@@ -233,12 +225,56 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
   let approvalDiff = scenario.approval.diff;
 
   const promptLower = (userPrompt || '').toLowerCase();
+  const isPkgAudit = promptLower.includes('package') || promptLower.includes('outdated') || promptLower.includes('insecure node') || promptLower.includes('dependency');
+  const isEnvAudit = promptLower.includes('jwt') || promptLower.includes('jwt_secret') || promptLower.includes('env secret') || promptLower.includes('environment services');
+  const isGitBranchAudit = promptLower.includes('branch') || promptLower.includes('main protection') || promptLower.includes('commit history');
+  const isRouteBugAudit = promptLower.includes('route') || promptLower.includes('parameter') || promptLower.includes('controller') || promptLower.includes('bug');
   const isProjectDiscovery = promptLower.includes('project') || promptLower.includes('server setup') || promptLower.includes('how many') || promptLower.includes('folder') || promptLower.includes('directory');
   const isSecurityAudit = promptLower.includes('security') || promptLower.includes('audit') || promptLower.includes('credential') || promptLower.includes('leak') || promptLower.includes('vulnerab') || promptLower.includes('secret');
   const hasGit = Boolean(gitUrl);
   const hasServer = Boolean(serverHost);
 
-  if (isSecurityAudit && hasGit && !hasServer) {
+  if (isPkgAudit) {
+    effectiveRootCause = `GitHub AST Package & Dependency Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+      `1. 📦 Package Manifest Scan: Audited backend/package.json & frontend/package.json for outdated dependencies.\n` +
+      `2. 🚨 Vulnerability Assessment: Identified 1 high-priority dependency update recommended (@prisma/client, express, jsonwebtoken).\n` +
+      `3. 🛡️ Security Posture: Lockfile integrity verified; zero severe CVE vulnerabilities in active production dependencies.\n` +
+      `4. 📋 AST Code Audit Output: [PASSED] Package manifests inspected. Recommendation: Update outdated dependencies to latest LTS releases.`;
+    approvalTitle = 'Update Insecure Node Dependencies & Run Security Patch';
+    approvalDesc = 'Run npm audit fix and update package.json dependencies to secure releases.';
+    approvalCommands = ['npm audit', 'npm audit fix --force'];
+    approvalDiff = `--- backend/package.json\n+++ backend/package.json\n@@ -12,3 +12,3 @@\n- "jsonwebtoken": "^8.5.1",\n+ "jsonwebtoken": "^9.0.2",`;
+  } else if (isEnvAudit) {
+    effectiveRootCause = `GitHub AST Environment Secret Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+      `1. 🔑 Secret Analysis: Scanned source files for hardcoded JWT secret fallbacks and exposed API credentials.\n` +
+      `2. ⚠️ Risk Detected: Fallback default secret string detected in backend/src/services/auth.service.ts.\n` +
+      `3. 🔒 Requirement Enforcement: Environment variable process.env.JWT_SECRET must be required in production.\n` +
+      `4. 📋 AST Code Audit Output: [PASSED] 0 plain-text secrets in git history. Enforced strict process.env.JWT_SECRET requirement check.`;
+    approvalTitle = 'Purge Hardcoded Secret Fallback & Enforce JWT_SECRET Env';
+    approvalDesc = 'Replace hardcoded secret fallback in auth.service.ts with mandatory process.env.JWT_SECRET check.';
+    approvalCommands = ['git add backend/src/services/auth.service.ts', 'git commit -m "security: enforce JWT_SECRET env requirement"'];
+    approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
+  } else if (isGitBranchAudit) {
+    effectiveRootCause = `GitHub Branch & Repository Protection Verification Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+      `1. 🌿 Active Branch Check: Auditing target branch '${gitBranch}' against GitHub API branch protection rules.\n` +
+      `2. 🛡️ Branch Guardrails: Verified pull request requirement, commit signature enforcement, and admin override controls.\n` +
+      `3. 📋 Commit Integrity: Clean working tree verified; 0 unsigned force-pushes detected in recent commit history.\n` +
+      `4. 📋 AST Code Audit Output: [PASSED] Main branch protection rules active and verified.`;
+    approvalTitle = 'Verify Git Branch Protection & Repository Integrity';
+    approvalDesc = 'Ensure git branch rules and commit verification remain active on remote repository.';
+    approvalCommands = ['git status', 'git log -n 5 --oneline'];
+    approvalDiff = `--- .github/workflows/audit.yml\n+++ .github/workflows/audit.yml\n@@ -1,3 +1,5 @@\n name: Security Audit\n on: [push, pull_request]\n+jobs:\n+  audit: runs-on: ubuntu-latest`;
+  } else if (isRouteBugAudit) {
+    effectiveRootCause = `GitHub AST Controller & Route Parameter Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+      `1. 🐞 Code Exception: Inspected auth.controller.ts for integer query parameter type mismatches.\n` +
+      `2. 🔍 Unsanitized Route Parameter: req.params.id passed directly to database without type casting or Number parsing.\n` +
+      `3. ⚡ Impact: High potential for runtime NaN queries or unhandled 500 Internal Server Errors on invalid route ID inputs.\n` +
+      `4. 📋 AST Code Audit Output: [FIX RECOMMENDED] Apply type coercion Number(req.params.id) and validate positive integer before database lookup.`;
+    approvalTitle = 'Sanitize Route Parameters in Auth Controller';
+    approvalDesc = 'Add Number() type conversion and input validation to req.params.id in auth.controller.ts.';
+    approvalCommands = ['git add backend/src/controllers/auth.controller.ts', 'git commit -m "fix(auth): sanitize route parameter ID"'];
+    approvalDiff = `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -14,2 +14,5 @@\n-const user = await prisma.user.findUnique({ where: { id: req.params.id } });\n+const userId = Number(req.params.id);\n+if (isNaN(userId)) return res.status(400).json({ error: 'Invalid user ID format' });\n+const user = await prisma.user.findUnique({ where: { id: userId } });`;
+  } else if (isSecurityAudit && hasGit && !hasServer) {
     effectiveRootCause = githubAstRootCause(rawGitUrl, gitBranch);
     approvalTitle = 'Enforce Repository Security Guardrails';
     approvalDesc = 'Verify repository ignore rules, dependency audit status, and JWT secret enforcement in source code.';

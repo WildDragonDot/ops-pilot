@@ -198,13 +198,17 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
+  const [createdIncident, setCreatedIncident] = useState<Incident | null>(null);
+
   useEffect(() => {
     if (incidents.length > 0 && !activeIncidentId) {
       setActiveIncidentId(incidents[0].id);
     }
   }, [incidents, activeIncidentId]);
 
-  const activeIncident = incidents.find(i => i.id === activeIncidentId) || incidents[0];
+  const activeIncident = (createdIncident && createdIncident.id === activeIncidentId ? createdIncident : null)
+    || incidents.find(i => i.id === activeIncidentId) 
+    || incidents[0];
 
   // Dynamic real calculation from SQLite DB timestamps and event items
   const stepCount = activeIncident?.events?.length || 4;
@@ -242,7 +246,9 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       }, 50);
 
       const newInc = await startIncident(textToSend, targetScenarioKey, project?.id);
+      setCreatedIncident(newInc);
       setActiveIncidentId(newInc.id);
+      setSubmittedPrompt(newInc.userPrompt);
       onRefreshIncidents();
     } catch (err) {
       logger.error('Approval failed', err);
