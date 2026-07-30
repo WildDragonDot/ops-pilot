@@ -231,12 +231,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
           
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold font-mono shadow-xs">
             <Zap className="w-3.5 h-3.5 text-blue-400" />
-            <span>Autonomous Production Failure Commander v2.5</span>
+            <span>Autonomous Production Failure Copilot v2.5</span>
           </div>
 
           <div className="space-y-3.5">
             <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-[1.1]">
-              Autonomous <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">DevOps Incident Commander</span> & GitHub Auditor
+              Autonomous <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">DevOps AI Copilot</span> & GitHub Auditor
             </h1>
             <p className="text-sm sm:text-base text-slate-400 max-w-xl leading-relaxed font-normal">
               Audit repository security vulnerabilities, detect server container outages via SSH, and execute automated code patches directly on source disk files in seconds.
@@ -247,7 +247,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
             {[
               { icon: GitBranch, title: 'GitHub Auditor', desc: 'AST static scan & auto PR security code fixes', color: 'blue' },
-              { icon: Terminal, title: 'SSH Commander', desc: 'Real SSH server container restart & log tracing', color: 'indigo' },
+              { icon: Terminal, title: 'SSH Terminal', desc: 'Real SSH server container restart & log tracing', color: 'indigo' },
               { icon: ShieldCheck, title: 'Zero-DB Storage', desc: 'SSH keys stay 100% encrypted in client vault', color: 'emerald' }
             ].map((f, idx) => {
               const IconComponent = f.icon;
@@ -507,7 +507,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
 
       {/* Landing Page Footer */}
       <footer className="max-w-7xl w-full mx-auto border-t border-slate-800/80 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-mono relative z-10">
-        <span>© 2026 D-OpsPilot AI — Production DevOps Commander & Code Intelligence</span>
+        <span>© 2026 D-OpsPilot AI — Production DevOps AI & Code Intelligence</span>
         <div className="flex items-center gap-4">
           <span>SOC2 Type II</span>
           <span>•</span>

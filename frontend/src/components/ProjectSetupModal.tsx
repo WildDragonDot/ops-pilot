@@ -248,7 +248,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
     { 
       scope: 'BOTH', 
       title: 'Full Stack (Recommended)', 
-      desc: 'Connect Server SSH + GitHub for complete Incident Command & Code Auditing',
+      desc: 'Connect Server SSH + GitHub for complete AI chat investigations & code auditing',
       icon: Zap,
       badge: 'ALL FEATURES'
     },
@@ -261,8 +261,8 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
     },
     { 
       scope: 'SERVER_ONLY', 
-      title: 'Server DevOps Commander Only', 
-      desc: 'SSH remote management, container restarts & live incident commander (No GitHub needed)',
+      title: 'Server DevOps AI Only', 
+      desc: 'SSH remote management, container restarts & live incident chat (No GitHub needed)',
       icon: Server,
       badge: 'SERVER ONLY'
     }

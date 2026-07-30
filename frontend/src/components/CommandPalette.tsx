@@ -48,7 +48,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'cmd-investigate-502',
       title: 'Investigate 502 Bad Gateway Outage',
-      category: 'Incident Command',
+      category: 'AI Chat',
       icon: Terminal,
       run: () => {
         onInjectFailure('DATABASE_STOPPED');
@@ -59,7 +59,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'cmd-investigate-config',
       title: 'Investigate DATABASE_URL Config Mismatch',
-      category: 'Incident Command',
+      category: 'AI Chat',
       icon: Zap,
       run: () => {
         onInjectFailure('CONFIG_MISMATCH');
@@ -70,7 +70,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     {
       id: 'cmd-investigate-codebug',
       title: 'Investigate Login API 500 Code Bug',
-      category: 'Incident Command',
+      category: 'AI Chat',
       icon: Zap,
       run: () => {
         onInjectFailure('CODE_BUG');

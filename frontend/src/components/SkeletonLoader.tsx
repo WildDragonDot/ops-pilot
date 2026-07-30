@@ -109,7 +109,7 @@ export const RepoAuditorSkeleton: React.FC = () => {
 };
 
 /**
- * Incident Command Center Skeleton Loader
+ * AI Chat Skeleton Loader
  */
 export const CommandCenterSkeleton: React.FC = () => {
   return (

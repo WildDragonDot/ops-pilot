@@ -41,10 +41,10 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
     c => !c.includes('Command failed') && !c.includes('Permission denied') && Boolean(c.trim())
   );
   const displayContainers = validContainers.length > 0 ? validContainers : [
-    'opspilot_api (Up 4 hours)',
-    'postgres_db (Up 4 hours)',
-    'redis_cache (Up 4 hours)',
-    'nginx_proxy (Up 4 hours)'
+    'app_service (sample)',
+    'database_service (sample)',
+    'cache_service (sample)',
+    'proxy_service (sample)'
   ];
 
   const validPm2 = (discovery.pm2Processes || []).filter(
@@ -164,10 +164,10 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
 
           <div className="space-y-1.5 font-mono text-xs">
             {displayContainers.map((c, i) => (
-              <div key={i} className="p-2 rounded-lg bg-slate-900/80 dark:bg-[#0d1117] border theme-border flex items-center justify-between text-title transition hover:border-indigo-500/40 shadow-xs">
+              <div key={i} className="p-2 rounded-lg card-bg-subtle border theme-border flex items-center justify-between text-title transition hover:border-indigo-500/40 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  <span className="font-bold text-slate-100 text-xs truncate">{c}</span>
+                  <span className="font-bold text-title text-xs truncate">{c}</span>
                 </div>
                 <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[9px] font-extrabold border border-emerald-500/20 shrink-0">
                   HEALTHY
@@ -191,10 +191,10 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
 
           <div className="space-y-1.5 font-mono text-xs">
             {displayPm2.map((p, i) => (
-              <div key={i} className="p-2 rounded-lg bg-slate-900/80 dark:bg-[#0d1117] border theme-border flex items-center justify-between text-title transition hover:border-amber-500/40 shadow-xs">
+              <div key={i} className="p-2 rounded-lg card-bg-subtle border theme-border flex items-center justify-between text-title transition hover:border-amber-500/40 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-                  <span className="font-bold text-slate-100 text-xs truncate">{p}</span>
+                  <span className="font-bold text-title text-xs truncate">{p}</span>
                 </div>
                 <span className="px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 text-[9px] font-extrabold border border-blue-500/20 shrink-0">
                   ONLINE
@@ -206,9 +206,9 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
       </div>
 
       {/* System Log Tail Console */}
-      <div className="p-3.5 rounded-xl bg-[#090d13] border border-slate-800 space-y-2 font-mono text-[11px] shadow-lg">
-        <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-          <span className="flex items-center gap-2 font-extrabold text-slate-200">
+      <div className="p-3.5 rounded-xl card-bg-subtle border theme-border space-y-2 font-mono text-[11px] shadow-inner">
+        <div className="flex items-center justify-between border-b theme-border pb-2">
+          <span className="flex items-center gap-2 font-extrabold text-title">
             <Terminal className="w-3.5 h-3.5 text-emerald-400" /> Remote System Log Tail
           </span>
           <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1.5">
@@ -216,28 +216,28 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
           </span>
         </div>
 
-        <div className="space-y-1 text-slate-300 leading-relaxed pt-0.5">
+        <div className="space-y-1 text-subtitle leading-relaxed pt-0.5">
           {(discovery.recentLogs || []).map((log, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-slate-600 font-bold shrink-0">›</span>
-              <span className="text-slate-300 font-mono text-[11px]">{log}</span>
+              <span className="text-muted font-bold shrink-0">›</span>
+              <span className="text-subtitle font-mono text-[11px]">{log}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* AI SRE Audit Recommendations & System Guidance */}
-      <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-900/20 via-indigo-900/15 to-purple-900/20 border border-blue-500/30 space-y-2 shadow-md">
+      <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-cyan-500/10 border border-blue-500/30 space-y-2 shadow-md">
         <div className="flex items-center gap-2 text-xs font-extrabold text-blue-400">
           <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
           <span className="uppercase tracking-wide font-display">D-OpsPilot AI SRE Audit Recommendations & System Guidance</span>
         </div>
 
-        <div className="space-y-1.5 text-xs text-slate-200 font-sans">
+        <div className="space-y-1.5 text-xs text-title font-sans">
           {(discovery.auditRecommendations || []).map((rec, idx) => (
-            <div key={idx} className="flex items-start gap-2 leading-snug p-2 rounded-lg bg-blue-950/40 border border-blue-500/10">
+            <div key={idx} className="flex items-start gap-2 leading-snug p-2 rounded-lg bg-blue-500/10 border border-blue-500/10">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-              <span className="font-medium text-slate-200 text-xs">{rec}</span>
+              <span className="font-medium text-title text-xs">{rec}</span>
             </div>
           ))}
         </div>

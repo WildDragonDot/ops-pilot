@@ -50,7 +50,7 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
   const mode = getProjectOperatingMode(project);
   const isServerConfigured = mode === 'SERVER_ONLY' || mode === 'HYBRID_BOTH';
   const isGitConfigured = mode === 'GITHUB_ONLY' || mode === 'HYBRID_BOTH';
-  const repoName = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot';
+  const repoName = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured';
 
   const serverRunbooks: Runbook[] = [
     {

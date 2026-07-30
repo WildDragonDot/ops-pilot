@@ -124,7 +124,7 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
             onClick={() => onNavigateTab('command')}
             className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition whitespace-nowrap self-start sm:self-auto shadow-xs"
           >
-            View AI Agent in Command Center →
+            View AI Chat →
           </button>
         </div>
       )}

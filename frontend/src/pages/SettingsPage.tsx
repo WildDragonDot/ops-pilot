@@ -71,7 +71,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [modalTab, setModalTab] = useState<'github' | 'server'>('github');
   const [isEditingGit, setIsEditingGit] = useState<boolean>(false);
   const [isEditingServer, setIsEditingServer] = useState<boolean>(false);
-  const [editGitUrl, setEditGitUrl] = useState<string>('https://github.com/WildDragonDot/ops-pilot');
+  const [editGitUrl, setEditGitUrl] = useState<string>('');
   const [editGitBranch, setEditGitBranch] = useState<string>('main');
   const [editGitToken, setEditGitToken] = useState<string>('');
   const [editHost, setEditHost] = useState<string>('');
@@ -1580,7 +1580,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     <div className="grid grid-cols-1 gap-2 font-mono">
                       <div>
                         <span className="text-[10px] text-subtitle block font-sans font-bold">Repository Target</span>
-                        <span className="text-title font-bold text-xs">{editingProject.gitUrl || 'https://github.com/WildDragonDot/ops-pilot'}</span>
+                        <span className="text-title font-bold text-xs">{editingProject.gitUrl || 'No GitHub repository configured'}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <div>
@@ -1615,7 +1615,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                             type="text"
                             value={editGitUrl}
                             onChange={(e) => setEditGitUrl(e.target.value)}
-                            placeholder="e.g. https://github.com/WildDragonDot/ops-pilot"
+                            placeholder="e.g. https://github.com/your-org/your-repo"
                             className="w-full px-3 py-2 rounded-xl border theme-border theme-input text-title font-mono focus:outline-none focus:border-blue-500"
                           />
                         </div>

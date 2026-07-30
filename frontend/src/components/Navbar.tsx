@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: Activity },
     { id: 'auditor', label: 'GitHub Auditor', icon: GitBranch },
-    { id: 'command', label: 'Incident Command', icon: Terminal },
+    { id: 'command', label: 'AI Chat', icon: Terminal },
     { id: 'approvals', label: 'Approvals Queue', icon: CheckSquare },
     { id: 'reports', label: 'Post-Mortems', icon: FileText },
     { id: 'sandbox', label: 'Failure Injector', icon: Zap },
@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                {user ? `${user.organizationName} • ${user.name}` : 'Production Commander'}
+                {user ? `${user.organizationName} • ${user.name}` : 'Production DevOps AI'}
               </p>
             </div>
           </div>

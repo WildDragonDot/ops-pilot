@@ -72,7 +72,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-              {user ? `${user.organizationName || 'Production Org'} • ${user.name}` : 'Autonomous Incident Commander'}
+              {user ? `${user.organizationName || 'Production Org'} • ${user.name}` : 'Autonomous DevOps AI'}
             </p>
           </div>
         </div>
@@ -118,7 +118,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
               Select Work Project & Server Environment
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
-              Welcome back, <strong className="text-slate-800 dark:text-slate-200">{user?.name || 'Operator'}</strong>! Select your target project below to launch the AI Incident Command workspace or connect a new server.
+              Welcome back, <strong className="text-slate-800 dark:text-slate-200">{user?.name || 'Operator'}</strong>! Select your target project below to launch the AI chat workspace or connect a new server.
             </p>
           </div>
 
@@ -290,7 +290,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
 
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800 py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
-        D-OpsPilot AI — Autonomous Incident Commander & Zero-DB Security Architecture
+        D-OpsPilot AI — Autonomous DevOps AI & Zero-DB Security Architecture
       </footer>
 
     </div>

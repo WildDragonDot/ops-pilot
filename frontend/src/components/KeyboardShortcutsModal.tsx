@@ -44,7 +44,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         { key: '⌘ 1', label: 'Project Selector', icon: Home, action: () => onNavigate('/projects') },
         { key: '⌘ 2', label: 'System Overview Dashboard', icon: Cpu, action: () => onNavigate('/dashboard') },
         { key: '⌘ 3', label: 'Repository Auditor', icon: ShieldAlert, action: () => onNavigate('/auditor') },
-        { key: '⌘ 4', label: 'AI Command Center', icon: Terminal, action: () => onNavigate('/command') },
+        { key: '⌘ 4', label: 'AI Chat', icon: Terminal, action: () => onNavigate('/command') },
         { key: '⌘ 5', label: 'Runbooks & Automation', icon: BookOpen, action: () => onNavigate('/runbooks') },
       ]
     }

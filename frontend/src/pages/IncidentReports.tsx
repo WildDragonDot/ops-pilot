@@ -109,7 +109,7 @@ export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) =
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Available Reports</h2>
           {resolvedIncidents.length === 0 ? (
             <div className="bg-white dark:bg-[#0d1117] p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
-              No post-mortem reports generated yet. Resolve an incident in the Command Center to generate a post-mortem.
+              No post-mortem reports generated yet. Resolve an incident in AI Chat to generate a post-mortem.
             </div>
           ) : (
             resolvedIncidents.map(inc => {
