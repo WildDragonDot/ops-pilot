@@ -375,8 +375,20 @@ export async function checkDeploymentGap(req, res) {
     const project = projectId
         ? await prisma.project.findUnique({ where: { id: projectId } })
         : await prisma.project.findFirst();
-    const serverHost = project?.serverHost?.trim() || '34.224.80.31';
-    const gitUrl = project?.gitUrl || 'https://github.com/WildDragonDot/ops-pilot';
+    const serverHost = project?.serverHost?.trim();
+    const gitUrl = project?.gitUrl?.trim();
+    // If project has NO GitHub URL configured, there is NO GitHub deployment gap to report!
+    if (!gitUrl || !serverHost) {
+        return res.json({
+            hasGap: false,
+            githubCommit: '',
+            serverCommit: '',
+            serverHost: serverHost || '',
+            gitUrl: gitUrl || '',
+            targetPath: project?.rootPath || '',
+            message: 'GitHub URL or Server Host not configured for this project.'
+        });
+    }
     try {
         const { exec } = await import('child_process');
         const { promisify } = await import('util');
@@ -403,13 +415,13 @@ export async function checkDeploymentGap(req, res) {
     }
     catch (err) {
         res.json({
-            hasGap: true,
-            githubCommit: 'f5a0362',
-            serverCommit: 'bcbdc03',
-            serverHost: '34.224.80.31',
-            gitUrl: 'https://github.com/WildDragonDot/ops-pilot',
-            targetPath: '/home/ubuntu/finance-lock',
-            message: '⚠️ Code pushed to GitHub (f5a0362) is NOT YET deployed to production server (34.224.80.31).'
+            hasGap: false,
+            githubCommit: '',
+            serverCommit: '',
+            serverHost,
+            gitUrl,
+            targetPath: project?.rootPath || '/home/ubuntu/finance-lock',
+            message: 'GitHub status check skipped.'
         });
     }
 }

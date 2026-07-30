@@ -462,8 +462,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 max-w-7xl mx-auto font-sans pb-12"
     >
-      {/* AI AUTONOMOUS DEPLOYMENT GAP ALERT BANNER */}
-      {deployGap?.hasGap && (
+      {/* AI AUTONOMOUS DEPLOYMENT GAP ALERT BANNER (Shown ONLY when GitHub URL & Server Host are configured) */}
+      {Boolean(project?.gitUrl?.trim()) && Boolean(project?.serverHost?.trim()) && deployGap?.hasGap && (
         <div className="glass-panel p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent space-y-3.5 shadow-md relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
