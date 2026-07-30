@@ -342,3 +342,73 @@ Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
     cleanLogs: filteredLines.slice(-30).join('\n')
   };
 }
+
+export async function generateAIIncidentAnalysis(userPrompt: string, projectContext: any): Promise<{
+  title?: string;
+  rootCause: string;
+  confidence: number;
+  approvalTitle: string;
+  approvalDesc: string;
+  commands: string[];
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  diff?: string;
+} | null> {
+  if (!hasOpenAIKey() || !openai) {
+    logger.info('OpenAI API key missing or unconfigured. Using deterministic fallback.');
+    return null;
+  }
+
+  try {
+    const prompt = `You are D-OpsPilot AI Incident Commander & Senior DevOps Engineer. Analyze the user's prompt for the project and generate a realistic, high-quality incident diagnosis, root cause, recovery plan, shell commands, and code patch diff.
+
+Project Details:
+- Name: ${projectContext?.name || 'Repository Workspace'}
+- Runtime: ${projectContext?.runtimeType || 'Node.js'}
+- Git Repository: ${projectContext?.gitUrl || 'N/A'}
+- Server Host: ${projectContext?.serverHost || 'N/A'}
+
+User Input Prompt:
+"${userPrompt}"
+
+Return a JSON object with EXACTLY these fields:
+{
+  "title": "Short descriptive incident title (max 50 chars)",
+  "rootCause": "Point-by-point root cause diagnosis formatted as:\n1. 🔍 Intent / Finding 1\n2. ⚙️ Execution / Analysis 2\n3. 📊 Diagnostics Summary 3\n4. 📋 AST Code Audit Output / Recommendation 4",
+  "confidence": 98,
+  "approvalTitle": "Actionable title for recovery plan",
+  "approvalDesc": "Explanation of recovery patch",
+  "commands": ["command 1", "command 2"],
+  "riskLevel": "MEDIUM",
+  "diff": "unified git diff string or empty string"
+}`;
+
+    logger.info(`🤖 Invoking OpenAI GPT-4o model for prompt: "${userPrompt}"`);
+    const completion = await openai.chat.completions.create({
+      model: openaiModel,
+      messages: [
+        { role: 'system', content: 'You are D-OpsPilot AI DevOps Commander. Return valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' }
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (content) {
+      const parsed = JSON.parse(content);
+      return {
+        title: parsed.title || userPrompt,
+        rootCause: parsed.rootCause || `AI Analysis completed for "${userPrompt}".`,
+        confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 95,
+        approvalTitle: parsed.approvalTitle || 'Execute AI Suggested Patch',
+        approvalDesc: parsed.approvalDesc || 'Apply proposed code changes and run verification tests.',
+        commands: Array.isArray(parsed.commands) ? parsed.commands : ['git status'],
+        riskLevel: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(parsed.riskLevel) ? parsed.riskLevel : 'MEDIUM',
+        diff: parsed.diff || ''
+      };
+    }
+  } catch (err: any) {
+    logger.warn('OpenAI Incident Analysis call notice:', err?.message || err);
+  }
+
+  return null;
+}

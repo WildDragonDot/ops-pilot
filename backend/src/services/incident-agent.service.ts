@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { prisma } from './db.service.js';
-import { runOpenAIIncidentReasoning } from './openai.service.js';
+import { runOpenAIIncidentReasoning, generateAIIncidentAnalysis } from './openai.service.js';
 import { broadcastEvent } from '../controllers/stream.controller.js';
 import { logger } from './logger.service.js';
 
@@ -386,6 +386,16 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
       'echo "Open Project Setup to configure GitHub PAT or Server SSH Host"'
     ];
     approvalDiff = '';
+  }
+
+  // Attempt live OpenAI GPT-4o model analysis
+  const aiAnalysis = await generateAIIncidentAnalysis(userPrompt, project);
+  if (aiAnalysis) {
+    effectiveRootCause = aiAnalysis.rootCause;
+    approvalTitle = aiAnalysis.approvalTitle;
+    approvalDesc = aiAnalysis.approvalDesc;
+    approvalCommands = aiAnalysis.commands;
+    approvalDiff = aiAnalysis.diff || '';
   }
 
   const incidentTitle = (userPrompt && userPrompt.length > 5)
