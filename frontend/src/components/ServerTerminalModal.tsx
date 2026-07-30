@@ -72,6 +72,56 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
   const [showAiCopilot, setShowAiCopilot] = useState<boolean>(false);
   const [aiProblemQuery, setAiProblemQuery] = useState<string>('');
   const [suggestedCommand, setSuggestedCommand] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
+  const [aiExplanation, setAiExplanation] = useState<string>('');
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleInputChange = (val: string) => {
+    setAiProblemQuery(val);
+    const trimmed = val.trim();
+    
+    if (!trimmed) {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      setIsTyping(false);
+      setIsAiThinking(false);
+      setSuggestedCommand('');
+      setAiExplanation('');
+      return;
+    }
+
+    setIsTyping(true);
+    setIsAiThinking(true);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      setIsTyping(false);
+      try {
+        const res = await suggestAICommandApi(trimmed, serverHost, serverUser);
+        if (res && res.command) {
+          setSuggestedCommand(res.command);
+          setAiExplanation(res.explanation || '');
+        }
+      } catch (e) {
+        const q = trimmed.toLowerCase();
+        if (q.includes('docker') && (q.includes('error') || q.includes('log'))) {
+          setSuggestedCommand(`for c in $(sudo docker ps --format '{{.Names}}'); do echo "=== CONTAINER: $c ==="; sudo docker logs --tail 25 $c 2>&1 | grep -i -E "error|warn|fail|exception" || echo "No recent errors"; done`);
+          setAiExplanation('Scans and filters error, warning & exception logs across all active Docker containers');
+        } else if (q.includes('setup') || q.includes('system') || q.includes('server') || q.includes('kya h')) {
+          setSuggestedCommand('uname -a && uptime && sudo docker ps');
+          setAiExplanation('Displays OS kernel details, server uptime & load, and all active Docker containers');
+        } else {
+          setSuggestedCommand('sudo docker ps');
+          setAiExplanation('Lists active Docker containers on remote host');
+        }
+      } finally {
+        setIsAiThinking(false);
+      }
+    }, 600);
+  };
   const [history, setHistory] = useState<CommandHistoryItem[]>([
     {
       id: 'init-1',
@@ -195,41 +245,6 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
-  const [aiExplanation, setAiExplanation] = useState<string>('');
-
-  const handleProblemSearch = async (query: string) => {
-    setAiProblemQuery(query);
-    const q = query.toLowerCase().trim();
-    if (!q) {
-      setSuggestedCommand('');
-      setAiExplanation('');
-      return;
-    }
-
-    try {
-      setIsAiThinking(true);
-      const res = await suggestAICommandApi(query, serverHost, serverUser);
-      if (res && res.command) {
-        setSuggestedCommand(res.command);
-        setAiExplanation(res.explanation || '');
-      }
-    } catch (e) {
-      if (q.includes('setup') || q.includes('system') || q.includes('server') || q.includes('details') || q.includes('info') || q.includes('kya h')) {
-        setSuggestedCommand('uname -a && uptime && sudo docker ps');
-        setAiExplanation('Displays OS kernel details, server uptime & load, and all active Docker containers');
-      } else if (q.includes('apk') || q.includes('mdm')) {
-        setSuggestedCommand("sudo grep 'mdm-agent.apk' /var/log/nginx/access.log | tail -n 20");
-        setAiExplanation('Filters Nginx access logs for MDM agent APK download requests');
-      } else {
-        setSuggestedCommand('sudo docker ps');
-        setAiExplanation('Lists active Docker containers on remote host');
-      }
-    } finally {
-      setIsAiThinking(false);
-    }
   };
 
   const presetCommands = [
@@ -358,12 +373,17 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
               <input
                 type="text"
                 value={aiProblemQuery}
-                onChange={(e) => handleProblemSearch(e.target.value)}
-                placeholder="Ask AI Copilot in Hindi/English (e.g. 'mera server setup kya h', 'nginx logs dekho', 'ram memory check')..."
+                onChange={(e) => handleInputChange(e.target.value)}
+                placeholder="Ask AI Copilot in Hindi/English (e.g. 'error log in docker', 'mera server setup kya h')..."
                 className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
               />
-              {isAiThinking && <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin shrink-0" />}
-              {aiProblemQuery && !isAiThinking && (
+              {(isTyping || isAiThinking) && (
+                <div className="flex items-center gap-1.5 text-purple-400 font-mono text-[10px] shrink-0 font-bold animate-pulse">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                  <span>{isTyping ? 'Waiting for typing complete...' : 'AI Thinking & Analyzing...'}</span>
+                </div>
+              )}
+              {aiProblemQuery && !isTyping && !isAiThinking && (
                 <button onClick={() => { setAiProblemQuery(''); setSuggestedCommand(''); setAiExplanation(''); }} className="text-slate-500 hover:text-slate-300 text-xs">
                   <X className="w-3.5 h-3.5" />
                 </button>
