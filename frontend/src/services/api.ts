@@ -200,10 +200,10 @@ export async function triggerRepositoryScan(projectId?: string): Promise<Scan> {
   return data.scan;
 }
 
-export async function applySecurityPatch(findingId: string): Promise<Scan> {
+export async function applySecurityPatch(findingId: string, projectId?: string): Promise<Scan> {
   const res = await fetch(`${API_BASE}/repositories/findings/${findingId}/patch`, { 
     method: 'POST',
-    headers: getAuthHeaders()
+    headers: getAuthHeaders(projectId)
   });
   if (!res.ok) throw new Error('Failed to apply security patch');
   const data = await res.json();

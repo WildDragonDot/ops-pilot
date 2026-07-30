@@ -634,19 +634,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as any)}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all cursor-pointer relative overflow-hidden ${
+                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all cursor-pointer relative overflow-hidden border ${
                     isActive
-                      ? 'border-l-3 border-blue-500 bg-gradient-to-r from-blue-600/15 via-blue-600/5 to-transparent text-blue-500 font-bold'
-                      : 'card-bg-subtle text-subtitle hover:text-title hover:bg-slate-500/10'
+                      ? 'bg-blue-600/10 dark:bg-blue-500/15 border-blue-400/60 text-blue-600 dark:text-blue-300 font-bold shadow-sm'
+                      : 'border-transparent bg-transparent text-subtitle hover:text-title hover:bg-slate-500/10'
                   }`}
                 >
+                  {isActive && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-blue-500" />}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`p-1 rounded-md ${isActive ? 'bg-blue-500/20 text-blue-500' : 'bg-slate-500/10 text-subtitle'}`}>
+                    <div className={`p-1 rounded-md ${isActive ? 'bg-blue-500/20 text-blue-600 dark:text-blue-300' : 'bg-slate-500/10 text-subtitle'}`}>
                       <Icon className="w-3.5 h-3.5 shrink-0" />
                     </div>
                     <div className="min-w-0">
                       <span className="text-[11px] font-bold block truncate leading-tight">{item.title}</span>
-                      <span className={`text-[9px] block truncate ${isActive ? 'text-blue-400' : 'text-subtitle'}`}>
+                      <span className={`text-[9px] block truncate ${isActive ? 'text-blue-500 dark:text-blue-300' : 'text-subtitle'}`}>
                         {item.desc}
                       </span>
                     </div>
@@ -655,7 +656,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     {item.badge && (
                       <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono max-w-[55px] truncate ${
-                        isActive ? 'bg-blue-500/20 text-blue-400 font-extrabold border border-blue-500/30' : 'bg-slate-500/10 text-subtitle font-bold'
+                        isActive ? 'bg-blue-500/20 text-blue-600 dark:text-blue-300 font-extrabold border border-blue-500/30' : 'bg-slate-500/10 text-subtitle font-bold'
                       }`}>
                         {item.badge}
                       </span>

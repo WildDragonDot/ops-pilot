@@ -42,9 +42,9 @@
   --alert-amber-border: #fbbf24;
   --alert-amber-text: #d97706;
 
-  --chat-user-bg: #eff6ff;
-  --chat-user-border: #bfdbfe;
-  --chat-user-text: #1e3a8a;
+  --chat-user-bg: #dbeafe;
+  --chat-user-border: #60a5fa;
+  --chat-user-text: #172554;
 
   --chat-ai-bg: #ffffff;
   --chat-ai-border: #cbd5e1;
@@ -94,9 +94,9 @@ html.dark {
   --alert-amber-border: #f59e0b;
   --alert-amber-text: #f59e0b;
 
-  --chat-user-bg: rgba(30, 58, 138, 0.25);
-  --chat-user-border: rgba(59, 130, 246, 0.3);
-  --chat-user-text: #bfdbfe;
+  --chat-user-bg: rgba(37, 99, 235, 0.22);
+  --chat-user-border: rgba(96, 165, 250, 0.7);
+  --chat-user-text: #dbeafe;
 
   --chat-ai-bg: #0b0f19;
   --chat-ai-border: rgba(255, 255, 255, 0.08);
@@ -374,7 +374,7 @@ textarea::placeholder,
   background-color: var(--chat-user-bg);
   border: 1px solid var(--chat-user-border);
   color: var(--chat-user-text);
-  box-shadow: 0 4px 16px -2px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 8px 24px -8px rgba(37, 99, 235, 0.35), 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
 .theme-reasoning-bar {

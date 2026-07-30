@@ -777,7 +777,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         </span>
                       </div>
                       <h2 className="text-base sm:text-lg font-bold text-title tracking-tight flex items-center gap-2">
-                        <span>{project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot'}</span>
+                        <span>{project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured'}</span>
                         {project?.gitUrl && (
                           <a href={project.gitUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:text-blue-400 underline font-mono flex items-center gap-1">
                             <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
@@ -861,14 +861,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
 	                      <Activity className={`w-4 h-4 ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 animate-pulse' : 'text-emerald-500'}`} />
 	                    </div>
 	                    
-	                    <div className="flex items-baseline justify-between gap-2 min-w-0">
-	                      <span className={`text-2xl leading-none font-extrabold tracking-wide min-w-0 ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 font-mono' : 'text-emerald-500 font-mono'}`}>
+	                    <div className="flex items-baseline justify-between gap-4 min-w-0">
+	                      <span className={`text-xl leading-none font-extrabold tracking-wide min-w-0 ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 font-mono' : 'text-emerald-500 font-mono'}`}>
 	                        {pendingApprovals > 0 || !allNodesHealthy ? 'DEGRADED' : 'HEALTHY'}
 	                      </span>
-	                      <span className="text-[9px] text-emerald-500 font-extrabold font-mono whitespace-nowrap shrink-0">● {uptimePercentage}</span>
+	                      <span className="ml-auto text-[9px] text-emerald-500 font-extrabold font-mono whitespace-nowrap shrink-0">● {uptimePercentage}</span>
 	                    </div>
 
-	                    <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+	                    <div className="w-full card-bg-subtle h-1 rounded-full overflow-hidden border theme-border">
 	                      <div className={`h-full rounded-full transition-all duration-500 ${allNodesHealthy ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: uptimePercentage }} />
 	                    </div>
 
@@ -945,11 +945,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* System Resource Gauges Card (When Server SSH Host is connected) */}
                 {Boolean(project?.serverHost?.trim()) && (
 	                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2.5 shadow-sm self-start col-span-2">
-                    <h3 className="text-[9px] font-mono font-bold uppercase tracking-wider text-title flex flex-col items-start gap-1 border-b theme-border pb-2">
-                      <span className="flex items-center gap-1.5">
+                    <h3 className="text-[9px] font-mono font-bold uppercase tracking-wider text-title flex items-center justify-between gap-2 border-b theme-border pb-2">
+                      <span className="flex min-w-0 items-center gap-1.5">
                         <Cpu className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span>System Resource Gauges</span>
                       </span>
-                      <span className="text-[8px] text-emerald-500 font-extrabold flex items-center gap-1">
+                      <span className="text-[8px] text-emerald-500 font-extrabold flex shrink-0 items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping shrink-0" /> HTOP STREAM
                       </span>
                     </h3>
@@ -986,10 +986,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t theme-border space-y-1 text-[9px] text-subtitle font-mono">
-                      <span className="block">Vault Crypto:</span>
-                      <b className="block text-emerald-500">WebCrypto AES-256</b>
-                      <span className="block text-emerald-500 font-bold">● VERIFIED</span>
+                    <div className="pt-2 border-t theme-border text-[9px] text-subtitle font-mono flex items-center justify-between gap-2">
+                      <span className="shrink-0">Vault Crypto:</span>
+                      <b className="min-w-0 flex-1 truncate text-emerald-500">WebCrypto AES-256</b>
+                      <span className="shrink-0 text-emerald-500 font-bold">● VERIFIED</span>
                     </div>
                   </div>
                 )}
@@ -1009,17 +1009,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             <div className="space-y-1.5 text-[9px] font-mono">
-              <div className="space-y-0.5 text-subtitle">
-                <span className="block">Human Sign-off</span>
-                <span className="block text-emerald-500 font-bold">REQUIRED</span>
+              <div className="flex items-center justify-between gap-3 text-subtitle">
+                <span className="min-w-0 truncate">Human Sign-off</span>
+                <span className="shrink-0 text-emerald-500 font-bold">REQUIRED</span>
               </div>
-              <div className="space-y-0.5 text-subtitle">
-                <span className="block">Auto-Rollback</span>
-                <span className="block text-emerald-500 font-bold">READY</span>
+              <div className="flex items-center justify-between gap-3 text-subtitle">
+                <span className="min-w-0 truncate">Auto-Rollback</span>
+                <span className="shrink-0 text-emerald-500 font-bold">READY</span>
               </div>
-              <div className="space-y-0.5 text-subtitle">
-                <span className="block">Audit Trail</span>
-                <span className="block text-emerald-500 font-bold">ENCRYPTED</span>
+              <div className="flex items-center justify-between gap-3 text-subtitle">
+                <span className="min-w-0 truncate">Audit Trail</span>
+                <span className="shrink-0 text-emerald-500 font-bold">ENCRYPTED</span>
               </div>
             </div>
           </div>

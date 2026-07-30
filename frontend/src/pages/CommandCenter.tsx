@@ -363,11 +363,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                     <span className="text-[10px]">{copiedPrompt ? 'Copied' : 'Copy'}</span>
                   </button>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-title">Operator Command Prompt</span>
-                    <span className="text-subtitle">[{new Date(activeIncident.startedAt).toLocaleTimeString()}]</span>
+                    <span className="font-extrabold text-blue-700 dark:text-blue-200">You</span>
+                    <span className="text-blue-600/80 dark:text-blue-200/70">[{new Date(activeIncident.startedAt).toLocaleTimeString()}]</span>
                   </div>
                 </div>
-                <p className="text-xs text-title font-mono leading-relaxed">
+                <p className="text-xs text-blue-950 dark:text-blue-50 font-mono font-semibold leading-relaxed">
                   "{activeIncident.userPrompt}"
                 </p>
               </div>
@@ -556,7 +556,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           </>
         ) : (
           <div className="p-8 text-center text-subtitle text-xs">
-            No incident selected. Use the Chat Editor below to start an investigation.
+            No chat selected. Start a new investigation from the message box below.
           </div>
         )}
       </div>

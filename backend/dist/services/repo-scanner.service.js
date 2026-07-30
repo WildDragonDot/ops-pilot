@@ -3,15 +3,16 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { prisma } from './db.service.js';
 import { auditCodebaseWithOpenAI } from './openai.service.js';
-export async function getLatestRepoScan() {
-    const repo = await getOrCreateWorkspaceRepository();
+import { fetchGitHubSourceFiles } from './github-audit.service.js';
+export async function getLatestRepoScan(options = {}) {
+    const repo = await getOrCreateWorkspaceRepository(options.projectId);
     let scan = await prisma.repositoryScan.findFirst({
         where: { repositoryId: repo.id },
         orderBy: { startedAt: 'desc' },
         include: { findings: true }
     });
     if (!scan || !scan.findings || scan.findings.length === 0) {
-        return executeRepoScan();
+        return executeRepoScan(options);
     }
     return scan;
 }
@@ -35,11 +36,13 @@ async function checkRealDiskFilePatchStatus(filePath, patchType) {
     }
     return 'OPEN';
 }
-async function getOrCreateWorkspaceRepository() {
-    const project = await prisma.project.findFirst({
-        where: { gitUrl: { not: null } },
-        orderBy: { createdAt: 'desc' }
-    });
+async function getOrCreateWorkspaceRepository(projectId) {
+    const project = projectId
+        ? await prisma.project.findUnique({ where: { id: projectId } })
+        : await prisma.project.findFirst({
+            where: { gitUrl: { not: null } },
+            orderBy: { createdAt: 'desc' }
+        });
     const repoId = project?.id ? `repo-${project.id}` : 'workspace-local-repo';
     const repoName = project?.gitUrl
         ? project.gitUrl.replace(/^https:\/\/github\.com\//, '').replace(/\/$/, '')
@@ -48,26 +51,21 @@ async function getOrCreateWorkspaceRepository() {
     return prisma.repository.upsert({
         where: { id: repoId },
         update: {
+            projectId: project?.id || null,
             name: repoName,
             url: repoUrl,
             defaultBranch: project?.gitBranch || 'main'
         },
         create: {
             id: repoId,
+            projectId: project?.id || null,
             name: repoName,
             url: repoUrl,
             defaultBranch: project?.gitBranch || 'main'
         }
     });
 }
-export async function executeRepoScan() {
-    // Delete legacy scans to ensure fresh deterministic findings state
-    const repo = await getOrCreateWorkspaceRepository();
-    await prisma.repositoryScan.deleteMany({
-        where: { repositoryId: repo.id }
-    });
-    const scanId = `scan-${Date.now()}`;
-    // Read real codebase source files from disk
+async function readLocalWorkspaceFiles() {
     const filesToRead = [
         'backend/src/index.ts',
         'backend/src/config/openai.ts',
@@ -84,6 +82,36 @@ export async function executeRepoScan() {
         catch (err) {
             // File missing skip
         }
+    }
+    return codeContexts;
+}
+export async function executeRepoScan(options = {}) {
+    // Delete legacy scans to ensure fresh deterministic findings state
+    const repo = await getOrCreateWorkspaceRepository(options.projectId);
+    const project = repo.projectId ? await prisma.project.findUnique({ where: { id: repo.projectId } }) : null;
+    await prisma.repositoryScan.deleteMany({
+        where: { repositoryId: repo.id }
+    });
+    const scanId = `scan-${Date.now()}`;
+    let codeContexts = [];
+    let sourceLabel = 'local workspace source files';
+    if (project?.gitUrl) {
+        try {
+            codeContexts = await fetchGitHubSourceFiles({
+                gitUrl: project.gitUrl,
+                gitBranch: project?.gitBranch || repo.defaultBranch || 'main',
+                githubToken: options.githubToken,
+                maxFiles: 24
+            });
+            sourceLabel = `GitHub repository ${repo.name}`;
+        }
+        catch (err) {
+            codeContexts = [];
+        }
+    }
+    if (codeContexts.length === 0) {
+        codeContexts = await readLocalWorkspaceFiles();
+        sourceLabel = project?.gitUrl ? `local fallback after GitHub source fetch failed for ${repo.name}` : sourceLabel;
     }
     // Attempt OpenAI API analysis
     const aiResult = await auditCodebaseWithOpenAI(codeContexts);
@@ -104,8 +132,8 @@ export async function executeRepoScan() {
         securityScore = 100;
     }
     const summary = openCount === 0
-        ? 'All codebase source files verified clean. 0 active risks.'
-        : `Scanned codebase source files. Detected ${openCount} Critical active risks.`;
+        ? `All ${sourceLabel} verified clean. 0 active risks.`
+        : `Scanned ${sourceLabel}. Detected ${openCount} Critical active risks.`;
     const newScan = await prisma.repositoryScan.create({
         data: {
             id: scanId,

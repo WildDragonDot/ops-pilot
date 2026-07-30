@@ -302,7 +302,7 @@ export async function getServerLogs(req, res) {
                 key: headerSshKey,
                 password: headerSshPass
             };
-            const rawLogs = await executeRemoteCommand(creds, 'docker logs --tail 10 opspilot_api 2>&1 || journalctl -n 10 --no-pager || tail -n 10 /var/log/syslog');
+            const rawLogs = await executeRemoteCommand(creds, `(docker ps --format '{{.Names}}' | head -n 1 | xargs -r -I{} docker logs --tail 20 {} 2>&1) || journalctl -n 20 --no-pager || tail -n 20 /var/log/syslog`);
             if (rawLogs && !rawLogs.includes('Command failed') && !rawLogs.includes('Permission denied')) {
                 const lines = rawLogs.split('\n').filter(Boolean);
                 const formatted = lines.map((msg, i) => ({
@@ -324,7 +324,7 @@ export async function getServerLogs(req, res) {
         { id: `l2-${Date.now()}`, time: timeStr, level: 'INFO', message: `project.config  -- Server host configured: ${serverHost}` },
         { id: `l3-${Date.now()}`, time: timeStr, level: 'INFO', message: `settings.vault  -- Configure SSH key/pass in Project Settings to enable live remote log streaming` }
     ] : [
-        { id: `l1-${Date.now()}`, time: timeStr, level: 'OK', message: `git.auditor     -- Verified remote GitHub branch "main" (${gitUrl || 'WildDragonDot/ops-pilot'})` },
+        { id: `l1-${Date.now()}`, time: timeStr, level: gitUrl ? 'OK' : 'WARN', message: gitUrl ? `git.auditor     -- Verified remote GitHub branch "main" (${gitUrl})` : 'git.auditor     -- No GitHub repository configured for this project' },
         { id: `l2-${Date.now()}`, time: timeStr, level: 'INFO', message: `ast.scanner     -- AST vulnerability scan clean (0 active risks)` },
         { id: `l3-${Date.now()}`, time: timeStr, level: 'OK', message: `vault.crypto    -- Zero-DB WebCrypto AES-256 vault active` },
         { id: `l4-${Date.now()}`, time: timeStr, level: 'INFO', message: `webhook.ingress -- Live repository audit stream standing by` }
@@ -422,11 +422,17 @@ export async function checkDeploymentGap(req, res) {
         });
     }
     try {
-        const { exec } = await import('child_process');
-        const { promisify } = await import('util');
-        const execAsync = promisify(exec);
-        const gitRes = await execAsync('git rev-parse --short HEAD');
-        const latestGithubCommit = gitRes.stdout.trim();
+        const githubAudit = await fetchLiveGitHubAudit({
+            gitUrl,
+            gitBranch: project?.gitBranch || 'main',
+            githubToken: getHeaderString(req.headers['x-github-token'])
+        });
+        const latestGithubCommit = githubAudit.connected && githubAudit.recentCommits?.[0]?.sha
+            ? githubAudit.recentCommits[0].sha
+            : '';
+        if (!latestGithubCommit) {
+            throw new Error(githubAudit.message || 'Unable to read latest GitHub commit from GitHub API.');
+        }
         const { executeRemoteCommand } = await import('../services/ssh.service.js');
         const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']);
         const headerSshPass = getHeaderString(req.headers['x-server-pass']);

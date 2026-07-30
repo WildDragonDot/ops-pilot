@@ -97,7 +97,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
 
     try {
-      const updatedScan = await applySecurityPatch(finding.id);
+      const updatedScan = await applySecurityPatch(finding.id, project?.id);
       setIsApplyingPatch(false);
 
       const msg = `✓ Security fix applied to ${finding.filePath || 'source file'} & committed to Git! Risk moved to Resolved tab.`;
@@ -167,7 +167,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">
-                  {project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot'}
+                  {project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured'}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Last Scanned: {scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : 'Just now'} • <span className="font-semibold text-slate-700 dark:text-slate-300">{countAll} active risks</span> detected ({countResolved} resolved)

@@ -122,10 +122,10 @@ export function AppRoutes() {
   const handleScanRepo = async () => {
     try {
       setIsScanning(true);
-      const newScan = await triggerRepositoryScan();
+      const newScan = await triggerRepositoryScan(project?.id);
       setScan(newScan);
       setTimeout(async () => {
-        const updated = await fetchRepositoryScan();
+        const updated = await fetchRepositoryScan(project?.id);
         setScan(updated);
         setIsScanning(false);
       }, 3000);

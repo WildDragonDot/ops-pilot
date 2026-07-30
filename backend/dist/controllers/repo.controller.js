@@ -1,7 +1,22 @@
 import { prisma } from '../services/db.service.js';
 import { getLatestRepoScan, executeRepoScan, applyFindingPatch } from '../services/repo-scanner.service.js';
+const getHeaderString = (val) => {
+    if (!val)
+        return undefined;
+    const str = Array.isArray(val) ? val[0] : val;
+    try {
+        return decodeURIComponent(str);
+    }
+    catch {
+        return str;
+    }
+};
 export async function getRepository(req, res) {
-    const latestScan = await getLatestRepoScan();
+    const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
+    const latestScan = await getLatestRepoScan({
+        projectId,
+        githubToken: getHeaderString(req.headers['x-github-token'])
+    });
     const repository = latestScan?.repositoryId
         ? await prisma.repository.findUnique({ where: { id: latestScan.repositoryId } })
         : null;
@@ -17,11 +32,17 @@ export async function getRepository(req, res) {
     });
 }
 export async function triggerScan(req, res) {
-    const scan = await executeRepoScan();
+    const scan = await executeRepoScan({
+        projectId: req.body?.projectId ? String(req.body.projectId) : undefined,
+        githubToken: getHeaderString(req.headers['x-github-token'])
+    });
     res.json({ scan });
 }
 export async function getScanById(req, res) {
-    const scan = await getLatestRepoScan();
+    const scan = await getLatestRepoScan({
+        projectId: req.query.projectId ? String(req.query.projectId) : undefined,
+        githubToken: getHeaderString(req.headers['x-github-token'])
+    });
     res.json({ scan });
 }
 export async function applyPatch(req, res) {

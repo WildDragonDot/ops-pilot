@@ -1,3 +1,21 @@
+export function parseGitHubRepo(gitUrl) {
+    if (!gitUrl)
+        return null;
+    const match = gitUrl.match(/github\.com[:/]([^/]+)\/([^/.]+)(?:\.git)?\/?$/);
+    if (!match)
+        return null;
+    return { owner: match[1], repo: match[2] };
+}
+function githubHeaders(githubToken) {
+    const headers = {
+        'User-Agent': 'OpsPilot-AI-Auditor',
+        'Accept': 'application/vnd.github.v3+json'
+    };
+    if (githubToken) {
+        headers['Authorization'] = `token ${githubToken}`;
+    }
+    return headers;
+}
 export async function fetchLiveGitHubAudit(params) {
     if (!params.gitUrl) {
         return {
@@ -6,23 +24,15 @@ export async function fetchLiveGitHubAudit(params) {
         };
     }
     const targetBranch = params.gitBranch?.trim() || 'main';
-    // Parse owner/repo from URL
-    const match = params.gitUrl.match(/github\.com\/([^/]+)\/([^/.]+)/);
-    if (!match) {
+    const parsed = parseGitHubRepo(params.gitUrl);
+    if (!parsed) {
         return {
             connected: false,
             message: 'Invalid GitHub URL format. Use https://github.com/owner/repository'
         };
     }
-    const owner = match[1];
-    const repo = match[2];
-    const headers = {
-        'User-Agent': 'OpsPilot-AI-Auditor',
-        'Accept': 'application/vnd.github.v3+json'
-    };
-    if (params.githubToken) {
-        headers['Authorization'] = `token ${params.githubToken}`;
-    }
+    const { owner, repo } = parsed;
+    const headers = githubHeaders(params.githubToken);
     try {
         const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
         if (!repoRes.ok) {
@@ -80,4 +90,36 @@ export async function fetchLiveGitHubAudit(params) {
             message: `Failed to connect to GitHub API: ${err.message}`
         };
     }
+}
+export async function fetchGitHubSourceFiles(params) {
+    const parsed = parseGitHubRepo(params.gitUrl);
+    if (!parsed)
+        return [];
+    const branch = params.gitBranch?.trim() || 'main';
+    const headers = githubHeaders(params.githubToken);
+    const treeUrl = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
+    const treeRes = await fetch(treeUrl, { headers });
+    if (!treeRes.ok) {
+        throw new Error(`GitHub source tree request failed with HTTP ${treeRes.status}`);
+    }
+    const treeData = await treeRes.json();
+    const sourceExtensions = /\.(ts|tsx|js|jsx|json|prisma|sql|yml|yaml|env\.example)$/i;
+    const ignoredPath = /(^|\/)(node_modules|dist|build|coverage|\.git)\//;
+    const candidates = (treeData.tree || [])
+        .filter((entry) => entry.type === 'blob' && sourceExtensions.test(entry.path) && !ignoredPath.test(entry.path))
+        .slice(0, params.maxFiles || 24);
+    const files = [];
+    for (const entry of candidates) {
+        const fileRes = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${encodeURIComponent(entry.path).replace(/%2F/g, '/')}?ref=${encodeURIComponent(branch)}`, { headers });
+        if (!fileRes.ok)
+            continue;
+        const fileData = await fileRes.json();
+        if (fileData.encoding === 'base64' && fileData.content) {
+            files.push({
+                path: entry.path,
+                content: Buffer.from(fileData.content, 'base64').toString('utf-8')
+            });
+        }
+    }
+    return files;
 }
