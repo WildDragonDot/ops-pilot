@@ -17,6 +17,7 @@ const getHeaderString = (val) => {
         return str;
     }
 };
+const shellQuote = (value) => `'${value.replace(/'/g, "'\\''")}'`;
 export async function getProjects(req, res) {
     const projects = await prisma.project.findMany({
         include: { repositories: true },
@@ -337,7 +338,7 @@ export async function suggestAICommand(req, res) {
 export async function scanServerDirectories(req, res) {
     const { serverHost, serverPort, serverUser, baseDir } = req.body;
     const sshKey = getHeaderString(req.headers['x-server-ssh-key']);
-    const sshPassword = getHeaderString(req.headers['x-server-ssh-pass']);
+    const sshPassword = getHeaderString(req.headers['x-server-pass']) || getHeaderString(req.headers['x-server-ssh-pass']);
     const creds = {
         host: serverHost || '34.224.80.31',
         port: Number(serverPort) || 22,
@@ -458,7 +459,7 @@ export async function executeAIDeployment(req, res) {
             key: headerSshKey,
             password: headerSshPass
         };
-        const remoteOut = await executeRemoteCommand(creds, `cd ${targetPath} && git pull origin main 2>&1 || docker ps`).catch(() => '');
+        const remoteOut = await executeRemoteCommand(creds, `cd ${shellQuote(targetPath)} && git pull origin main 2>&1 || docker ps`).catch(() => '');
         if (remoteOut) {
             logs.push(`[SSH Output] ${remoteOut.substring(0, 300)}`);
         }

@@ -9,20 +9,26 @@ const app = express();
 const PORT = Number(process.env.PORT || 5080);
 app.use(cors());
 app.use(express.json());
-// Initialize SQLite/Prisma file database seed
-initDatabase();
-// API Routes
-app.use('/api', apiRouter);
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        service: 'D-OpsPilot AI Backend',
-        openaiEnabled: hasOpenAIKey(),
-        timestamp: new Date().toISOString()
+async function startServer() {
+    // Initialize SQLite/Prisma file database seed before accepting requests.
+    await initDatabase();
+    // API Routes
+    app.use('/api', apiRouter);
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+        res.json({
+            status: 'OK',
+            service: 'D-OpsPilot AI Backend',
+            openaiEnabled: hasOpenAIKey(),
+            timestamp: new Date().toISOString()
+        });
     });
-});
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
-    console.log(`🤖 OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED (GPT-4o / Codex)' : 'FALLBACK MODE'}`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
+        console.log(`OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED' : 'FALLBACK MODE'}`);
+    });
+}
+startServer().catch((err) => {
+    console.error('Failed to start D-OpsPilot backend:', err);
+    process.exit(1);
 });

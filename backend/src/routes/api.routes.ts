@@ -30,6 +30,7 @@ router.get('/projects', requireAuth, getProjects);
 router.post('/projects', requireAuth, createProject);
 router.post('/projects/exec', requireAuth, executeServerCommand);
 router.post('/projects/test-connection', requireAuth, testProjectConnection);
+router.post('/projects/scan-directories', requireAuth, scanServerDirectories);
 router.delete('/projects/:id', requireAuth, deleteProject);
 router.get('/projects/:id', requireAuth, getProject);
 router.get('/projects/:id/health', requireAuth, getProjectHealth);
