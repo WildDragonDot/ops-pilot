@@ -5,8 +5,12 @@ export async function getAuditLogs(req: Request, res: Response) {
   try {
     const userEmail = (req as any).user?.email || 'admin@opspilot.ai';
     const userName = (req as any).user?.name || 'Chandan Vishwakarma';
+    const projectId = req.query.projectId as string | undefined;
+
+    const incidentWhere = projectId ? { projectId } : {};
 
     const incidents = await prisma.incident.findMany({
+      where: incidentWhere,
       include: { approvals: true, events: true },
       orderBy: { startedAt: 'desc' },
       take: 20
@@ -17,8 +21,11 @@ export async function getAuditLogs(req: Request, res: Response) {
       take: 10
     });
 
-    const project = await prisma.project.findFirst();
-    const repoName = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot';
+    // Get the specific project if projectId is provided
+    const project = projectId
+      ? await prisma.project.findUnique({ where: { id: projectId } })
+      : await prisma.project.findFirst();
+    const repoName = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'repository';
     const targetBranch = (project as any)?.gitBranch || 'main';
 
     const logs: any[] = [];
@@ -56,22 +63,24 @@ export async function getAuditLogs(req: Request, res: Response) {
       });
     });
 
-    // 2. Real Scans
-    scans.forEach(s => {
-      const grade = s.overallScore >= 90 ? 'A+' : 'B+';
-      logs.push({
-        id: `log-scan-${s.id}`,
-        timestamp: new Date(s.startedAt).toISOString().replace('T', ' ').substring(0, 19),
-        user: 'D-OpsPilot Autonomous Agent',
-        userEmail: 'agent@system.internal',
-        action: 'TRIGGERED_REPO_SCAN',
-        category: 'SCAN',
-        target: repoName,
-        ipAddress: '127.0.0.1',
-        status: 'SUCCESS',
-        details: `Target Branch: ${targetBranch} — Overall Score: ${s.overallScore}/100 Grade ${grade}`
+    // 2. Real Scans (only show if project has GitHub)
+    if (!projectId || project?.gitUrl) {
+      scans.forEach(s => {
+        const grade = s.overallScore >= 90 ? 'A+' : 'B+';
+        logs.push({
+          id: `log-scan-${s.id}`,
+          timestamp: new Date(s.startedAt).toISOString().replace('T', ' ').substring(0, 19),
+          user: 'D-OpsPilot Autonomous Agent',
+          userEmail: 'agent@system.internal',
+          action: 'TRIGGERED_REPO_SCAN',
+          category: 'SCAN',
+          target: repoName,
+          ipAddress: '127.0.0.1',
+          status: 'SUCCESS',
+          details: `Target Branch: ${targetBranch} — Overall Score: ${s.overallScore}/100 Grade ${grade}`
+        });
       });
-    });
+    }
 
     // 3. User authentication & active session log
     logs.push({
@@ -81,7 +90,7 @@ export async function getAuditLogs(req: Request, res: Response) {
       userEmail: userEmail,
       action: 'USER_LOGIN',
       category: 'AUTH',
-      target: project?.name || 'OpsPilot Workspace',
+      target: project?.name || 'D-OpsPilot Workspace',
       ipAddress: '192.168.1.104',
       status: 'SUCCESS',
       details: 'User authenticated via JWT Bearer Token Session.'

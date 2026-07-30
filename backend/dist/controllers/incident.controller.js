@@ -1,7 +1,7 @@
 import { createAndRunIncident, getAllIncidents, getIncidentById, incidentEmitter } from '../services/incident-agent.service.js';
 export async function createIncident(req, res) {
-    const { userPrompt, scenarioKey } = req.body;
-    const incident = await createAndRunIncident(userPrompt, scenarioKey);
+    const { userPrompt, scenarioKey, projectId } = req.body;
+    const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId);
     res.json({ incident });
 }
 export async function getIncidents(req, res) {

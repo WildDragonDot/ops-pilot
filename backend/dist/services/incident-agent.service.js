@@ -169,11 +169,14 @@ export async function getIncidentById(id) {
         } : undefined
     };
 }
-export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_STOPPED') {
+export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_STOPPED', projectId) {
     const scenario = activeScenarios[scenarioKey] || activeScenarios['DATABASE_STOPPED'];
     const incidentId = `inc-${Date.now()}`;
     const approvalId = `appr-${Date.now()}`;
-    let project = await prisma.project.findFirst();
+    // Load specific project by ID if provided, otherwise fallback to first
+    let project = projectId
+        ? await prisma.project.findUnique({ where: { id: projectId } })
+        : await prisma.project.findFirst();
     if (!project) {
         project = await prisma.project.create({
             data: {

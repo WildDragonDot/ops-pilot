@@ -7,8 +7,8 @@ import {
 } from '../services/incident-agent.service.js';
 
 export async function createIncident(req: Request, res: Response) {
-  const { userPrompt, scenarioKey } = req.body;
-  const incident = await createAndRunIncident(userPrompt, scenarioKey);
+  const { userPrompt, scenarioKey, projectId } = req.body;
+  const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId);
   res.json({ incident });
 }
 
