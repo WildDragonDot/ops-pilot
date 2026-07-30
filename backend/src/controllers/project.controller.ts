@@ -314,11 +314,9 @@ export async function getServerLogs(req: Request, res: Response) {
 
   const timeStr = now.toTimeString().split(' ')[0];
   const logs = serverHost ? [
-    { id: `l1-${Date.now()}`, time: timeStr, level: 'OK' as const, message: `ssh.daemon      -- Remote SSH session verified on host ${serverHost}:22` },
-    { id: `l2-${Date.now()}`, time: timeStr, level: 'INFO' as const, message: `docker.engine   -- Container opspilot_api (PID 4912) listening on 0.0.0.0:3000` },
-    { id: `l3-${Date.now()}`, time: timeStr, level: 'INFO' as const, message: `nginx.ingress   -- Proxy route /api active with HTTP/2 SSL ingress` },
-    { id: `l4-${Date.now()}`, time: timeStr, level: 'OK' as const, message: `postgres.db     -- Connection pool healthy (14/100 active clients)` },
-    { id: `l5-${Date.now()}`, time: timeStr, level: 'INFO' as const, message: `redis.cache     -- Memory usage: 14.2 MB / 512 MB (Hit ratio: 94.2%)` }
+    { id: `l1-${Date.now()}`, time: timeStr, level: 'WARN' as const, message: `ssh.auth        -- Remote SSH credentials required for host ${serverHost}:22` },
+    { id: `l2-${Date.now()}`, time: timeStr, level: 'INFO' as const, message: `project.config  -- Server host configured: ${serverHost}` },
+    { id: `l3-${Date.now()}`, time: timeStr, level: 'INFO' as const, message: `settings.vault  -- Configure SSH key/pass in Project Settings to enable live remote log streaming` }
   ] : [
     { id: `l1-${Date.now()}`, time: timeStr, level: 'OK' as const, message: `git.auditor     -- Verified remote GitHub branch "main" (${gitUrl || 'WildDragonDot/ops-pilot'})` },
     { id: `l2-${Date.now()}`, time: timeStr, level: 'INFO' as const, message: `ast.scanner     -- AST vulnerability scan clean (0 active risks)` },
