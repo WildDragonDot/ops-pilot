@@ -601,7 +601,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
                 <span className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-extrabold flex items-center gap-2 shadow-sm">
                   <Server className="w-3.5 h-3.5 text-white animate-pulse" />
-                  <span>PRODUCTION ({project?.serverHost || '34.224.80.31'})</span>
+                  <span>PRODUCTION ({project?.serverHost})</span>
                 </span>
               </div>
             ) : (
@@ -739,7 +739,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
                       <h3 className="text-base font-bold text-title">0 Active Microservices in Target Path</h3>
                       <p className="text-xs text-subtitle font-mono max-w-xl mx-auto leading-relaxed">
-                        Path <b className="text-blue-500 dark:text-blue-400 font-bold">{activeTargetPath}</b> has no active microservices or docker-compose running on server <b className="text-emerald-500">{project?.serverHost || '34.224.80.31'}</b>.
+                        Path <b className="text-blue-500 dark:text-blue-400 font-bold">{activeTargetPath}</b> has no active microservices or docker-compose running on server <b className="text-emerald-500">{project?.serverHost}</b>.
                       </p>
                     </div>
                     <div className="pt-2 flex justify-center gap-3">

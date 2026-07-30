@@ -155,7 +155,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
   isOpen, 
   onClose, 
   projectId,
-  serverHost = '34.224.80.31',
+  serverHost = '',
   serverUser = 'ubuntu'
 }) => {
   const [commandInput, setCommandInput] = useState<string>('');

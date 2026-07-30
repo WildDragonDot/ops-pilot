@@ -304,6 +304,9 @@ export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_S
     const incidentTitle = (userPrompt && userPrompt.length > 5)
         ? (userPrompt.length > 55 ? `${userPrompt.substring(0, 52)}...` : userPrompt)
         : (!serverHost ? `GitHub AST Code Audit: ${gitUrl}` : scenario.title);
+    const approvalActionType = approvalCommands.some((cmd) => cmd.startsWith('git ') || cmd.includes('npm audit') || cmd.includes('rg -n'))
+        ? 'CODE_PATCH'
+        : scenario.approval.actionType;
     const newIncident = await prisma.incident.create({
         data: {
             id: incidentId,
@@ -322,7 +325,7 @@ export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_S
         data: {
             id: approvalId,
             incidentId: newIncident.id,
-            actionType: !serverHost ? 'CODE_PATCH' : scenario.approval.actionType,
+            actionType: !serverHost ? 'CODE_PATCH' : approvalActionType,
             title: approvalTitle,
             description: approvalDesc,
             commands: JSON.stringify(approvalCommands),

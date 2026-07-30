@@ -90,7 +90,7 @@ export async function runOpenAIIncidentReasoning(prompt, context) {
 }
 export async function generateAICommandFromPrompt(query, serverContext) {
     const q = query.toLowerCase().trim();
-    const host = serverContext?.host || '34.224.80.31';
+    const host = serverContext?.host || 'configured server';
     const user = serverContext?.user || 'ubuntu';
     if (hasOpenAIKey() && openai) {
         try {
@@ -236,7 +236,7 @@ export async function filterProjectsWithAI(rawDirectories, serverHost) {
         return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
     }
     try {
-        const prompt = `You are OpsPilot AI Server Architect. Analyze these raw directories discovered on Linux server (${serverHost || '34.224.80.31'}):
+        const prompt = `You are OpsPilot AI Server Architect. Analyze these raw directories discovered on Linux server (${serverHost || 'configured server'}):
 ${JSON.stringify(rawDirectories)}
 
 Return ONLY a JSON object with key "projects" containing a list of actual application/project root directories. Exclude hidden dot-files (.npm, .cache, .ssh), npm logs, node_modules, temp files, and system cache folders.

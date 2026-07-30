@@ -325,6 +325,15 @@ export async function suggestAICommand(req, res) {
     if (!query || typeof query !== 'string') {
         return res.status(400).json({ error: 'Query string is required' });
     }
+    if (!serverHost?.trim()) {
+        return res.json({
+            success: true,
+            command: 'git status && npm audit --audit-level=high',
+            explanation: 'Runs repository status and dependency audit checks in GitHub AST mode.',
+            detectedIntent: 'Repository Audit',
+            confidence: 0.92
+        });
+    }
     try {
         const { generateAICommandFromPrompt } = await import('../services/openai.service.js');
         const result = await generateAICommandFromPrompt(query, { host: serverHost, user: serverUser });

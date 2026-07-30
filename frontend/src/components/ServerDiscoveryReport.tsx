@@ -34,7 +34,7 @@ interface ServerDiscoveryReportProps {
 
 export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
   discovery,
-  host = '34.224.80.31',
+  host = 'configured server',
   user = 'root'
 }) => {
   const validContainers = (discovery.containers || []).filter(

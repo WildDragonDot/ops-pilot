@@ -107,7 +107,7 @@ export async function generateAICommandFromPrompt(query: string, serverContext?:
   confidence: number;
 }> {
   const q = query.toLowerCase().trim();
-  const host = serverContext?.host || '34.224.80.31';
+  const host = serverContext?.host || 'configured server';
   const user = serverContext?.user || 'ubuntu';
 
   if (hasOpenAIKey() && openai) {
@@ -242,7 +242,7 @@ export async function filterProjectsWithAI(rawDirectories: string[], serverHost?
   }
 
   try {
-    const prompt = `You are OpsPilot AI Server Architect. Analyze these raw directories discovered on Linux server (${serverHost || '34.224.80.31'}):
+    const prompt = `You are OpsPilot AI Server Architect. Analyze these raw directories discovered on Linux server (${serverHost || 'configured server'}):
 ${JSON.stringify(rawDirectories)}
 
 Return ONLY a JSON object with key "projects" containing a list of actual application/project root directories. Exclude hidden dot-files (.npm, .cache, .ssh), npm logs, node_modules, temp files, and system cache folders.

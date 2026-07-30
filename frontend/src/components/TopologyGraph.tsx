@@ -258,7 +258,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
 
     // Real Discovered Production Server Stack
     return {
-      stackLabel: `AWS EC2 Production Stack (${project?.serverHost || '34.224.80.31'})`,
+      stackLabel: `AWS EC2 Production Stack (${project?.serverHost})`,
       pipeline: ['NANOMDM:8080', 'NANODEP:8082', 'POSTGRES:5434', 'SCEP:8081', 'REDIS:6379'],
       nodes: [
         {
@@ -447,7 +447,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white tracking-tight">{inspectNode.label}</h3>
-                  <p className="text-xs text-slate-400 font-mono">Host: {project?.serverHost || '34.224.80.31'} • Port: {inspectNode.port}</p>
+                  <p className="text-xs text-slate-400 font-mono">Host: {project?.serverHost} • Port: {inspectNode.port}</p>
                 </div>
               </div>
 
@@ -490,7 +490,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 font-mono">
                   <Terminal className="w-4 h-4 text-emerald-400" />
-                  Live SSH Container Logs (ubuntu@{project?.serverHost || '34.224.80.31'})
+                  Live SSH Container Logs (ubuntu@{project?.serverHost})
                 </span>
 
                 <button
@@ -507,7 +507,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
                 {loadingLogs ? (
                   <div className="flex items-center justify-center py-6 text-slate-500 gap-2">
                     <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
-                    Connecting via SSH to {project?.serverHost || '34.224.80.31'}...
+                    Connecting via SSH to {project?.serverHost}...
                   </div>
                 ) : (
                   <pre className="whitespace-pre-wrap">{containerLogs || 'No logs captured.'}</pre>
