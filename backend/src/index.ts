@@ -89,6 +89,14 @@ async function startServer() {
     logger.info(`✅  D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
     logger.info(`🔑  OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED' : 'FALLBACK MODE'}`);
     logger.info(`🌐  CORS allowed origins: ${allowedOrigins.join(', ')}`);
+
+    // ─── 3-Day Storage Auto-Cleanup Policy (Runs on startup & every 12h) ─────────
+    import('./services/repo-clone.service.js').then(({ cleanupInactiveClonedRepos }) => {
+      cleanupInactiveClonedRepos(3);
+      setInterval(() => {
+        cleanupInactiveClonedRepos(3);
+      }, 12 * 60 * 60 * 1000);
+    }).catch(err => logger.warn('Cleanup scheduler start notice', err));
   });
 }
 

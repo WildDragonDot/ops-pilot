@@ -102,13 +102,47 @@ export async function executeRepoScan(options: RepoScanOptions = {}) {
   let sourceLabel = 'local workspace source files';
   if (project?.gitUrl) {
     try {
-      codeContexts = await fetchGitHubSourceFiles({
-        gitUrl: project.gitUrl,
-        gitBranch: (project as any)?.gitBranch || repo.defaultBranch || 'main',
-        githubToken: options.githubToken,
-        maxFiles: 24
-      });
-      sourceLabel = `GitHub repository ${repo.name}`;
+      const { cloneOrSyncRepository } = await import('./repo-clone.service.js');
+      const targetBranch = (project as any)?.gitBranch || repo.defaultBranch || 'main';
+      const cloneResult = await cloneOrSyncRepository(
+        project.id,
+        project.gitUrl,
+        targetBranch,
+        options.githubToken
+      );
+
+      if (cloneResult.success && cloneResult.repoPath) {
+        const filesToRead = [
+          'package.json',
+          'backend/package.json',
+          'src/index.ts',
+          'backend/src/index.ts',
+          'src/controllers/auth.controller.ts',
+          'backend/src/controllers/auth.controller.ts',
+          'src/services/auth.service.ts',
+          'backend/src/services/auth.service.ts'
+        ];
+        for (const relPath of filesToRead) {
+          try {
+            const fullPath = path.join(cloneResult.repoPath, relPath);
+            const content = await readFile(fullPath, 'utf-8');
+            codeContexts.push({ path: relPath, content });
+          } catch (e) {}
+        }
+        if (codeContexts.length > 0) {
+          sourceLabel = `Cloned GitHub repository ${repo.name} (branch: ${targetBranch})`;
+        }
+      }
+
+      if (codeContexts.length === 0) {
+        codeContexts = await fetchGitHubSourceFiles({
+          gitUrl: project.gitUrl,
+          gitBranch: targetBranch,
+          githubToken: options.githubToken,
+          maxFiles: 24
+        });
+        sourceLabel = `GitHub repository ${repo.name}`;
+      }
     } catch (err) {
       codeContexts = [];
     }
