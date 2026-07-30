@@ -87,7 +87,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error('Authentication service unavailable. Please try again.');
+      }
+
       if (!res.ok) {
         throw new Error(data.error || 'Social sign-in failed on backend.');
       }
@@ -130,7 +137,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error('Authentication service unavailable. Please try again.');
+      }
+
       if (!res.ok) {
         throw new Error(data.error || 'Login failed.');
       }
