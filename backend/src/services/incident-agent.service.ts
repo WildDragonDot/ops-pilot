@@ -217,14 +217,7 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
     : await prisma.project.findFirst();
 
   if (!project) {
-    project = await prisma.project.create({
-      data: {
-        id: 'demo-commerce-api',
-        name: 'Production E-Commerce API',
-        rootPath: process.cwd(),
-        runtimeType: 'Docker Compose'
-      }
-    });
+    throw new Error('A selected project is required before creating an incident.');
   }
 
   const serverHost = (project as any)?.serverHost?.trim();
@@ -292,8 +285,9 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
       approvalTitle = `Target Remote Server Application Directory (${serverHost})`;
       approvalDesc = `Target one of the discovered application directories on remote host to scope monitoring.`;
       approvalCommands = dirs.slice(0, 5).map(d => `cd "${d}" && ls -la`);
-    } catch (e) {
-      effectiveRootCause = `Discovered 3 active project root directories on remote server (${serverHost}): /home/ubuntu/finance-lock, /var/www, /opt.`;
+    } catch (e: any) {
+      effectiveRootCause = `Remote Server Project Discovery could not complete for ${serverHost}: ${e.message || 'SSH directory scan failed'}. Verify SSH credentials and target base directory.`;
+      approvalCommands = [];
     }
   } else if (!serverHost && gitUrl) {
     effectiveRootCause = `SSH Server Host is NOT configured in workspace settings. Operating in GitHub AST Code Audit Mode. Analyzed repository (${gitUrl}): Identified hardcoded JWT_SECRET requirement fallback default in backend/src/services/auth.service.ts. Attach an SSH Server Host in Settings for live container & server diagnostics.`;
@@ -393,24 +387,15 @@ async function executeAgentReasoning(
   };
 
   if (isProjectDiscovery && serverHost) {
-    const formattedProjects = `✓ Server Discovery Completed (${serverHost}): Discovered 3 Active Production Projects on Remote Host:
+    let dirs: string[] = [];
+    try {
+      const { listRemoteServerDirectories } = await import('./ssh.service.js');
+      dirs = await listRemoteServerDirectories({ host: serverHost, user: project?.serverUser || 'ubuntu', port: project?.serverPort || 22 }, '/home/ubuntu');
+    } catch {}
 
-1. 🚀 Finance Lock Microservices Suite
-   • Path: /home/ubuntu/finance-lock
-   • Stack: Docker Compose (NanoMDM, NanoDEP, SCEP, Postgres, Redis)
-   • Status: 5 Active Containers RUNNING
-
-2. 📦 Production Release Workload
-   • Path: /home/ubuntu/release
-   • Stack: Application Release Binaries & Deployment Bundle
-   • Status: ACTIVE
-
-3. 🌐 Nginx Web Proxy Gateway
-   • Path: /var/www
-   • Stack: Nginx Reverse Proxy & SSL Endpoints
-   • Status: RUNNING
-
-D-OpsPilot AI is actively connected to ${serverHost} and monitoring all 3 project roots.`;
+    const formattedProjects = dirs.length
+      ? `✓ Server Discovery Completed (${serverHost}): Discovered ${dirs.length} active project root director${dirs.length === 1 ? 'y' : 'ies'} on remote host:\n\n${dirs.map((d, i) => `${i + 1}. 📁 ${d}`).join('\n')}\n\nD-OpsPilot AI is scoped to real directories returned by the configured SSH server.`
+      : `Remote Server Project Discovery could not find application directories on ${serverHost}. Verify SSH credentials, permissions, and base directory settings.`;
 
     await new Promise(r => setTimeout(r, 600));
     await addEvent('PLAN', `Auditing Real Application Projects on Server (${serverHost})`, {
@@ -423,8 +408,8 @@ D-OpsPilot AI is actively connected to ${serverHost} and monitoring all 3 projec
 
     await new Promise(r => setTimeout(r, 900));
     await addEvent('TOOL_CALL', `Executing Project Discovery on ${serverHost}`, {
-      command: `ssh ubuntu@${serverHost} "sudo docker ps && ls -d /home/ubuntu/finance-lock /home/ubuntu/release /var/www"`,
-      output: `1. /home/ubuntu/finance-lock (5 containers)\n2. /home/ubuntu/release (application build)\n3. /var/www (Nginx proxy)`
+      command: `find /home/ubuntu /var/www /opt -maxdepth 2 -type d`,
+      output: dirs.length ? dirs.join('\n') : 'No application directories discovered.'
     });
 
     await new Promise(r => setTimeout(r, 800));
@@ -439,7 +424,7 @@ D-OpsPilot AI is actively connected to ${serverHost} and monitoring all 3 projec
 
     const finalIncident = await getIncidentById(incidentId);
     incidentEmitter.emit(`incident_update_${incidentId}`, finalIncident);
-    broadcastEvent({ type: 'success', title: 'Server Project Discovery Complete', message: `Discovered 3 active projects on ${serverHost}` });
+    broadcastEvent({ type: 'success', title: 'Server Project Discovery Complete', message: dirs.length ? `Discovered ${dirs.length} project directories on ${serverHost}` : `No project directories discovered on ${serverHost}` });
     return;
   }
 

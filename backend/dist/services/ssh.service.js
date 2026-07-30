@@ -233,6 +233,6 @@ export async function listRemoteServerDirectories(creds, baseDir = '/home/ubuntu
         return Array.from(new Set(filtered)).slice(0, 10);
     }
     catch (e) {
-        return ['/home/ubuntu/finance-lock', '/var/www', '/opt'];
+        return [];
     }
 }

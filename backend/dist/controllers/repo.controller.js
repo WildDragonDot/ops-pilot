@@ -1,12 +1,16 @@
+import { prisma } from '../services/db.service.js';
 import { getLatestRepoScan, executeRepoScan, applyFindingPatch } from '../services/repo-scanner.service.js';
 export async function getRepository(req, res) {
     const latestScan = await getLatestRepoScan();
+    const repository = latestScan?.repositoryId
+        ? await prisma.repository.findUnique({ where: { id: latestScan.repositoryId } })
+        : null;
     res.json({
         repository: {
-            id: 'opspilot-demo-repo',
-            name: 'company/production-backend-api',
-            url: 'https://github.com/company/production-backend-api',
-            defaultBranch: 'main',
+            id: repository?.id || 'workspace-local-repo',
+            name: repository?.name || 'Local Workspace Repository',
+            url: repository?.url || 'local-workspace',
+            defaultBranch: repository?.defaultBranch || 'main',
             lastScannedAt: latestScan?.completedAt,
             latestScan
         }

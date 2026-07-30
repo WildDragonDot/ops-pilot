@@ -137,7 +137,7 @@ export function AppRoutes() {
 
   const handleInjectFailure = async (scenarioKey: string) => {
     try {
-      await injectFailure(scenarioKey);
+      await injectFailure(scenarioKey, project?.id);
       await loadData();
     } catch (err) {
       console.error(err);
@@ -146,7 +146,7 @@ export function AppRoutes() {
 
   const handleResetEnv = async () => {
     try {
-      await resetEnvironment();
+      await resetEnvironment(project?.id);
       await loadData();
     } catch (err) {
       console.error(err);

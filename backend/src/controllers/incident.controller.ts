@@ -8,8 +8,12 @@ import {
 
 export async function createIncident(req: Request, res: Response) {
   const { userPrompt, scenarioKey, projectId } = req.body;
-  const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId);
-  res.json({ incident });
+  try {
+    const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId);
+    res.json({ incident });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Unable to create incident.' });
+  }
 }
 
 export async function getIncidents(req: Request, res: Response) {

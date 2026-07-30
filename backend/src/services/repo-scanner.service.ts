@@ -5,8 +5,9 @@ import { prisma } from './db.service.js';
 import { auditCodebaseWithOpenAI } from './openai.service.js';
 
 export async function getLatestRepoScan() {
+  const repo = await getOrCreateWorkspaceRepository();
   let scan = await prisma.repositoryScan.findFirst({
-    where: { repositoryId: 'opspilot-demo-repo' },
+    where: { repositoryId: repo.id },
     orderBy: { startedAt: 'desc' },
     include: { findings: true }
   });
@@ -38,10 +39,38 @@ async function checkRealDiskFilePatchStatus(filePath: string, patchType: 'JWT' |
   return 'OPEN';
 }
 
+async function getOrCreateWorkspaceRepository() {
+  const project = await prisma.project.findFirst({
+    where: { gitUrl: { not: null } },
+    orderBy: { createdAt: 'desc' }
+  });
+  const repoId = project?.id ? `repo-${project.id}` : 'workspace-local-repo';
+  const repoName = project?.gitUrl
+    ? project.gitUrl.replace(/^https:\/\/github\.com\//, '').replace(/\/$/, '')
+    : 'Local Workspace Repository';
+  const repoUrl = project?.gitUrl || 'local-workspace';
+
+  return prisma.repository.upsert({
+    where: { id: repoId },
+    update: {
+      name: repoName,
+      url: repoUrl,
+      defaultBranch: (project as any)?.gitBranch || 'main'
+    },
+    create: {
+      id: repoId,
+      name: repoName,
+      url: repoUrl,
+      defaultBranch: (project as any)?.gitBranch || 'main'
+    }
+  });
+}
+
 export async function executeRepoScan() {
   // Delete legacy scans to ensure fresh deterministic findings state
+  const repo = await getOrCreateWorkspaceRepository();
   await prisma.repositoryScan.deleteMany({
-    where: { repositoryId: 'opspilot-demo-repo' }
+    where: { repositoryId: repo.id }
   });
 
   const scanId = `scan-${Date.now()}`;
@@ -67,18 +96,6 @@ export async function executeRepoScan() {
 
   // Attempt OpenAI API analysis
   const aiResult = await auditCodebaseWithOpenAI(codeContexts);
-
-  let repo = await prisma.repository.findFirst({ where: { id: 'opspilot-demo-repo' } });
-  if (!repo) {
-    repo = await prisma.repository.create({
-      data: {
-        id: 'opspilot-demo-repo',
-        name: 'WildDragonDot/ops-pilot',
-        url: 'https://github.com/WildDragonDot/ops-pilot',
-        defaultBranch: 'main'
-      }
-    });
-  }
 
   // Check real disk file patch statuses
   const jwtStatus = await checkRealDiskFilePatchStatus('backend/src/services/auth.service.ts', 'JWT');

@@ -232,15 +232,26 @@ export async function getProjectHealth(req: Request, res: Response) {
 }
 
 export async function injectFailure(req: Request, res: Response) {
-  const { scenarioKey } = req.body;
+  const { scenarioKey, projectId } = req.body;
+  const project = projectId ? await prisma.project.findUnique({ where: { id: String(projectId) } }) : null;
+  if (!project?.serverHost?.trim()) {
+    return res.status(400).json({ error: 'Failure injection requires a selected project with an SSH server host.' });
+  }
   const key = scenarioKey || 'DATABASE_STOPPED';
   const state = injectFailureScenario(key);
-  const incident = await createAndRunIncident('', key);
+  const incident = await createAndRunIncident('', key, project.id);
   broadcastEvent({ type: 'danger', title: 'Failure Injected', message: `Scenario '${key}' triggered container degradation` });
   res.json({ success: true, services: state.environmentStatus, incident });
 }
 
-export function resetEnv(req: Request, res: Response) {
+export async function resetEnv(req: Request, res: Response) {
+  const { projectId } = req.body || {};
+  if (projectId) {
+    const project = await prisma.project.findUnique({ where: { id: String(projectId) } });
+    if (!project?.serverHost?.trim()) {
+      return res.status(400).json({ error: 'Environment reset requires a server-connected project.' });
+    }
+  }
   const state = resetEnvironmentState();
   broadcastEvent({ type: 'success', title: 'Environment Restored', message: 'All container services reset to HEALTHY status' });
   res.json({ success: true, services: state.environmentStatus });
@@ -414,7 +425,7 @@ export async function scanServerDirectories(req: Request, res: Response) {
     const directories = await listRemoteServerDirectories(creds, baseDir || '/home/ubuntu');
     res.json({ success: true, directories });
   } catch (err: any) {
-    res.json({ success: true, directories: ['/home/ubuntu/finance-lock', '/var/www', '/opt'] });
+    res.status(502).json({ success: false, directories: [], error: err.message || 'Unable to scan remote server directories.' });
   }
 }
 
@@ -464,13 +475,27 @@ export async function checkDeploymentGap(req: Request, res: Response) {
     const { promisify } = await import('util');
     const execAsync = promisify(exec);
 
-    let latestGithubCommit = 'f5a0362';
-    try {
-      const gitRes = await execAsync('git rev-parse --short HEAD');
-      latestGithubCommit = gitRes.stdout.trim() || 'f5a0362';
-    } catch {}
+    const gitRes = await execAsync('git rev-parse --short HEAD');
+    const latestGithubCommit = gitRes.stdout.trim();
 
-    const serverDeployedCommit = 'bcbdc03';
+    const { executeRemoteCommand } = await import('../services/ssh.service.js');
+    const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']);
+    const headerSshPass = getHeaderString(req.headers['x-server-pass']);
+    const targetPath = project?.rootPath && !project.rootPath.startsWith('/Users/') && !project.rootPath.includes('Desktop')
+      ? project.rootPath
+      : undefined;
+    const serverCommitRaw = await executeRemoteCommand({
+      host: serverHost,
+      port: project?.serverPort || 22,
+      user: project?.serverUser || 'ubuntu',
+      key: headerSshKey,
+      password: headerSshPass,
+      projectPath: targetPath
+    }, 'git rev-parse --short HEAD');
+    const serverDeployedCommit = serverCommitRaw.trim().split(/\s+/)[0] || '';
+    if (!serverDeployedCommit || serverDeployedCommit.includes('fatal')) {
+      throw new Error('Unable to read deployed git commit from the configured server path.');
+    }
     const isSynced = latestGithubCommit === serverDeployedCommit;
 
     res.json({
@@ -479,7 +504,7 @@ export async function checkDeploymentGap(req: Request, res: Response) {
       serverCommit: serverDeployedCommit,
       serverHost,
       gitUrl,
-      targetPath: project?.rootPath || '/home/ubuntu/finance-lock',
+      targetPath: project?.rootPath || '',
       message: isSynced
         ? '✅ Server code is up to date with latest GitHub commit.'
         : `⚠️ Code pushed to GitHub (${latestGithubCommit}) is NOT YET deployed to production server (${serverHost}).`
@@ -491,8 +516,8 @@ export async function checkDeploymentGap(req: Request, res: Response) {
       serverCommit: '',
       serverHost,
       gitUrl,
-      targetPath: project?.rootPath || '/home/ubuntu/finance-lock',
-      message: 'GitHub status check skipped.'
+      targetPath: project?.rootPath || '',
+      message: err.message || 'GitHub/server deployment status check skipped.'
     });
   }
 }
@@ -505,23 +530,21 @@ export async function executeAIDeployment(req: Request, res: Response) {
 
   const serverHost = project?.serverHost?.trim();
   const gitUrl = project?.gitUrl?.trim();
-  const targetPath = project?.rootPath || '/home/ubuntu/finance-lock';
+  const targetPath = project?.rootPath || '';
   const now = new Date().toISOString();
 
   if (!serverHost || !gitUrl) {
     return res.status(400).json({ error: 'AI deployment requires both a GitHub repository and an SSH server host.' });
+  }
+  if (!targetPath || targetPath.startsWith('/Users/') || targetPath.includes('Desktop')) {
+    return res.status(400).json({ error: 'AI deployment requires a real remote target path for this server project.' });
   }
 
   const logs: string[] = [
     `[${now}] 🤖 D-OpsPilot Autonomous AI Deployment Agent Initialized`,
     `[${now}] 🔗 Establishing secure SSH connection to ubuntu@${serverHost}:22...`,
     `[${now}] 📂 Navigating to target application directory: ${targetPath}`,
-    `[${now}] 📥 Executing git pull origin main...`,
-    `[${now}] ✅ Repository pulled successfully. Updated to commit f5a0362.`,
-    `[${now}] 🏗️ Rebuilding & restarting application containers (docker compose up -d)...`,
-    `[${now}] 🧪 Running automated AI health checks on ports 8080, 8082, 5434...`,
-    `[${now}] 🟢 HTTP/200 OK received from all active microservices. ZERO downtime deployment verified.`,
-    `[${now}] 🛡️ Deployment audit trail recorded in SOC 2 Compliance database.`
+    `[${now}] 📥 Executing git pull origin ${(project as any)?.gitBranch || 'main'}...`
   ];
 
   try {
@@ -537,16 +560,19 @@ export async function executeAIDeployment(req: Request, res: Response) {
       password: headerSshPass
     };
 
-    const remoteOut = await executeRemoteCommand(creds, `cd ${shellQuote(targetPath)} && git pull origin main 2>&1 || docker ps`).catch(() => '');
+    const branch = (project as any)?.gitBranch || 'main';
+    const remoteOut = await executeRemoteCommand(creds, `cd ${shellQuote(targetPath)} && git pull origin ${shellQuote(branch)} 2>&1 && git rev-parse --short HEAD && (docker compose ps || docker ps)`);
     if (remoteOut) {
-      logs.push(`[SSH Output] ${remoteOut.substring(0, 300)}`);
+      logs.push(`[SSH Output] ${remoteOut.substring(0, 1200)}`);
     }
-  } catch (e) {}
+  } catch (e: any) {
+    return res.status(502).json({ error: e.message || 'Remote deployment command failed.', logs });
+  }
 
   res.json({
     success: true,
-    message: '🎉 AI Autonomous Deployment & Automated Health Verification completed successfully!',
-    deployedCommit: 'f5a0362',
+    message: 'AI deployment command completed on the configured server.',
+    deployedCommit: '',
     serverHost,
     logs
   });

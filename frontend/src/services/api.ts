@@ -174,7 +174,8 @@ export async function fetchProjectHealth(projectId?: string): Promise<{
   metrics?: { cpuUsage: number; memoryMB: number; memoryPct: number; memoryTotalMB: number; networkMBs: number; htopSource: string };
   timestamp: string;
 }> {
-  const id = projectId || 'demo-project';
+  if (!projectId) throw new Error('Project ID is required to fetch project health');
+  const id = projectId;
   const res = await fetch(`${API_BASE}/projects/${id}/health`, { headers: getAuthHeaders(id) });
   if (!res.ok) throw new Error('Failed to fetch project health');
   return res.json();
@@ -253,22 +254,29 @@ export async function rejectFix(approvalId: string): Promise<any> {
   return res.json();
 }
 
-export async function injectFailure(scenarioKey: string): Promise<any> {
+export async function injectFailure(scenarioKey: string, projectId?: string): Promise<any> {
   const res = await fetch(`${API_BASE}/demo/inject-failure`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ scenarioKey }),
+    headers: getAuthHeaders(projectId),
+    body: JSON.stringify({ scenarioKey, projectId }),
   });
-  if (!res.ok) throw new Error('Failed to inject failure');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to inject failure');
+  }
   return res.json();
 }
 
-export async function resetEnvironment(): Promise<any> {
+export async function resetEnvironment(projectId?: string): Promise<any> {
   const res = await fetch(`${API_BASE}/demo/reset`, { 
     method: 'POST',
-    headers: getAuthHeaders()
+    headers: getAuthHeaders(projectId),
+    body: JSON.stringify({ projectId })
   });
-  if (!res.ok) throw new Error('Failed to reset environment');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to reset environment');
+  }
   return res.json();
 }
 
@@ -293,7 +301,8 @@ export async function executeCommandOnServer(command: string, projectId?: string
 }
 
 export async function fetchServerLogs(projectId?: string): Promise<{ logs: Array<{ id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }>; host?: string; realRemote: boolean }> {
-  const id = projectId || 'demo-project';
+  if (!projectId) throw new Error('Project ID is required to fetch server logs');
+  const id = projectId;
   const res = await fetch(`${API_BASE}/projects/${id}/server-logs`, { headers: getAuthHeaders(id) });
   if (!res.ok) throw new Error('Failed to fetch server logs');
   return res.json();
@@ -316,7 +325,8 @@ export async function fetchDeploymentGap(projectId?: string): Promise<{
   targetPath: string;
   message: string;
 }> {
-  const id = projectId || 'demo-project';
+  if (!projectId) throw new Error('Project ID is required to fetch deployment gap status');
+  const id = projectId;
   const res = await fetch(`${API_BASE}/projects/${id}/deploy-gap`, { headers: getAuthHeaders(id) });
   if (!res.ok) throw new Error('Failed to fetch deployment gap status');
   return res.json();
