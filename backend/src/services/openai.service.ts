@@ -144,7 +144,27 @@ Return a JSON object with:
   let explanation = 'Lists all 5 active Finance-Lock Docker containers running on host';
   let detectedIntent = 'Docker Container Discovery';
 
-  if (q.includes('setup') || q.includes('system') || q.includes('server') || q.includes('details') || q.includes('info') || q.includes('kya h')) {
+  if (q.includes('docker') && (q.includes('error') || q.includes('err') || q.includes('fail') || q.includes('exception'))) {
+    command = `for c in $(sudo docker ps --format '{{.Names}}'); do echo "=== CONTAINER: $c ==="; sudo docker logs --tail 25 $c 2>&1 | grep -i -E "error|warn|fail|exception" || echo "No recent errors"; done`;
+    explanation = 'Scans and filters error, warning & exception logs across all 5 active Docker containers on host';
+    detectedIntent = 'Docker Container Error Log Audit';
+  } else if (q.includes('nanomdm') || (q.includes('mdm') && q.includes('container'))) {
+    command = 'sudo docker logs --tail 50 finance-lock-nanomdm';
+    explanation = 'Tails recent 50 console logs for NanoMDM core container';
+    detectedIntent = 'NanoMDM Container Log Stream';
+  } else if (q.includes('nanodep') || (q.includes('dep') && q.includes('container'))) {
+    command = 'sudo docker logs --tail 50 finance-lock-nanodep';
+    explanation = 'Tails recent 50 console logs for NanoDEP container';
+    detectedIntent = 'NanoDEP Container Log Stream';
+  } else if (q.includes('scep') && q.includes('log')) {
+    command = 'sudo docker logs --tail 50 finance-lock-scep';
+    explanation = 'Tails recent 50 console logs for SCEP certificate container';
+    detectedIntent = 'SCEP Container Log Stream';
+  } else if (q.includes('docker') && q.includes('log')) {
+    command = 'for c in $(sudo docker ps --format "{{.Names}}"); do echo "=== LOGS: $c ==="; sudo docker logs --tail 15 $c; done';
+    explanation = 'Fetches latest 15 console log lines from all 5 active Docker containers';
+    detectedIntent = 'All Docker Containers Log Stream';
+  } else if (q.includes('setup') || q.includes('system') || q.includes('server') || q.includes('details') || q.includes('info') || q.includes('kya h')) {
     command = 'uname -a && uptime && sudo docker ps';
     explanation = 'Displays OS kernel details, server uptime & load, and all active Docker containers';
     detectedIntent = 'Server Architecture & Setup Overview';
@@ -161,13 +181,13 @@ Return a JSON object with:
     explanation = 'Tails active Nginx web traffic access logs';
     detectedIntent = 'Nginx Traffic Inspection';
   } else if (q.includes('postgres') || q.includes('database') || q.includes('db')) {
-    command = 'sudo docker exec finance-lock-postgres pg_isready';
-    explanation = 'Executes pg_isready database health check inside PostgreSQL container';
-    detectedIntent = 'PostgreSQL Health Audit';
+    command = 'sudo docker exec finance-lock-postgres pg_isready && sudo docker logs --tail 25 finance-lock-postgres';
+    explanation = 'Executes pg_isready database check and views latest PostgreSQL logs';
+    detectedIntent = 'PostgreSQL Health & Log Audit';
   } else if (q.includes('redis') || q.includes('cache')) {
-    command = 'sudo docker exec finance-lock-redis redis-cli ping';
-    explanation = 'Pings Redis cache container for latency response';
-    detectedIntent = 'Redis Cache Status';
+    command = 'sudo docker exec finance-lock-redis redis-cli ping && sudo docker logs --tail 25 finance-lock-redis';
+    explanation = 'Pings Redis cache container and checks recent cache logs';
+    detectedIntent = 'Redis Cache Health & Logs';
   } else if (q.includes('ram') || q.includes('memory') || q.includes('htop') || q.includes('cpu')) {
     command = 'free -m && top -b -n 1 | head -n 15';
     explanation = 'Displays RAM memory allocation and top 15 CPU consuming processes';
@@ -180,6 +200,10 @@ Return a JSON object with:
     command = 'sudo netstat -tulpn || sudo ss -tulpn';
     explanation = 'Lists all active open TCP/UDP listening ports and service PIDs';
     detectedIntent = 'Network Port Audit';
+  } else if (q.includes('error') || q.includes('fail') || q.includes('issue')) {
+    command = 'sudo tail -n 30 /var/log/nginx/error.log && for c in $(sudo docker ps --format "{{.Names}}"); do echo "=== $c ==="; sudo docker logs --tail 15 $c 2>&1 | grep -i "error" || true; done';
+    explanation = 'Audits Nginx web proxy error logs and scans all container error logs';
+    detectedIntent = 'Global System & Docker Error Audit';
   } else if (q.includes('restart') && q.includes('scep')) {
     command = 'sudo docker restart finance-lock-scep';
     explanation = 'Restarts SCEP certificate server container';
