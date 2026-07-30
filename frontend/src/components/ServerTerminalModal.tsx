@@ -13,7 +13,12 @@ import {
   Maximize2, 
   Minimize2,
   TerminalSquare,
-  Play
+  Play,
+  Sparkles,
+  Search,
+  HelpCircle,
+  Lightbulb,
+  ChevronRight
 } from 'lucide-react';
 import { executeCommandOnServer } from '../services/api';
 
@@ -32,6 +37,28 @@ interface CommandHistoryItem {
   time: string;
 }
 
+interface ProblemCommandItem {
+  problem: string;
+  command: string;
+  description: string;
+  category: 'DOCKER' | 'NGINX' | 'SYSTEM' | 'NETWORK' | 'LOGS';
+}
+
+const PROBLEM_COMMAND_DATABASE: ProblemCommandItem[] = [
+  { problem: 'Check running docker containers', command: 'sudo docker ps', description: 'List all active Docker containers and open ports', category: 'DOCKER' },
+  { problem: 'Check all container logs', command: 'sudo docker logs --tail 50 finance-lock-nanomdm', description: 'Tail recent 50 logs for NanoMDM container', category: 'DOCKER' },
+  { problem: 'Restart redis container', command: 'sudo docker restart finance-lock-redis', description: 'Restart Redis container on host', category: 'DOCKER' },
+  { problem: 'Restart postgres database', command: 'sudo docker restart finance-lock-postgres', description: 'Restart PostgreSQL container on host', category: 'DOCKER' },
+  { problem: 'Nginx access log search for mdm apk', command: "sudo grep 'mdm-agent.apk' /var/log/nginx/access.log | tail -n 20", description: 'Filter Nginx access logs for MDM agent APK requests', category: 'NGINX' },
+  { problem: 'Nginx error logs check', command: 'sudo tail -n 30 /var/log/nginx/error.log', description: 'View latest 30 Nginx server error entries', category: 'NGINX' },
+  { problem: 'Nginx config test', command: 'sudo nginx -t', description: 'Verify Nginx syntax configuration integrity', category: 'NGINX' },
+  { problem: 'Check RAM memory usage & top processes', command: 'free -m && top -b -n 1 | head -n 15', description: 'View total vs used RAM allocation and top processes', category: 'SYSTEM' },
+  { problem: 'Check disk space allocation', command: 'df -h /', description: 'Inspect root filesystem storage usage', category: 'SYSTEM' },
+  { problem: 'Check active listening TCP ports', command: 'sudo netstat -tulpn || sudo ss -tulpn', description: 'List all open server ports and listening PIDs', category: 'NETWORK' },
+  { problem: 'Test local HTTP proxy endpoint', command: 'curl -I http://localhost:8080/health', description: 'Send HTTP GET ping to local proxy port 8080', category: 'NETWORK' },
+  { problem: 'Check system authentication logs', command: 'sudo tail -n 20 /var/log/auth.log', description: 'Inspect SSH logins and sudo privileges log', category: 'LOGS' }
+];
+
 export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
   isOpen,
   onClose,
@@ -42,6 +69,9 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
   const [executingCmd, setExecutingCmd] = useState<string>('');
   const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  const [showAiCopilot, setShowAiCopilot] = useState<boolean>(false);
+  const [aiProblemQuery, setAiProblemQuery] = useState<string>('');
+  const [suggestedCommand, setSuggestedCommand] = useState<string>('');
   const [history, setHistory] = useState<CommandHistoryItem[]>([
     {
       id: 'init-1',
@@ -169,6 +199,68 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleProblemSearch = (query: string) => {
+    setAiProblemQuery(query);
+    const q = query.toLowerCase().trim();
+    if (!q) {
+      setSuggestedCommand('');
+      return;
+    }
+
+    if (q.includes('apk') || q.includes('mdm')) {
+      setSuggestedCommand("sudo grep 'mdm-agent.apk' /var/log/nginx/access.log | tail -n 20");
+      return;
+    }
+    if (q.includes('nginx') && q.includes('error')) {
+      setSuggestedCommand('sudo tail -n 30 /var/log/nginx/error.log');
+      return;
+    }
+    if (q.includes('nginx') && (q.includes('log') || q.includes('access'))) {
+      setSuggestedCommand('sudo tail -n 30 /var/log/nginx/access.log');
+      return;
+    }
+    if (q.includes('docker') && q.includes('log')) {
+      setSuggestedCommand('sudo docker logs --tail 30 finance-lock-nanomdm');
+      return;
+    }
+    if (q.includes('docker') || q.includes('container')) {
+      setSuggestedCommand('sudo docker ps');
+      return;
+    }
+    if (q.includes('ram') || q.includes('memory') || q.includes('htop')) {
+      setSuggestedCommand('free -m && top -b -n 1 | head -n 15');
+      return;
+    }
+    if (q.includes('disk') || q.includes('storage') || q.includes('space')) {
+      setSuggestedCommand('df -h /');
+      return;
+    }
+    if (q.includes('port') || q.includes('listen') || q.includes('netstat')) {
+      setSuggestedCommand('sudo netstat -tulpn');
+      return;
+    }
+    if (q.includes('restart') && q.includes('redis')) {
+      setSuggestedCommand('sudo docker restart finance-lock-redis');
+      return;
+    }
+    if (q.includes('restart') && q.includes('postgres')) {
+      setSuggestedCommand('sudo docker restart finance-lock-postgres');
+      return;
+    }
+
+    const match = PROBLEM_COMMAND_DATABASE.find(item => 
+      item.problem.toLowerCase().includes(q) || 
+      item.command.toLowerCase().includes(q) ||
+      item.description.toLowerCase().includes(q)
+    );
+
+    if (match) {
+      setSuggestedCommand(match.command);
+    } else {
+      setSuggestedCommand(`sudo docker ps`);
+    }
+  };
+
   const presetCommands = [
     'docker ps',
     'curl http://localhost:8080/health',
@@ -191,7 +283,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 10 }}
           className={`glass-panel w-full rounded-2xl border border-slate-800 bg-[#050811] shadow-2xl flex flex-col overflow-hidden font-sans transition-all duration-300 ${
-            isMaximized ? 'h-[96vh] max-w-[98vw]' : 'h-[82vh] max-w-4xl'
+            isMaximized ? 'h-[96vh] max-w-[98vw]' : 'h-[85vh] max-w-5xl'
           }`}
         >
           {/* Top Window Bar */}
@@ -209,8 +301,21 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="hidden md:flex items-center gap-1.5 text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-bold font-mono">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" /> WebCrypto Encrypted Session
+              <button
+                onClick={() => setShowAiCopilot(!showAiCopilot)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer border ${
+                  showAiCopilot
+                    ? 'bg-purple-600 text-white border-purple-500 shadow-md glow-blue'
+                    : 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20'
+                }`}
+                title="Toggle AI Command Copilot Drawer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-400 fill-current animate-pulse" />
+                <span>AI Copilot</span>
+              </button>
+
+              <span className="hidden lg:flex items-center gap-1.5 text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-bold font-mono">
+                <ShieldCheck className="w-3 h-3 text-emerald-400" /> WebCrypto Encrypted
               </span>
 
               <button
@@ -249,98 +354,202 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
           </div>
 
           {/* Quick Preset Command Pills Toolbar */}
-          <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-900 flex items-center gap-2 overflow-x-auto select-none font-mono text-[10px]">
-            <span className="text-slate-500 shrink-0 font-bold">Quick Presets:</span>
-            {presetCommands.map(cmd => (
-              <button
-                key={cmd}
-                onClick={() => handleRunCommand(cmd)}
-                disabled={isExecuting}
-                className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-blue-600 hover:text-white text-slate-300 border border-slate-800 transition shrink-0 cursor-pointer font-bold flex items-center gap-1"
-              >
-                <Play className="w-2.5 h-2.5 text-emerald-400 fill-current" />
-                <span>{cmd}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Terminal Screen Body */}
-          <div 
-            onClick={() => inputRef.current?.focus()}
-            className="p-4 flex-1 overflow-y-auto font-mono text-xs leading-relaxed space-y-3 bg-[#03060f] cursor-text"
-          >
-            <div className="text-slate-500 text-[11px] pb-2 border-b border-slate-900">
-              Connected to <b>{serverUser}@{serverHost}</b>. Type shell commands directly below or click presets above. Type <b className="text-blue-400">help</b> for instructions, <b className="text-blue-400">clear</b> to clear.
+          <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-900 flex items-center justify-between gap-3 select-none font-mono text-[10px]">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <span className="text-slate-500 shrink-0 font-bold">Quick Presets:</span>
+              {presetCommands.map(cmd => (
+                <button
+                  key={cmd}
+                  onClick={() => handleRunCommand(cmd)}
+                  disabled={isExecuting}
+                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-blue-600 hover:text-white text-slate-300 border border-slate-800 transition shrink-0 cursor-pointer font-bold flex items-center gap-1"
+                >
+                  <Play className="w-2.5 h-2.5 text-emerald-400 fill-current" />
+                  <span>{cmd}</span>
+                </button>
+              ))}
             </div>
 
-            {history.map((item) => (
-              <div key={item.id} className="space-y-1">
-                {/* Command Line Prompt */}
-                <div className="flex items-center gap-2 text-slate-300 flex-wrap">
-                  <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
-                  <span className="text-slate-100 font-bold">{item.command}</span>
-                  <span className="text-[10px] text-slate-600 font-mono ml-auto">[{item.time}]</span>
-                </div>
+            <button
+              onClick={() => setShowAiCopilot(!showAiCopilot)}
+              className="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <Lightbulb className="w-3 h-3 text-purple-400" />
+              <span>{showAiCopilot ? 'Hide AI Solver Drawer' : 'Problem ➔ Command Assistant'}</span>
+            </button>
+          </div>
 
-                {/* Command Output */}
-                <pre className={`p-3 rounded-lg text-[11px] overflow-x-auto border font-mono whitespace-pre-wrap leading-relaxed ${
-                  item.exitCode === 0
-                    ? 'bg-slate-950/90 text-slate-200 border-slate-900 shadow-inner'
-                    : 'bg-rose-950/30 text-rose-300 border-rose-900/50 shadow-inner'
-                }`}>
-                  {item.output}
-                </pre>
-              </div>
-            ))}
-
-            {/* Glowing Thinking & Execution Loader Block */}
-            {isExecuting && (
-              <div className="space-y-1.5 animate-pulse my-2">
-                <div className="flex items-center gap-2 text-slate-300 font-mono text-xs">
-                  <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
-                  <span className="text-blue-400 font-bold">{executingCmd || commandInput}</span>
-                </div>
-                <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-blue-300 font-mono text-xs flex items-center gap-3 shadow-lg glow-blue">
-                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <span className="font-extrabold text-blue-400 tracking-wide uppercase text-[10px] block">
-                      ⚡ SSH COMMAND EXECUTING ON REMOTE SERVER...
-                    </span>
-                    <span className="text-slate-200 text-[11px] font-semibold">
-                      Thinking & Fetching live response from <b className="text-blue-300 font-bold">{serverUser}@{serverHost}</b>...
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Live Active Command Input Line */}
-            <div className="flex items-center gap-2 pt-2 text-slate-200 font-mono">
-              <span className="text-emerald-400 font-bold shrink-0">{serverUser}@{serverHost}:~$</span>
+          {/* AI Natural Language Problem ➔ Command Solver Input Bar */}
+          <div className="px-4 py-2.5 bg-[#080d1a] border-b border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 flex-1 card-bg-subtle px-3 py-1.5 rounded-xl border border-purple-500/30">
+              <Sparkles className="w-4 h-4 text-purple-400 shrink-0 animate-pulse" />
               <input
-                ref={inputRef}
                 type="text"
-                value={commandInput}
-                disabled={isExecuting}
-                onChange={(e) => setCommandInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isExecuting ? 'Executing command on server...' : 'Type command (e.g. docker ps)...'}
-                className="flex-1 bg-transparent text-slate-100 font-mono text-xs focus:outline-none border-none placeholder-slate-600"
+                value={aiProblemQuery}
+                onChange={(e) => handleProblemSearch(e.target.value)}
+                placeholder="Ask AI Copilot for a command (e.g. 'nginx access logs', 'check ram & cpu', 'mdm apk logs')..."
+                className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
               />
-              {isExecuting ? (
-                <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
-              ) : (
-                <button
-                  onClick={() => handleRunCommand()}
-                  className="p-1 text-slate-400 hover:text-emerald-400 transition"
-                  title="Run Command (Enter)"
-                >
-                  <Send className="w-3.5 h-3.5" />
+              {aiProblemQuery && (
+                <button onClick={() => { setAiProblemQuery(''); setSuggestedCommand(''); }} className="text-slate-500 hover:text-slate-300 text-xs">
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            <div ref={bottomRef} />
+            {suggestedCommand && (
+              <div className="flex items-center gap-2 bg-purple-950/40 border border-purple-500/40 px-3 py-1.5 rounded-xl animate-fadeIn">
+                <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider shrink-0">
+                  Suggested:
+                </span>
+                <code className="text-xs font-mono text-emerald-400 font-bold truncate max-w-xs md:max-w-md">
+                  {suggestedCommand}
+                </code>
+                <button
+                  onClick={() => handleRunCommand(suggestedCommand)}
+                  disabled={isExecuting}
+                  className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <Play className="w-3 h-3 fill-current" />
+                  <span>Run Now</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Terminal Screen Body + Side AI Copilot Drawer */}
+          <div className="flex-1 flex min-h-0 overflow-hidden relative">
+            
+            {/* Main Terminal Screen */}
+            <div 
+              onClick={() => inputRef.current?.focus()}
+              className="p-4 flex-1 overflow-y-auto font-mono text-xs leading-relaxed space-y-3 bg-[#03060f] cursor-text"
+            >
+              <div className="text-slate-500 text-[11px] pb-2 border-b border-slate-900">
+                Connected to <b>{serverUser}@{serverHost}</b>. Type shell commands directly below or use AI Copilot solver above. Type <b className="text-blue-400">help</b> for instructions, <b className="text-blue-400">clear</b> to clear.
+              </div>
+
+              {history.map((item) => (
+                <div key={item.id} className="space-y-1">
+                  {/* Command Line Prompt */}
+                  <div className="flex items-center gap-2 text-slate-300 flex-wrap">
+                    <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                    <span className="text-slate-100 font-bold">{item.command}</span>
+                    <span className="text-[10px] text-slate-600 font-mono ml-auto">[{item.time}]</span>
+                  </div>
+
+                  {/* Command Output */}
+                  <pre className={`p-3 rounded-lg text-[11px] overflow-x-auto border font-mono whitespace-pre-wrap leading-relaxed ${
+                    item.exitCode === 0
+                      ? 'bg-slate-950/90 text-slate-200 border-slate-900 shadow-inner'
+                      : 'bg-rose-950/30 text-rose-300 border-rose-900/50 shadow-inner'
+                  }`}>
+                    {item.output}
+                  </pre>
+                </div>
+              ))}
+
+              {/* Glowing Thinking & Execution Loader Block */}
+              {isExecuting && (
+                <div className="space-y-1.5 animate-pulse my-2">
+                  <div className="flex items-center gap-2 text-slate-300 font-mono text-xs">
+                    <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                    <span className="text-blue-400 font-bold">{executingCmd || commandInput}</span>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-blue-300 font-mono text-xs flex items-center gap-3 shadow-lg glow-blue">
+                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-extrabold text-blue-400 tracking-wide uppercase text-[10px] block">
+                        ⚡ SSH COMMAND EXECUTING ON REMOTE SERVER...
+                      </span>
+                      <span className="text-slate-200 text-[11px] font-semibold">
+                        Thinking & Fetching live response from <b className="text-blue-300 font-bold">{serverUser}@{serverHost}</b>...
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Live Active Command Input Line */}
+              <div className="flex items-center gap-2 pt-2 text-slate-200 font-mono">
+                <span className="text-emerald-400 font-bold shrink-0">{serverUser}@{serverHost}:~$</span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={commandInput}
+                  disabled={isExecuting}
+                  onChange={(e) => setCommandInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={isExecuting ? 'Executing command on server...' : 'Type command (e.g. docker ps)...'}
+                  className="flex-1 bg-transparent text-slate-100 font-mono text-xs focus:outline-none border-none placeholder-slate-600"
+                />
+                {isExecuting ? (
+                  <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
+                ) : (
+                  <button
+                    onClick={() => handleRunCommand()}
+                    className="p-1 text-slate-400 hover:text-emerald-400 transition"
+                    title="Run Command (Enter)"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Right Side Collapsible AI Problem-to-Command Solver Drawer */}
+            <AnimatePresence>
+              {showAiCopilot && (
+                <motion.div
+                  initial={{ x: 300, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 300, opacity: 0 }}
+                  className="w-80 border-l border-slate-800 bg-[#090e1c] flex flex-col h-full font-sans text-xs overflow-y-auto shrink-0 shadow-2xl p-4 space-y-4"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2 font-bold text-slate-200 text-xs">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <span>Problem ➔ Command Solver</span>
+                    </div>
+                    <button onClick={() => setShowAiCopilot(false)} className="text-slate-500 hover:text-slate-300">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Click any problem below to automatically generate and execute the exact shell command on <b>{serverUser}@{serverHost}</b>:
+                  </p>
+
+                  <div className="space-y-2.5">
+                    {PROBLEM_COMMAND_DATABASE.map((item, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleRunCommand(item.command)}
+                        className="p-3 rounded-xl card-bg-subtle border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-[11px] text-purple-300 group-hover:text-purple-200">
+                            {item.problem}
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">
+                            {item.category}
+                          </span>
+                        </div>
+                        <code className="text-[10px] font-mono text-emerald-400 block truncate font-bold">
+                          {item.command}
+                        </code>
+                        <p className="text-[10px] text-slate-400">
+                          {item.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
           </div>
 
         </motion.div>
