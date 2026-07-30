@@ -224,6 +224,7 @@ export function AppRoutes() {
             element={
               <ApprovalsPage
                 incidents={incidents}
+                project={project}
                 onRefreshIncidents={loadData}
               />
             }

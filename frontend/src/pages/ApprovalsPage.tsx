@@ -6,17 +6,30 @@ import { approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
 import { useOutletContext } from 'react-router-dom';
 
+import { Project } from '../types';
+
 interface ApprovalsPageProps {
   incidents: Incident[];
+  project?: Project | null;
   onRefreshIncidents: () => void;
 }
 
-export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefreshIncidents }) => {
+export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project, onRefreshIncidents }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
   const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
   const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
 
-  const filteredIncidents = isVacantPath ? [] : incidents;
+  const hasGitUrl = Boolean(project?.gitUrl?.trim());
+
+  const filteredIncidents = isVacantPath ? [] : incidents.filter(i => {
+    if (!i.activeApproval) return false;
+    const commandsStr = JSON.stringify(i.activeApproval.commands || '');
+    const isGitPatchApproval = commandsStr.includes('git add') || commandsStr.includes('git push') || commandsStr.includes('auth.service.ts');
+    if (isGitPatchApproval && !hasGitUrl) {
+      return false; // Filter out GitHub git push approvals when GitHub is NOT connected!
+    }
+    return true;
+  });
 
   const allApprovals = filteredIncidents
     .filter(i => i.activeApproval)
