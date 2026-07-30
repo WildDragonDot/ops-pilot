@@ -38,6 +38,7 @@ import {
   GitPullRequest,
   Folder
 } from 'lucide-react';
+import { getProjectOperatingMode } from '../utils/projectMode';
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
@@ -156,13 +157,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   useEffect(() => {
     const syncDeployGap = async () => {
+      const mode = getProjectOperatingMode(project);
+      if (mode !== 'HYBRID_BOTH') {
+        setDeployGap(null);
+        return;
+      }
       try {
         const data = await fetchDeploymentGap(project?.id);
         setDeployGap(data);
       } catch (err) {}
     };
     syncDeployGap();
-  }, [project?.id]);
+  }, [project?.id, project?.gitUrl, project?.serverHost]);
 
   const handleRunAIDeployment = async () => {
     setIsDeploying(true);
