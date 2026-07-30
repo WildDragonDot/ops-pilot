@@ -215,3 +215,43 @@ Return a JSON object with:
         confidence: 0.98
     };
 }
+export async function filterProjectsWithAI(rawDirectories, serverHost) {
+    // Hard smart filter out dot-folders, caches, npm logs, etc.
+    const cleaned = rawDirectories.filter(d => {
+        const parts = d.split('/').filter(Boolean);
+        const last = parts[parts.length - 1] || '';
+        if (last.startsWith('.'))
+            return false;
+        if (['node_modules', 'tmp', 'cache', 'checkpoint-nodejs', 'prisma-nodejs', 'prisma', 'logs', '_cacache', '_logs', 'share', 'debug', 'local'].includes(last))
+            return false;
+        if (d.includes('/.npm') || d.includes('/.cache') || d.includes('/.local') || d.includes('/.ssh'))
+            return false;
+        return true;
+    });
+    if (!hasOpenAIKey() || !openai) {
+        return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
+    }
+    try {
+        const prompt = `You are OpsPilot AI Server Architect. Analyze these raw directories discovered on Linux server (${serverHost || '34.224.80.31'}):
+${JSON.stringify(rawDirectories)}
+
+Return ONLY a JSON object with key "projects" containing a list of actual application/project root directories. Exclude hidden dot-files (.npm, .cache, .ssh), npm logs, node_modules, temp files, and system cache folders.
+Example JSON: {"projects": ["/home/ubuntu/finance-lock", "/var/www"]}`;
+        const completion = await openai.chat.completions.create({
+            model: openaiModel,
+            messages: [{ role: 'user', content: prompt }],
+            response_format: { type: 'json_object' }
+        });
+        const content = completion.choices[0]?.message?.content;
+        if (content) {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+                return parsed.projects;
+            }
+        }
+    }
+    catch (err) {
+        console.error('OpenAI Directory Filter Notice:', err);
+    }
+    return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
+}

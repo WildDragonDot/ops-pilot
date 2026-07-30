@@ -226,15 +226,18 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
 }
 
 export async function listRemoteServerDirectories(creds: SSHCredentials, baseDir = '/home/ubuntu'): Promise<string[]> {
-  const scanCmd = `find ${baseDir} /var/www /opt -maxdepth 2 -type d 2>/dev/null | head -n 25`;
+  const scanCmd = `find ${baseDir} /var/www /opt -maxdepth 2 -type d 2>/dev/null | head -n 35`;
   try {
     const output = await executeRemoteCommand(creds, scanCmd);
-    const dirs = output
+    const rawDirs = output
       .split('\n')
       .map(d => d.trim())
       .filter(d => d && !d.startsWith('[') && !d.includes(' ') && d.startsWith('/'));
-    return Array.from(new Set(['/home/ubuntu', '/var/www', ...dirs])).slice(0, 15);
+
+    const { filterProjectsWithAI } = await import('./openai.service.js');
+    const filtered = await filterProjectsWithAI(rawDirs, creds.host);
+    return Array.from(new Set(filtered)).slice(0, 10);
   } catch (e) {
-    return ['/home/ubuntu', '/var/www', '/opt'];
+    return ['/home/ubuntu/finance-lock', '/var/www', '/opt'];
   }
 }
