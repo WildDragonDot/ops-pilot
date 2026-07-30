@@ -12,6 +12,7 @@ export interface Project {
   serverHost?: string | null;
   serverPort?: number | null;
   serverUser?: string | null;
+  projectPath?: string | null;
   environmentType?: string;
   createdAt?: string;
   updatedAt?: string;
