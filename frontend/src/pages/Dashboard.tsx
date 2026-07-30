@@ -564,65 +564,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <Server className="w-3.5 h-3.5 text-white animate-pulse" />
                   <span>PRODUCTION ({project?.serverHost || '34.224.80.31'})</span>
                 </span>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl card-bg-subtle text-subtitle border theme-border font-mono text-[11px] font-bold shadow-xs">
-                  <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span>Target Path:</span>
-                  
-                  {isEditingCustomPath ? (
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        value={customPathInput}
-                        onChange={(e) => setCustomPathInput(e.target.value)}
-                        placeholder="/home/ubuntu/my-app"
-                        className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-blue-500 text-blue-600 dark:text-blue-400 text-xs focus:outline-none w-44 font-extrabold"
-                      />
-                      <button
-                        onClick={() => {
-                          if (customPathInput.trim()) {
-                            const newPath = customPathInput.trim();
-                            setSelectedTargetPath(newPath);
-                            if (!serverDirectories.includes(newPath)) {
-                              setServerDirectories(prev => [newPath, ...prev]);
-                            }
-                            setIsEditingCustomPath(false);
-                          }
-                        }}
-                        className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
-                      >
-                        Set
-                      </button>
-                      <button
-                        onClick={() => setIsEditingCustomPath(false)}
-                        className="text-slate-400 font-bold px-1"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedTargetPath}
-                      onChange={(e) => {
-                        if (e.target.value === '__CUSTOM__') {
-                          setCustomPathInput(selectedTargetPath);
-                          setIsEditingCustomPath(true);
-                        } else {
-                          setSelectedTargetPath(e.target.value);
-                        }
-                      }}
-                      className="bg-transparent text-blue-600 dark:text-blue-400 font-extrabold font-mono text-[11px] cursor-pointer focus:outline-none border-none py-0 pr-1"
-                    >
-                      {serverDirectories.map((dir) => (
-                        <option key={dir} value={dir} className="bg-slate-900 text-white font-mono">
-                          {dir} {dir === '/home/ubuntu/finance-lock' ? '(Active App Stack)' : ''}
-                        </option>
-                      ))}
-                      <option value="__CUSTOM__" className="bg-slate-900 text-blue-400 font-bold font-mono">
-                        + Enter Custom Path...
-                      </option>
-                    </select>
-                  )}
-                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 font-mono text-[10px]">

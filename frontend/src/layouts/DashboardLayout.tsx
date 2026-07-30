@@ -33,6 +33,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const { toggleTheme } = useTheme();
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState<boolean>(false);
 
+  const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
+  const getCleanTargetPath = (p?: string | null) => {
+    if (isLocalPath(p)) return '/home/ubuntu/finance-lock';
+    return p as string;
+  };
+
+  const [selectedTargetPath, setSelectedTargetPath] = useState<string>(getCleanTargetPath(project?.rootPath));
+
+  useEffect(() => {
+    setSelectedTargetPath(getCleanTargetPath(project?.rootPath));
+  }, [project?.id, project?.rootPath]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Toggle shortcuts with '?' (Shift + /) or 'Cmd + /'
@@ -110,6 +122,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           onResetEnv={onResetEnv}
           onScanRepo={onScanRepo}
           isScanning={isScanning}
+          selectedTargetPath={selectedTargetPath}
+          onSelectTargetPath={(path) => setSelectedTargetPath(path)}
         />
 
         {/* Page Content — scrollable area */}

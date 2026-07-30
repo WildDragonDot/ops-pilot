@@ -13,7 +13,8 @@ import {
   XCircle,
   Database,
   Layers,
-  Globe
+  Globe,
+  Folder
 } from 'lucide-react';
 import { Project, Scan } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -31,6 +32,8 @@ interface HeaderProps {
   onResetEnv: () => void;
   onScanRepo: () => void;
   isScanning: boolean;
+  selectedTargetPath?: string;
+  onSelectTargetPath?: (path: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -42,7 +45,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenShortcuts = () => {},
   onResetEnv,
   onScanRepo,
-  isScanning
+  isScanning,
+  selectedTargetPath = '',
+  onSelectTargetPath = () => {}
 }) => {
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState<boolean>(false);
   const [showStatusPopover, setShowStatusPopover] = useState<boolean>(false);
@@ -105,6 +110,19 @@ export const Header: React.FC<HeaderProps> = ({
     { name: 'Nginx Proxy', port: 80, state: rawEnv?.nginx || 'HEALTHY', icon: Globe },
   ];
 
+  const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
+  const targetPath = (selectedTargetPath && !isLocalPath(selectedTargetPath)) ? selectedTargetPath : '/home/ubuntu/finance-lock';
+
+  const [serverDirectories, setServerDirectories] = useState<string[]>([
+    '/home/ubuntu/finance-lock',
+    '/home/ubuntu/release',
+    '/var/www/my-app',
+    '/opt/services',
+    '/etc/nginx'
+  ]);
+  const [isEditingCustomPath, setIsEditingCustomPath] = useState<boolean>(false);
+  const [customPathInput, setCustomPathInput] = useState<string>('');
+
   return (
     <>
       <header className="h-16 header-bg backdrop-blur-xl border-b px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 gap-3">
@@ -124,8 +142,70 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Section: Status Pills & Action Controls */}
+        {/* Right Section: Target Path Selector, Status Pills & Action Controls */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 ml-auto">
+          
+          {/* Target Path Dropdown Selector in Header (Shown ONLY when remote SSH host is active) */}
+          {Boolean(project?.serverHost?.trim()) && (
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl card-bg-subtle border theme-border font-mono text-xs text-subtitle whitespace-nowrap shrink-0 shadow-xs">
+              <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span>Target Path:</span>
+              {isEditingCustomPath ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={customPathInput}
+                    onChange={(e) => setCustomPathInput(e.target.value)}
+                    placeholder="/home/ubuntu/my-app"
+                    className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-blue-500 text-blue-600 dark:text-blue-400 text-xs focus:outline-none w-44 font-extrabold"
+                  />
+                  <button
+                    onClick={() => {
+                      if (customPathInput.trim()) {
+                        const newPath = customPathInput.trim();
+                        if (onSelectTargetPath) onSelectTargetPath(newPath);
+                        if (!serverDirectories.includes(newPath)) {
+                          setServerDirectories(prev => [newPath, ...prev]);
+                        }
+                        setIsEditingCustomPath(false);
+                      }
+                    }}
+                    className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
+                  >
+                    Set
+                  </button>
+                  <button
+                    onClick={() => setIsEditingCustomPath(false)}
+                    className="text-slate-400 font-bold px-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={targetPath}
+                  onChange={(e) => {
+                    if (e.target.value === '__CUSTOM__') {
+                      setCustomPathInput(targetPath);
+                      setIsEditingCustomPath(true);
+                    } else {
+                      if (onSelectTargetPath) onSelectTargetPath(e.target.value);
+                    }
+                  }}
+                  className="bg-transparent text-blue-600 dark:text-blue-400 font-extrabold font-mono text-xs cursor-pointer focus:outline-none border-none py-0 pr-1"
+                >
+                  {serverDirectories.map((dir) => (
+                    <option key={dir} value={dir} className="bg-slate-900 text-white font-mono">
+                      {dir} {dir === '/home/ubuntu/finance-lock' ? '(Active Stack)' : ''}
+                    </option>
+                  ))}
+                  <option value="__CUSTOM__" className="bg-slate-900 text-blue-400 font-bold font-mono">
+                    + Enter Custom Path...
+                  </option>
+                </select>
+              )}
+            </div>
+          )}
           
           {/* Host Info Pill (only when SSH server is set) */}
           {mode !== 'GITHUB_ONLY' && (
