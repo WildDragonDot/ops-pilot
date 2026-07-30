@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Project, Scan } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { useNotification } from '../context/NotificationContext';
 import { CommandPalette } from './CommandPalette';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
@@ -51,7 +52,9 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState<boolean>(false);
   const [showStatusPopover, setShowStatusPopover] = useState<boolean>(false);
+  const [showNotificationPopover, setShowNotificationPopover] = useState<boolean>(false);
   const { theme, toggleTheme } = useTheme();
+  const { notifications, unreadCount, markAllRead, markRead } = useNotification();
 
   let savedResolved: string[] = [];
   try {
@@ -317,15 +320,69 @@ export const Header: React.FC<HeaderProps> = ({
             <RefreshCw className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={() => setCmdPaletteOpen(true)}
-            title="Alerts"
-            aria-label="View system alerts and command palette"
-            className="w-9 h-9 flex items-center justify-center text-subtitle hover:text-title card-bg-subtle rounded-xl border theme-border transition relative shrink-0 cursor-pointer"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full animate-ping" />
-          </button>
+          {/* Notifications Toggle */}
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowNotificationPopover(!showNotificationPopover)}
+              title="Notifications"
+              aria-label="View notifications"
+              className="w-9 h-9 flex items-center justify-center text-subtitle hover:text-title card-bg-subtle rounded-xl border theme-border transition relative shrink-0 cursor-pointer"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+              )}
+            </button>
+            
+            {showNotificationPopover && (
+              <div 
+                className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto glass-panel border theme-border rounded-xl p-0 shadow-2xl z-50 animate-fadeIn"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between p-3 border-b theme-border bg-slate-50/50 dark:bg-slate-900/50 sticky top-0 backdrop-blur-md z-10">
+                  <h4 className="text-xs font-bold text-title flex items-center gap-1.5 font-mono">
+                    NOTIFICATIONS ({unreadCount})
+                  </h4>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={() => markAllRead()}
+                      className="text-[10px] font-bold text-blue-500 hover:text-blue-600 cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="divide-y theme-border">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 text-xs font-mono">
+                      No notifications
+                    </div>
+                  ) : (
+                    notifications.map(n => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => {
+                          if (!n.read) markRead(n.id);
+                        }}
+                        className={`p-3 text-xs transition cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 ${n.read ? 'opacity-60' : 'bg-blue-50/30 dark:bg-blue-900/10'}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <strong className="text-title leading-tight">{n.title}</strong>
+                          {n.timestamp && <span className="text-[9px] text-slate-400 shrink-0">{n.timestamp}</span>}
+                        </div>
+                        <div className="text-subtitle mt-1 line-clamp-2 leading-relaxed">
+                          {n.message}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
         </div>
       </header>

@@ -11,6 +11,7 @@ export interface ToastNotification {
   timestamp?: string;
   read?: boolean;
   persisted?: boolean; // true if stored in DB
+  hideToast?: boolean; // true to hide from floating toast
 }
 
 interface NotificationContextType {
@@ -46,7 +47,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             message: n.message,
             timestamp: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             read: n.read,
-            persisted: true
+            persisted: true,
+            hideToast: true
           }));
           setNotifications(persisted);
           setUnreadCount(data.unreadCount || 0);
@@ -85,7 +87,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // Auto-dismiss in-memory toast after 5 seconds
     setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id && !(n.persisted && n.id === id)));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, hideToast: true } : n));
     }, 5000);
   }, [token]);
 
@@ -187,7 +189,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       {/* Floating Toast Notification Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none font-sans">
-        {notifications.filter(n => !n.read).slice(0, 5).map(n => (
+        {notifications.filter(n => !n.read && !n.hideToast).slice(0, 5).map(n => (
           <div
             key={n.id}
             className={`pointer-events-auto p-3.5 rounded-xl border shadow-xl flex items-start gap-3 transition-all duration-300 transform translate-y-0 backdrop-blur-md ${
