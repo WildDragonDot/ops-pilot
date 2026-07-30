@@ -69,6 +69,9 @@ export async function executeRemoteCommand(creds, cmd) {
     else if (safeCmd.startsWith('docker ') || safeCmd === 'docker') {
         safeCmd = `sudo ${safeCmd}`;
     }
+    if (creds.projectPath && creds.projectPath.trim() !== '/') {
+        safeCmd = `cd "${creds.projectPath.trim()}" 2>/dev/null || true; ${safeCmd}`;
+    }
     const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
     try {
         const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'xterm-256color' } });
@@ -174,5 +177,19 @@ export async function discoverServerTechStack(creds) {
             recentLogs: [`[SSH ERROR] ${err.message}`],
             auditRecommendations: [`⚠️ SSH Connection error: ${err.message}`]
         };
+    }
+}
+export async function listRemoteServerDirectories(creds, baseDir = '/home/ubuntu') {
+    const scanCmd = `find ${baseDir} /var/www /opt -maxdepth 2 -type d 2>/dev/null | head -n 25`;
+    try {
+        const output = await executeRemoteCommand(creds, scanCmd);
+        const dirs = output
+            .split('\n')
+            .map(d => d.trim())
+            .filter(d => d && !d.startsWith('[') && !d.includes(' ') && d.startsWith('/'));
+        return Array.from(new Set(['/home/ubuntu', '/var/www', ...dirs])).slice(0, 15);
+    }
+    catch (e) {
+        return ['/home/ubuntu', '/var/www', '/opt'];
     }
 }

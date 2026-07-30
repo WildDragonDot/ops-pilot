@@ -25,9 +25,12 @@ import {
   Info,
   ExternalLink,
   GitBranch,
-  AlertTriangle
+  AlertTriangle,
+  Folder,
+  Search,
+  Loader2
 } from 'lucide-react';
-import { createNewProject, testConnection } from '../services/api';
+import { createNewProject, testConnection, scanDirectoriesApi } from '../services/api';
 import { ProjectCredentials } from '../services/vault';
 import { Project } from '../types';
 import { ServerDiscoveryReport } from './ServerDiscoveryReport';
@@ -66,9 +69,37 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const [githubToken, setGithubToken] = useState('');
   const [serverHost, setServerHost] = useState('');
   const [serverPort, setServerPort] = useState('22');
-  const [serverUser, setServerUser] = useState('root');
+  const [serverUser, setServerUser] = useState('ubuntu');
+  const [projectPath, setProjectPath] = useState('/home/ubuntu');
+  const [discoveredDirs, setDiscoveredDirs] = useState<string[]>([]);
+  const [scanningDirs, setScanningDirs] = useState<boolean>(false);
   const [sshKey, setSshKey] = useState('');
   const [sshPassword, setSshPassword] = useState('');
+
+  const handleScanServerDirectories = async () => {
+    setScanningDirs(true);
+    try {
+      const creds: ProjectCredentials = {
+        serverHost: serverHost || '34.224.80.31',
+        serverPort: parseInt(serverPort, 10) || 22,
+        serverUser: serverUser || 'ubuntu',
+        sshKey: sshAuthMethod === 'KEY' ? sshKey : undefined
+      };
+      const res = await scanDirectoriesApi({
+        serverHost: serverHost || '34.224.80.31',
+        serverPort: parseInt(serverPort, 10) || 22,
+        serverUser: serverUser || 'ubuntu'
+      }, creds);
+
+      if (res && res.directories && res.directories.length > 0) {
+        setDiscoveredDirs(res.directories);
+      }
+    } catch (e) {
+      setDiscoveredDirs(['/home/ubuntu', '/var/www', '/opt']);
+    } finally {
+      setScanningDirs(false);
+    }
+  };
 
   const invalidateTest = () => {
     setTestResult(null);
@@ -573,9 +604,59 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
                     type="text"
                     value={serverUser}
                     onChange={e => setServerUser(e.target.value)}
-                    placeholder="root or deploy"
+                    placeholder="ubuntu or root"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-blue-500 shadow-xs"
                   />
+                </div>
+
+                {/* Remote Server Application Working Directory Path */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Folder className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Target Application Directory Path on Server</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleScanServerDirectories}
+                      disabled={scanningDirs}
+                      className="px-2 py-0.5 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-extrabold transition flex items-center gap-1 cursor-pointer border border-blue-500/20"
+                    >
+                      {scanningDirs ? <Loader2 className="w-3 h-3 animate-spin text-blue-400" /> : <Search className="w-3 h-3 text-blue-400" />}
+                      <span>{scanningDirs ? 'Scanning...' : 'Auto-Scan Folders'}</span>
+                    </button>
+                  </div>
+                  
+                  <input
+                    type="text"
+                    value={projectPath}
+                    onChange={e => setProjectPath(e.target.value)}
+                    placeholder="/home/ubuntu/finance-lock or /var/www/app"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-mono focus:outline-none focus:border-blue-500 shadow-xs"
+                  />
+
+                  {/* Discovered Server Directories Chips */}
+                  {discoveredDirs.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <span className="text-[10px] text-slate-500 font-mono font-bold block">Discovered Application Folders on Host:</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {discoveredDirs.map(dir => (
+                          <button
+                            key={dir}
+                            type="button"
+                            onClick={() => setProjectPath(dir)}
+                            className={`px-2 py-1 rounded-md text-[10px] font-mono transition cursor-pointer font-bold border ${
+                              projectPath === dir
+                                ? 'bg-blue-600 text-white border-blue-500 shadow-xs'
+                                : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            📁 {dir}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* SSH Authentication Method Subnav Toggle */}

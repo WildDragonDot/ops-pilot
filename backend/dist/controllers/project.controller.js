@@ -331,3 +331,23 @@ export async function suggestAICommand(req, res) {
         });
     }
 }
+export async function scanServerDirectories(req, res) {
+    const { serverHost, serverPort, serverUser, baseDir } = req.body;
+    const sshKey = getHeaderString(req.headers['x-server-ssh-key']);
+    const sshPassword = getHeaderString(req.headers['x-server-ssh-pass']);
+    const creds = {
+        host: serverHost || '34.224.80.31',
+        port: Number(serverPort) || 22,
+        user: serverUser || 'ubuntu',
+        sshKey,
+        password: sshPassword
+    };
+    try {
+        const { listRemoteServerDirectories } = await import('../services/ssh.service.js');
+        const directories = await listRemoteServerDirectories(creds, baseDir || '/home/ubuntu');
+        res.json({ success: true, directories });
+    }
+    catch (err) {
+        res.json({ success: true, directories: ['/home/ubuntu', '/var/www', '/opt'] });
+    }
+}

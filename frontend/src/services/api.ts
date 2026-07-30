@@ -126,6 +126,21 @@ export async function suggestAICommandApi(query: string, serverHost?: string, se
   return res.json();
 }
 
+export async function scanDirectoriesApi(payload: { serverHost?: string; serverPort?: number; serverUser?: string; baseDir?: string }, creds?: ProjectCredentials): Promise<{ directories: string[] }> {
+  const headers = getAuthHeaders();
+  if (creds?.sshKey) {
+    const enc = safeHeaderEncode(creds.sshKey);
+    if (enc) headers['x-server-ssh-key'] = enc;
+  }
+  const res = await fetch(`${API_BASE}/projects/scan-directories`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('Failed to scan remote directories');
+  return res.json();
+}
+
 export async function removeProject(id: string): Promise<any> {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: 'DELETE',
