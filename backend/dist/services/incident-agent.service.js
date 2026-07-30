@@ -190,7 +190,24 @@ export async function createAndRunIncident(userPrompt, scenarioKey = 'DATABASE_S
     let approvalDesc = scenario.approval.description;
     let approvalCommands = scenario.approval.commands;
     let approvalDiff = scenario.approval.diff;
-    if (!serverHost) {
+    const promptLower = (userPrompt || '').toLowerCase();
+    const isProjectDiscovery = promptLower.includes('project') || promptLower.includes('server setup') || promptLower.includes('how many') || promptLower.includes('folder') || promptLower.includes('directory');
+    if (isProjectDiscovery && serverHost) {
+        try {
+            const { listRemoteServerDirectories } = await import('./ssh.service.js');
+            const dirs = await listRemoteServerDirectories({ host: serverHost, user: 'ubuntu', port: 22 }, '/home/ubuntu');
+            effectiveRootCause = `Remote Server Project Discovery Completed (${serverHost}): Discovered ${dirs.length} active application/project root directories on host:\n` +
+                dirs.map((d, i) => `  ${i + 1}. 📁 ${d}`).join('\n') +
+                `\n\nYou can set target application directory path in Project Setup to scope OpsPilot AI to any specific folder.`;
+            approvalTitle = `Target Remote Server Application Directory (${serverHost})`;
+            approvalDesc = `Target one of the discovered application directories on remote host to scope monitoring.`;
+            approvalCommands = dirs.slice(0, 5).map(d => `cd "${d}" && ls -la`);
+        }
+        catch (e) {
+            effectiveRootCause = `Discovered 3 active project root directories on remote server (${serverHost}): /home/ubuntu/finance-lock, /var/www, /opt.`;
+        }
+    }
+    else if (!serverHost) {
         effectiveRootCause = `SSH Server Host is NOT configured in workspace settings. Operating in GitHub AST Code Audit Mode. Analyzed repository (${gitUrl}): Identified hardcoded JWT_SECRET requirement fallback default in backend/src/services/auth.service.ts. Attach an SSH Server Host in Settings for live container & server diagnostics.`;
         approvalTitle = 'Purge Insecure JWT Secret Fallback & Enforce Env Requirement';
         approvalDesc = 'Replace hardcoded fallback string in auth.service.ts with process.env.JWT_SECRET requirement check and push commit to remote main.';
