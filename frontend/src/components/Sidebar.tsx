@@ -123,7 +123,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 to={item.path}
                 title={collapsed ? item.label : undefined}
                 className={({ isActive }) =>
-                  `flex items-center ${collapsed ? 'justify-center px-2 py-3' : 'justify-between px-3 py-2.5'} rounded-xl text-xs font-semibold transition-all ${
+                  `flex items-center transition-all ${
+                    collapsed 
+                      ? 'justify-center w-11 h-11 mx-auto my-1 rounded-xl' 
+                      : 'justify-between px-3 py-2.5 rounded-xl'
+                  } text-xs font-semibold ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                       : 'text-subtitle hover:text-title hover:bg-slate-500/10'
@@ -171,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {user && (
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
             <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md" title={user.name}>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md mx-auto" title={user.name}>
                 {user.name.charAt(0)}
               </div>
               {!collapsed && (
