@@ -129,7 +129,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Page Content — scrollable area */}
         <main className="flex-1 overflow-y-auto w-full flex flex-col">
           <div className="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-8">
-            <Outlet />
+            <Outlet context={{ selectedTargetPath, onSelectTargetPath: setSelectedTargetPath }} />
           </div>
           
           {/* Footer inside scroll area */}
