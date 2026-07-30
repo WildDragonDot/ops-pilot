@@ -33,6 +33,9 @@ interface AuditLogEntry {
 export const AuditLogs: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -54,13 +57,25 @@ export const AuditLogs: React.FC = () => {
 
   const filteredLogs = logs.filter(log => {
     const matchesCategory = selectedCategory === 'ALL' || log.category === selectedCategory;
+    const matchesStatus = selectedStatus === 'ALL' || log.status === selectedStatus;
+    const query = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === '' || 
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.target.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+      log.action.toLowerCase().includes(query) ||
+      log.user.toLowerCase().includes(query) ||
+      log.target.toLowerCase().includes(query) ||
+      log.details.toLowerCase().includes(query) ||
+      log.ipAddress.toLowerCase().includes(query);
+    return matchesCategory && matchesStatus && matchesSearch;
   });
+
+  // Reset to page 1 on filter or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, selectedStatus, itemsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage);
 
   const handleExportCSV = () => {
     const csvContent = [
@@ -110,40 +125,69 @@ export const AuditLogs: React.FC = () => {
 
         <button
           onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition shrink-0 cursor-pointer"
         >
           <Download className="w-4 h-4" />
           <span>Export Audit CSV</span>
         </button>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="glass-panel p-4 rounded-2xl theme-border border flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 theme-input px-3 py-2 rounded-xl border theme-border w-full sm:w-80">
-          <Search className="w-4 h-4 text-subtitle shrink-0" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Filter logs by action, user, or target..."
-            className="w-full bg-transparent border-none text-xs text-title focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/50 placeholder:opacity-50"
-          />
-        </div>
+      {/* Filter & Search Controls Bar */}
+      <div className="glass-panel p-4 rounded-2xl theme-border border space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          
+          {/* Live Search Input */}
+          <div className="flex items-center gap-2 theme-input px-3.5 py-2 rounded-xl border theme-border w-full md:w-80 shadow-xs">
+            <Search className="w-4 h-4 text-blue-500 shrink-0" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by action, user, target or IP..."
+              className="w-full bg-transparent border-none text-xs text-title focus:outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500/50"
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="text-xs text-subtitle hover:text-title font-bold px-1"
+              >
+                ×
+              </button>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
-          {['ALL', 'APPROVAL', 'SCAN', 'FAILURE_INJECTION', 'AUTH'].map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                selectedCategory === cat
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'card-bg-subtle text-subtitle hover:text-title border theme-border'
-              }`}
+          {/* Category & Status Selectors */}
+          <div className="flex flex-wrap items-center gap-2">
+            
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto p-1 rounded-xl card-bg-subtle border theme-border">
+              {['ALL', 'APPROVAL', 'SCAN', 'FAILURE_INJECTION', 'AUTH'].map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                    selectedCategory === cat
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-subtitle hover:text-title'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Status Dropdown Filter */}
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold card-bg-subtle text-title border theme-border cursor-pointer focus:outline-none"
             >
-              {cat}
-            </button>
-          ))}
+              <option value="ALL">Status: All</option>
+              <option value="SUCCESS">Status: SUCCESS</option>
+              <option value="WARNING">Status: WARNING</option>
+              <option value="FAILED">Status: FAILED</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -162,15 +206,24 @@ export const AuditLogs: React.FC = () => {
                 <th className="p-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y theme-border text-xs">
-              {filteredLogs.length === 0 ? (
+            <tbody className="divide-y theme-border text-xs font-sans">
+              {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-subtitle">
-                    No matching audit log entries found.
+                  <td colSpan={7} className="p-12 text-center text-subtitle">
+                    <div className="flex items-center justify-center gap-2 font-mono">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                      <span>Loading audit logs...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-subtitle font-mono">
+                    No matching audit log entries found for search/filter criteria.
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map(log => (
+                paginatedLogs.map(log => (
                   <tr key={log.id} className="hover:bg-blue-500/5 transition">
                     <td className="p-4 font-mono text-subtitle text-[11px] whitespace-nowrap">
                       {log.timestamp}
@@ -197,8 +250,8 @@ export const AuditLogs: React.FC = () => {
                       {log.ipAddress}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold uppercase ${
-                        log.status === 'SUCCESS' ? 'status-healthy' : 'status-warning'
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-extrabold uppercase ${
+                        log.status === 'SUCCESS' ? 'status-healthy' : log.status === 'WARNING' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' : 'status-warning'
                       }`}>
                         {log.status}
                       </span>
@@ -209,6 +262,69 @@ export const AuditLogs: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION CONTROLS FOOTER */}
+        {!isLoading && filteredLogs.length > 0 && (
+          <div className="p-4 border-t theme-border card-bg-subtle flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono">
+            
+            {/* Entry Summary & Page Size Selector */}
+            <div className="flex items-center gap-4 text-subtitle">
+              <span>
+                Showing <b className="text-title">{startIndex + 1}</b> to <b className="text-title">{Math.min(startIndex + itemsPerPage, filteredLogs.length)}</b> of <b className="text-title">{filteredLogs.length}</b> logs
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <span>Per Page:</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-2 py-1 rounded-lg card-bg-subtle text-title border theme-border font-bold focus:outline-none cursor-pointer"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Page Navigation Buttons */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg card-bg-subtle text-title border theme-border font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-600 hover:text-white transition cursor-pointer"
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-7 h-7 rounded-lg font-bold transition flex items-center justify-center cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'card-bg-subtle text-subtitle hover:text-title border theme-border'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg card-bg-subtle text-title border theme-border font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-600 hover:text-white transition cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+
+          </div>
+        )}
       </div>
 
     </motion.div>
