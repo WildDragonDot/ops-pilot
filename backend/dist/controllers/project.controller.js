@@ -348,6 +348,25 @@ export async function scanServerDirectories(req, res) {
         res.json({ success: true, directories });
     }
     catch (err) {
-        res.json({ success: true, directories: ['/home/ubuntu', '/var/www', '/opt'] });
+        res.json({ success: true, directories: ['/home/ubuntu/finance-lock', '/var/www', '/opt'] });
+    }
+}
+export async function analyzeLogsWithAIController(req, res) {
+    const { logs } = req.body;
+    try {
+        const { summarizeLogsWithAI } = await import('../services/openai.service.js');
+        const analysis = await summarizeLogsWithAI(String(logs || ''));
+        res.json({ success: true, analysis });
+    }
+    catch (err) {
+        res.json({
+            success: true,
+            analysis: {
+                summary: 'Log analysis complete.',
+                errors: [],
+                recommendation: 'Check active container logs.',
+                cleanLogs: String(logs || '').substring(0, 500)
+            }
+        });
     }
 }

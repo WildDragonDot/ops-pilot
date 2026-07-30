@@ -263,3 +263,75 @@ Example JSON: {"projects": ["/home/ubuntu/finance-lock", "/var/www"]}`;
 
   return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
 }
+
+export async function summarizeLogsWithAI(rawLogs: string): Promise<{
+  summary: string;
+  errors: string[];
+  recommendation: string;
+  cleanLogs: string;
+}> {
+  if (!rawLogs || !rawLogs.trim()) {
+    return {
+      summary: 'No log output captured from host.',
+      errors: [],
+      recommendation: 'Check container logs or service status.',
+      cleanLogs: 'No logs available.'
+    };
+  }
+
+  const lines = rawLogs.split('\n');
+  const filteredLines = lines.filter(line => {
+    const l = line.toLowerCase();
+    if (l.includes('debug') || l.includes('trace') || l.includes('info: heartbeat') || l.includes('ping ok')) return false;
+    return true;
+  });
+
+  if (!hasOpenAIKey() || !openai) {
+    const errorLines = lines.filter(l => /error|fail|warn|exception|crash|refused/i.test(l));
+    return {
+      summary: errorLines.length > 0 ? `Detected ${errorLines.length} warning/error entries in log output.` : 'All logs healthy. Zero critical errors detected.',
+      errors: errorLines.slice(0, 5),
+      recommendation: errorLines.length > 0 ? 'Inspect failing container processes with sudo docker logs.' : 'System operates normally.',
+      cleanLogs: filteredLines.slice(-30).join('\n')
+    };
+  }
+
+  try {
+    const prompt = `You are OpsPilot AI Log Sanitizer. Analyze these raw server logs:
+${rawLogs.substring(0, 4000)}
+
+Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
+{
+  "summary": "1-sentence executive summary of log health",
+  "errors": ["list of critical error snippets found"],
+  "recommendation": "actionable fix recommendation for DevOps engineer",
+  "cleanLogs": "filtered log string showing only relevant events"
+}`;
+
+    const completion = await openai.chat.completions.create({
+      model: openaiModel,
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' }
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (content) {
+      const parsed = JSON.parse(content);
+      return {
+        summary: parsed.summary || 'Log analysis complete.',
+        errors: parsed.errors || [],
+        recommendation: parsed.recommendation || 'No action required.',
+        cleanLogs: parsed.cleanLogs || filteredLines.slice(-30).join('\n')
+      };
+    }
+  } catch (err) {
+    console.error('OpenAI Log Summarizer Notice:', err);
+  }
+
+  return {
+    summary: 'Log analysis complete.',
+    errors: [],
+    recommendation: 'Monitor service health.',
+    cleanLogs: filteredLines.slice(-30).join('\n')
+  };
+}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Copy, Check, Play, ShieldAlert, Cpu, X } from 'lucide-react';
+import { Terminal, Copy, Check, Play, ShieldAlert, Cpu, X, Sparkles, Filter } from 'lucide-react';
 import { IncidentEvent } from '../types';
 
 interface TerminalConsoleProps {
@@ -10,8 +10,18 @@ interface TerminalConsoleProps {
 
 export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incidentId, onClose }) => {
   const [copied, setCopied] = useState<boolean>(false);
+  const [aiNoiseFilter, setAiNoiseFilter] = useState<boolean>(true);
 
-  const toolCalls = events.filter(e => e.type === 'TOOL_CALL' || e.type === 'PLAN' || e.type === 'EXECUTION');
+  const rawToolCalls = events.filter(e => e.type === 'TOOL_CALL' || e.type === 'PLAN' || e.type === 'EXECUTION');
+  
+  // Smart AI Noise Purger
+  const toolCalls = aiNoiseFilter 
+    ? rawToolCalls.filter(e => {
+        const title = (e.title || '').toLowerCase();
+        if (title.includes('ping') || title.includes('heartbeat') || title.includes('debug')) return false;
+        return true;
+      })
+    : rawToolCalls;
 
   const handleCopy = () => {
     const text = toolCalls.map(e => `[${e.type}] ${e.title}\n${e.details ? JSON.stringify(e.details, null, 2) : ''}`).join('\n\n');
@@ -36,6 +46,19 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incide
         </div>
 
         <div className="flex items-center gap-3">
+          {/* AI Noise Purger Toggle */}
+          <button
+            onClick={() => setAiNoiseFilter(!aiNoiseFilter)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono transition border cursor-pointer ${
+              aiNoiseFilter
+                ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-sm glow-purple'
+                : 'bg-slate-900 text-slate-400 border-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
+            <span>{aiNoiseFilter ? '✨ AI Noise Purged' : 'Show Raw Noise'}</span>
+          </button>
+
           <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
             <Cpu className="w-3 h-3 animate-pulse" /> OpenAI GPT-4o Agent Active
           </span>

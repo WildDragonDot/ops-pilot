@@ -141,6 +141,23 @@ export async function scanDirectoriesApi(payload: { serverHost?: string; serverP
   return res.json();
 }
 
+export async function analyzeLogsWithAiApi(logs: string): Promise<{
+  analysis: {
+    summary: string;
+    errors: string[];
+    recommendation: string;
+    cleanLogs: string;
+  }
+}> {
+  const res = await fetch(`${API_BASE}/ai/analyze-logs`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ logs })
+  });
+  if (!res.ok) throw new Error('Log AI Analysis failed');
+  return res.json();
+}
+
 export async function removeProject(id: string): Promise<any> {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: 'DELETE',
