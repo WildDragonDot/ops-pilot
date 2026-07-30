@@ -42,7 +42,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incide
             <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
           </div>
           <Terminal className="w-4 h-4 text-emerald-400" />
-          <span className="text-slate-200 font-bold truncate">opspilot-agent-cli --incident={incidentId}</span>
+          <span className="text-slate-200 font-bold truncate">dop-agent-cli --incident={incidentId}</span>
         </div>
 
         <div className="flex items-center gap-3">
