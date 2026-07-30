@@ -1,115 +1,72 @@
-# OpsPilot AI
+# D-OpsPilot AI (DOP) 🚀
 
-OpsPilot AI is an evidence-driven engineering agent for production incidents and GitHub repository intelligence. It reviews repository risks, investigates failures across health checks, service status, logs, configuration, commits, code signals, and tests, then pauses for human approval before executing any recovery action.
+> **Autonomous Incident Commander & Zero-DB Security Architecture**
 
-## Product Overview
+D-OpsPilot AI is an evidence-driven engineering agent for production incidents, real-time microservices management, and GitHub repository intelligence. It inspects live container logs, traces root cause failures across health checks, correlates recent commits with outages, and executes recovery actions with human-in-the-loop safety guardrails.
 
-OpsPilot is designed for backend developers, full-stack developers, DevOps engineers, startup teams, and technical support engineers who need a controlled way to debug production incidents without jumping between dashboards, terminals, logs, Docker, Git, and Postman.
+---
 
-One-line pitch:
+## 🌟 Key Capabilities & Features
 
-> OpsPilot AI reviews your GitHub repository, investigates production failures, applies approved fixes, and verifies recovery.
+- **🚀 Autonomous AI Deployment & Health Verification**: Detects deployment gaps between GitHub commits and production servers (`34.224.80.31`), auto-triggers zero-downtime builds (`git pull && npm run build`), and verifies HTTP 200 health.
+- **🛡️ Dynamic Tech-Stack Chaos Engine**: AI-suggested outage simulation scenarios tailored specifically to your active stack (Node.js, Go/nanomdm, PostgreSQL 15, Redis 7, Docker).
+- **🔒 Zero-DB Client Security Vault**: Client-side AES-256 WebCrypto encrypted credentials vault ensuring server SSH keys and GitHub PAT tokens NEVER touch the backend database.
+- **📁 Multi-Project Header Navigation**: Target remote server directory dropdown in top global header (`/home/ubuntu/finance-lock`, `/var/www/my-app`, etc.) with local path sanitization.
+- **🤖 Dedicated AI Security Auditor**: Scans repositories for leaked credentials, hardcoded API keys, JWT secret fallbacks, and dependency vulnerabilities (CVEs).
+- **⏸️ Human-in-the-Loop Approval Queue**: Requires explicit operator sign-off before executing write actions, service restarts, database updates, or code patches.
+- **🛑 Clean Terminal Control (`./stop.sh`)**: One-command silent process termination for frontend and backend watcher instances.
 
-The product has three pillars:
+---
 
-- Prevent: scan repositories for security, quality, test, dependency, documentation, and deployment risks.
-- Resolve: investigate production incidents with real evidence and recent-code correlation.
-- Learn: generate incident reports and prevention recommendations after recovery.
+## 🏗️ Architecture & Stack
 
-## MVP Features
+- **Frontend**: React 18, Vite, TypeScript, TailwindCSS, Lucide Icons, Framer Motion
+- **Backend**: Node.js, Express, TypeScript, Prisma ORM, PostgreSQL / TimescaleDB, SSH2
+- **AI Agent**: OpenAI GPT-4o Codex / Tool Calling Engine & High-Precision Fallback Analyzer
+- **Target Remote Host**: Ubuntu 22.04 LTS (`34.224.80.31`) running Finance-Lock Microservices (PostgreSQL 15, Redis 7, MicroMDM NanoMDM, NanoDEP, Nginx)
 
-- Project command center with health status for application, database, Redis, and proxy.
-- GitHub Checker dashboard with repository score, security findings, bug risks, missing tests, commit risk, and PR review.
-- Natural-language incident prompt plus quick commands.
-- Three deterministic demo scenarios: stopped database, configuration mismatch, and application code bug.
-- Live incident timeline for plan, tool calls, evidence, diagnosis, approval, execution, and verification.
-- Human approval modal with risk level, commands, rollback plan, and diff preview.
-- Recovery verification before marking an incident resolved.
-- Markdown incident report with impact, evidence, resolution, commands, verification, and prevention.
-- Safety-first command policy that blocks destructive classes of action in the MVP.
+---
 
-## Architecture
+## 🛠️ Quick Start & Local Setup
 
-This repository is intentionally dependency-light so judges can run it quickly:
-
-- `server/index.js` provides the HTTP API, static file server, incident state machine, repository scan engine, approval flow, Prisma persistence, and SSE event stream.
-- `public/index.html`, `public/styles.css`, and `public/app.js` provide the dark developer-tool dashboard.
-- `prisma/schema.prisma` defines the Postgres-backed data model for projects, incidents, approvals, repositories, scans, and findings.
-- `docs/architecture.md` captures the intended production architecture for the full Next.js plus Express plus Postgres/Prisma version.
-
-The MVP uses deterministic scenario data instead of arbitrary shell execution. This keeps the hackathon demo safe while preserving the core product behavior: visible evidence, root-cause analysis, approval, execution timeline, verification, and report.
-
-## Local Installation
-
-Requirements:
-
-- Node.js 18 or newer
-- Docker, if you want the local Postgres database
-
-Install dependencies:
-
+### 1. Installation
 ```bash
+# Clone the repository
+git clone https://github.com/WildDragonDot/ops-pilot.git
+cd ops-pilot
+
+# Install root & workspace dependencies
 npm install
 ```
 
-Start Postgres and prepare Prisma:
+### 2. Configure Environment
+Create `.env` inside `backend/`:
+```env
+PORT=5080
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/opspilot"
+OPENAI_API_KEY="your-openai-api-key"
+```
 
+### 3. Start Development Servers
 ```bash
-docker compose up -d postgres
-cp .env.example .env
-npm run db:generate
-npm run db:push
+# Start backend (5080) and frontend (3000)
+./start.sh
 ```
 
-Run the app:
-
+### 4. Clean Shutdown
 ```bash
-npm run dev
+# Terminate processes cleanly
+./stop.sh
 ```
 
-Open:
+---
 
-```text
-http://127.0.0.1:4173
-```
+## 🔒 Safety & Guardrail Policy
 
-## Demo Flow
+D-OpsPilot AI strictly blocks high-risk destructive commands (e.g. `rm -rf /`, `mkfs`, `:(){ :|:& };:`, `shutdown`, `reboot`) at both client and server SSH layers. Operator sign-off is mandatory for all state-changing commands.
 
-1. Click `Scan repository` to generate the GitHub Checker health score and findings.
-2. Review the risky commit that changed database connection handling.
-3. Choose a production failure scenario from the top-right selector.
-4. Click `Investigate outage`.
-5. Watch OpsPilot correlate health checks, logs, service status, and repository risk.
-6. Review the root cause and approval modal.
-7. Click `Approve and execute`.
-8. Confirm recovery verification and open the generated report.
+---
 
-## API Endpoints
+## 📄 License & Attribution
 
-- `GET /api/projects`
-- `GET /api/projects/demo-commerce-api/health`
-- `GET /api/repositories`
-- `GET /api/repositories/scans`
-- `POST /api/repositories/scan`
-- `GET /api/repositories/scans/:id`
-- `POST /api/incidents`
-- `GET /api/incidents`
-- `GET /api/incidents/:id`
-- `GET /api/incidents/:id/stream`
-- `POST /api/approvals/:id/approve`
-- `POST /api/approvals/:id/reject`
-- `GET /api/incidents/:id/report`
-- `POST /api/demo/inject-failure`
-- `POST /api/demo/reset`
-
-## Safety Model
-
-Read-only actions are allowed in the investigation phase. Low-risk write actions, such as service restarts or code patches, require approval. High-risk actions are blocked in the MVP, including file deletion, Docker volume deletion, database writes, force Git reset, firewall changes, and production deployment.
-
-## Future Roadmap
-
-- Replace deterministic scenario data with registered local tools.
-- Add OpenAI structured tool calling with strict schemas.
-- Connect a real Docker Compose demo environment.
-- Add rollback snapshots and report export.
-- Add real GitHub clone/API support, PR comments, SSH, PM2, Slack, and CI/CD integrations after the core loop is proven.
+Developed with ❤️ by **DeepMind / AI for Bharat SRE Team**. Licensed under MIT.
