@@ -98,8 +98,6 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history, isExecuting]);
 
-  if (!isOpen) return null;
-
   const handleRunCommand = async (cmdToRun?: string) => {
     const targetCmd = (cmdToRun || commandInput).trim();
     if (!targetCmd || isExecuting) return;
@@ -245,12 +243,13 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
-      >
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
+        >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 10 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -538,6 +537,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
         </motion.div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 };
