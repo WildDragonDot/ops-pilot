@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { prisma } from './db.service.js';
 import { auditCodebaseWithOpenAI } from './openai.service.js';
 export async function getLatestRepoScan() {
@@ -198,10 +198,11 @@ export async function applyFindingPatch(findingId) {
                 // Execute real git commit & push for resolved security patch
                 try {
                     const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
-                    execSync(`git add "${finding.filePath}" && git commit -m "${commitMsg}"`, { cwd: process.cwd() });
+                    execFileSync('git', ['add', finding.filePath], { cwd: process.cwd() });
+                    execFileSync('git', ['commit', '-m', commitMsg], { cwd: process.cwd() });
                     console.log(`[Git Commit] Security patch for ${finding.filePath} committed successfully`);
                     try {
-                        execSync(`git push origin main`, { cwd: process.cwd() });
+                        execFileSync('git', ['push', 'origin', 'main'], { cwd: process.cwd() });
                         console.log(`[Git Push] Successfully pushed security patch commit to origin main`);
                     }
                     catch (pErr) {
@@ -218,10 +219,11 @@ export async function applyFindingPatch(findingId) {
                 // Execute real git commit & push for resolved security patch
                 try {
                     const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
-                    execSync(`git add "${finding.filePath}" && git commit -m "${commitMsg}"`, { cwd: process.cwd() });
+                    execFileSync('git', ['add', finding.filePath], { cwd: process.cwd() });
+                    execFileSync('git', ['commit', '-m', commitMsg], { cwd: process.cwd() });
                     console.log(`[Git Commit] Security patch for ${finding.filePath} committed successfully`);
                     try {
-                        execSync(`git push origin main`, { cwd: process.cwd() });
+                        execFileSync('git', ['push', 'origin', 'main'], { cwd: process.cwd() });
                         console.log(`[Git Push] Successfully pushed security patch commit to origin main`);
                     }
                     catch (pErr) {

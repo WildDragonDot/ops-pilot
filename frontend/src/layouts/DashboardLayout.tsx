@@ -3,6 +3,7 @@ import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal';
+import { ServerTerminalModal } from '../components/ServerTerminalModal';
 import { useTheme } from '../context/ThemeContext';
 import { Project, Scan, Incident } from '../types';
 
@@ -32,6 +33,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const navigate = useNavigate();
   const { toggleTheme } = useTheme();
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState<boolean>(false);
+  const [terminalModalOpen, setTerminalModalOpen] = useState<boolean>(false);
 
   const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
   const getCleanTargetPath = (p?: string | null) => {
@@ -104,6 +106,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             projects={projects}
             onSelectProject={onSelectProject}
             onOpenSetupModal={onOpenSetupModal}
+            onOpenTerminal={() => setTerminalModalOpen(true)}
           />
         );
       })()}
@@ -149,6 +152,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         onScanRepo={onScanRepo}
         onToggleTheme={toggleTheme}
       />
+
+      {Boolean(project?.serverHost?.trim()) && (
+        <ServerTerminalModal
+          isOpen={terminalModalOpen}
+          onClose={() => setTerminalModalOpen(false)}
+          projectId={project.id}
+          serverHost={project.serverHost || ''}
+          serverUser={project.serverUser && project.serverUser !== 'root' ? project.serverUser : 'ubuntu'}
+        />
+      )}
 
     </div>
   );

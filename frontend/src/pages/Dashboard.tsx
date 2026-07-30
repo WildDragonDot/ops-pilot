@@ -855,28 +855,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 {/* Card 1: Cluster Health OR GitHub Sync Status */}
                 {Boolean(project?.serverHost?.trim()) ? (
-                  <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono">Cluster Health</span>
-                      <Activity className={`w-3.5 h-3.5 ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 animate-pulse' : 'text-emerald-500'}`} />
-                    </div>
-                    
-                    <div className="flex items-baseline justify-between">
-                      <span className={`text-xl font-extrabold ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 font-mono' : 'text-emerald-500 font-mono'}`}>
-                        {pendingApprovals > 0 || !allNodesHealthy ? 'DEGRADED' : 'HEALTHY'}
-                      </span>
-                      <span className="text-[9px] text-emerald-500 font-bold font-mono">● {uptimePercentage}</span>
-                    </div>
+	                  <div className="glass-panel p-4 rounded-xl theme-border border space-y-3 shadow-sm">
+	                    <div className="flex items-center justify-between">
+	                      <span className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-subtitle font-mono">Cluster Health</span>
+	                      <Activity className={`w-4 h-4 ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 animate-pulse' : 'text-emerald-500'}`} />
+	                    </div>
+	                    
+	                    <div className="flex items-baseline justify-between gap-2 min-w-0">
+	                      <span className={`text-2xl leading-none font-extrabold tracking-wide min-w-0 ${pendingApprovals > 0 || !allNodesHealthy ? 'text-amber-500 font-mono' : 'text-emerald-500 font-mono'}`}>
+	                        {pendingApprovals > 0 || !allNodesHealthy ? 'DEGRADED' : 'HEALTHY'}
+	                      </span>
+	                      <span className="text-[9px] text-emerald-500 font-extrabold font-mono whitespace-nowrap shrink-0">● {uptimePercentage}</span>
+	                    </div>
 
-                    <div className="w-full card-bg-subtle h-1 rounded-full overflow-hidden border theme-border">
-                      <div className={`h-full rounded-full transition-all duration-500 ${allNodesHealthy ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: uptimePercentage }} />
-                    </div>
+	                    <div className="w-full card-bg-subtle h-1.5 rounded-full overflow-hidden border theme-border">
+	                      <div className={`h-full rounded-full transition-all duration-500 ${allNodesHealthy ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: uptimePercentage }} />
+	                    </div>
 
-                    <div className="flex items-center justify-between text-[9px] font-mono pt-1.5 border-t theme-border gap-2">
-                      <span className="text-emerald-400 font-bold shrink-0">Uptime <b className="text-emerald-300 font-extrabold">{uptimePercentage}</b></span>
-                      <span className="text-title font-bold truncate text-right"><b className="text-indigo-400 font-extrabold">{onlineCount}/4</b> Nodes</span>
-                    </div>
-                  </div>
+	                    <div className="flex items-center justify-between text-[9px] font-mono pt-3 border-t theme-border gap-2 min-w-0">
+	                      <span className="text-emerald-500 font-extrabold shrink-0">Uptime <b>{uptimePercentage}</b></span>
+	                      <span className="text-title font-extrabold whitespace-nowrap shrink-0 text-right"><b className="text-indigo-500 font-extrabold">{onlineCount}/4</b> Nodes</span>
+	                    </div>
+	                  </div>
                 ) : (
                   <div className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 shadow-sm">
                     <div className="flex items-center justify-between">

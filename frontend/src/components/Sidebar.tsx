@@ -4,6 +4,7 @@ import {
   Activity, 
   GitBranch, 
   Terminal, 
+  TerminalSquare,
   CheckSquare, 
   FileText, 
   Zap, 
@@ -28,6 +29,7 @@ interface SidebarProps {
   projects?: Project[];
   onSelectProject?: (project: Project) => void;
   onOpenSetupModal?: () => void;
+  onOpenTerminal?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -36,7 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   project, 
   projects = [], 
   onSelectProject = () => {}, 
-  onOpenSetupModal = () => {} 
+  onOpenSetupModal = () => {},
+  onOpenTerminal = () => {}
 }) => {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
@@ -47,10 +50,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const mode = getProjectOperatingMode(project);
   const modeBadge = getModeBadgeInfo(mode);
   const isServerOnly = mode === 'SERVER_ONLY';
+  const hasServer = Boolean(project?.serverHost?.trim());
 
   const navItems = [
     { path: '/dashboard', label: 'Overview', icon: Activity },
     ...(!isServerOnly ? [{ path: '/auditor', label: 'GitHub Auditor', icon: GitBranch, badge: scanScore ? `${scanScore}/100` : 'READY', badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-extrabold' }] : []),
+    ...(hasServer ? [{ path: '__ssh_terminal__', label: 'SSH Terminal', icon: TerminalSquare, action: onOpenTerminal, special: true }] : []),
     { path: '/command', label: 'Incident Command', icon: Terminal, badge: activeIncidentsCount > 0 ? `${activeIncidentsCount}` : undefined, badgeColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-extrabold' },
     { path: '/approvals', label: 'Approvals Queue', icon: CheckSquare, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount}` : undefined, badgeColor: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-extrabold' },
     { path: '/runbooks', label: 'Auto Runbooks', icon: BookOpen },
@@ -117,6 +122,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
+            if (item.action) {
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  onClick={item.action}
+                  title={collapsed ? item.label : undefined}
+                  className={`flex items-center transition-all w-full ${
+                    collapsed 
+                      ? 'justify-center w-11 h-11 mx-auto my-1 rounded-lg' 
+                      : 'justify-between px-3 py-2.5 rounded-lg'
+                    } text-xs font-semibold text-subtitle hover:text-title hover:bg-slate-500/10 border border-transparent cursor-pointer`}
+                >
+                  <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {!collapsed && <span className="truncate leading-none">{item.label}</span>}
+                  </div>
+                </button>
+              );
+            }
             return (
               <NavLink
                 key={item.path}

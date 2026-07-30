@@ -2,6 +2,46 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
+const HOST_PATTERN = /^[a-zA-Z0-9.-]+$/;
+const USER_PATTERN = /^[a-z_][a-z0-9_-]*[$]?$/i;
+const ABSOLUTE_PATH_PATTERN = /^\/[a-zA-Z0-9._~/-]*$/;
+
+const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
+
+function normalizePort(port?: number): number {
+  const normalized = Number(port || 22);
+  if (!Number.isInteger(normalized) || normalized < 1 || normalized > 65535) {
+    throw new Error('Invalid SSH port.');
+  }
+  return normalized;
+}
+
+function assertSafeHost(host?: string): string {
+  const normalized = host?.trim();
+  if (!normalized) {
+    throw new Error('Host IP/Domain is required');
+  }
+  if (!HOST_PATTERN.test(normalized)) {
+    throw new Error('Invalid SSH host format.');
+  }
+  return normalized;
+}
+
+function assertSafeUser(user?: string): string {
+  const normalized = (user || 'root').trim();
+  if (!USER_PATTERN.test(normalized)) {
+    throw new Error('Invalid SSH user format.');
+  }
+  return normalized;
+}
+
+function assertSafeAbsolutePath(pathValue: string): string {
+  const normalized = pathValue.trim();
+  if (!ABSOLUTE_PATH_PATTERN.test(normalized) || normalized.includes('..')) {
+    throw new Error('Invalid remote path.');
+  }
+  return normalized;
+}
 
 export interface SSHCredentials {
   host?: string;
@@ -14,35 +54,37 @@ export interface SSHCredentials {
 }
 
 export async function testSSHConnection(creds: SSHCredentials): Promise<{ success: boolean; message: string; output?: string }> {
-  if (!creds.host) {
+  if (!creds.host?.trim()) {
     return { success: false, message: 'Host IP/Domain is required' };
   }
 
-  const user = creds.user || 'root';
-  const port = creds.port || 22;
-
   // In production / local sandbox mode, verify host reachability or SSH connection
   try {
-    if (creds.host === '127.0.0.1' || creds.host === 'localhost') {
+    const host = assertSafeHost(creds.host);
+    const user = assertSafeUser(creds.user);
+    const port = normalizePort(creds.port);
+
+    if (host === '127.0.0.1' || host === 'localhost') {
       const { stdout } = await execAsync('docker ps || echo "Docker daemon reachable"');
       return { success: true, message: 'Local sandbox environment verified successfully', output: stdout };
     }
 
     // Remote host connection test using ssh command timeout
-    const command = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -p ${port} ${user}@${creds.host} "echo Connection_OK"`;
+    const command = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -p ${port} ${user}@${host} "echo Connection_OK"`;
     const { stdout } = await execAsync(command);
 
     if (stdout.includes('Connection_OK')) {
-      return { success: true, message: `Successfully authenticated SSH session with ${user}@${creds.host}:${port}`, output: stdout };
+      return { success: true, message: `Successfully authenticated SSH session with ${user}@${host}:${port}`, output: stdout };
     }
 
-    return { success: true, message: `Server ${creds.host}:${port} is reachable` };
+    return { success: true, message: `Server ${host}:${port} is reachable` };
   } catch (err: any) {
     // If SSH key or password was provided, simulate or test fallback
     if (creds.key || creds.password) {
-      return { success: true, message: `SSH credential verification payload accepted for ${user}@${creds.host}:${port}` };
+      const user = creds.user || 'root';
+      return { success: true, message: `SSH credential verification payload accepted for ${user}@${creds.host}:${creds.port || 22}` };
     }
-    return { success: false, message: err.message || `Failed to connect to ${creds.host}:${port}` };
+    return { success: false, message: err.message || `Failed to connect to ${creds.host}:${creds.port || 22}` };
   }
 }
 
@@ -71,8 +113,10 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
     return stdout;
   }
 
-  const user = (creds.user && creds.user !== 'root') ? creds.user : (creds.host === '34.224.80.31' ? 'ubuntu' : (creds.user || 'root'));
-  const port = creds.port || 22;
+  const host = assertSafeHost(creds.host);
+  const rawUser = (creds.user && creds.user !== 'root') ? creds.user : (host === '34.224.80.31' ? 'ubuntu' : (creds.user || 'root'));
+  const user = assertSafeUser(rawUser);
+  const port = normalizePort(creds.port);
   const keyFlag = getSSHKeyFlag(creds);
 
   let safeCmd = cmd.trim();
@@ -92,10 +136,11 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
   }
 
   if (creds.projectPath && creds.projectPath.trim() !== '/') {
-    safeCmd = `cd "${creds.projectPath.trim()}" 2>/dev/null || true; ${safeCmd}`;
+    const projectPath = assertSafeAbsolutePath(creds.projectPath);
+    safeCmd = `cd ${shellQuote(projectPath)} 2>/dev/null || true; ${safeCmd}`;
   }
 
-  const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
+  const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
 
   try {
     const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'xterm-256color' } });
@@ -226,7 +271,8 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
 }
 
 export async function listRemoteServerDirectories(creds: SSHCredentials, baseDir = '/home/ubuntu'): Promise<string[]> {
-  const scanCmd = `find ${baseDir} /var/www /opt -maxdepth 2 -type d 2>/dev/null | head -n 35`;
+  const safeBaseDir = assertSafeAbsolutePath(baseDir || '/home/ubuntu');
+  const scanCmd = `find ${shellQuote(safeBaseDir)} /var/www /opt -maxdepth 2 -type d 2>/dev/null | head -n 35`;
   try {
     const output = await executeRemoteCommand(creds, scanCmd);
     const rawDirs = output

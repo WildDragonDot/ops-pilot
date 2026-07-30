@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Terminal, 
@@ -282,6 +283,26 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       return;
     }
 
+    if (targetCmd.toLowerCase() === 'history') {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const historyOutput = cmdHistoryList.length
+        ? cmdHistoryList.map((cmd, index) => `${index + 1}  ${cmd}`).join('\n')
+        : 'No commands have been run in this terminal session yet.';
+      setHistory(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          command: 'history',
+          output: historyOutput,
+          exitCode: 0,
+          time: timeStr
+        }
+      ]);
+      setCommandInput('');
+      return;
+    }
+
     try {
       setIsExecuting(true);
       setExecutingCmd(targetCmd);
@@ -363,34 +384,34 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     'ls -la'
   ];
 
-  return (
+  const modal = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
+          className="fixed inset-0 z-50 bg-slate-900/35 dark:bg-black/70 backdrop-blur-md flex items-start justify-center p-3"
         >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 10 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 10 }}
-          className={`glass-panel w-full rounded-2xl border border-slate-800 bg-[#050811] shadow-2xl flex flex-col overflow-hidden font-sans transition-all duration-300 ${
-            isMaximized ? 'h-[96vh] max-w-[98vw]' : 'h-[85vh] max-w-5xl'
+          className={`glass-panel w-full rounded-2xl border theme-border bg-white shadow-2xl flex flex-col overflow-hidden font-sans transition-all duration-300 dark:border-slate-800 dark:bg-[#050811] ${
+            isMaximized ? 'h-[calc(100vh-1.5rem)] max-w-[98vw]' : 'h-[min(760px,calc(100vh-1.5rem))] max-w-5xl'
           }`}
         >
           {/* Top Window Bar */}
-          <div className="px-4 py-3 bg-[#0a0f1d] border-b border-slate-800 flex items-center justify-between font-mono text-xs select-none">
+          <div className="px-4 py-3 bg-slate-50 border-b theme-border flex items-center justify-between font-mono text-xs select-none dark:bg-[#0a0f1d] dark:border-slate-800">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block cursor-pointer hover:opacity-80 transition" onClick={onClose} title="Close Terminal" />
                 <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block cursor-pointer hover:opacity-80 transition" onClick={() => setIsMaximized(!isMaximized)} title="Maximize/Restore" />
                 <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
               </div>
-              <Terminal className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-slate-200 font-bold truncate">
-                {serverUser}@{serverHost} <span className="text-slate-500 font-normal text-[10px] hidden sm:inline">(Interactive Remote SSH Terminal)</span>
+              <Terminal className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="text-title font-bold truncate">
+                {serverUser}@{serverHost} <span className="text-subtitle font-normal text-[10px] hidden sm:inline">(Interactive Remote SSH Terminal)</span>
               </span>
             </div>
 
@@ -400,21 +421,21 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                 className={`px-3 py-1 rounded-xl text-xs font-bold font-mono transition flex items-center gap-1.5 cursor-pointer border ${
                   showAiCopilot
                     ? 'bg-purple-600 text-white border-purple-500 shadow-md glow-blue'
-                    : 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20'
+                    : 'bg-purple-500/10 text-purple-700 border-purple-500/30 hover:bg-purple-500/20 dark:text-purple-400'
                 }`}
                 title="Toggle AI Command Copilot Drawer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400 fill-current animate-pulse" />
+                <Sparkles className="w-3.5 h-3.5 text-purple-700 dark:text-purple-400 fill-current animate-pulse" />
                 <span>AI Copilot</span>
               </button>
 
-              <span className="hidden lg:flex items-center gap-1.5 text-[10px] text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-bold font-mono">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" /> WebCrypto Encrypted
+              <span className="hidden lg:flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-bold font-mono">
+                <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> WebCrypto Encrypted
               </span>
 
               <button
                 onClick={handleCopyLogs}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition flex items-center gap-1 text-[11px]"
+                className="p-1.5 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title transition flex items-center gap-1 text-[11px] dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white"
                 title="Copy Terminal Log"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -423,7 +444,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
               <button
                 onClick={() => setHistory([])}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 transition"
+                className="p-1.5 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-rose-500 transition dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-rose-400"
                 title="Clear Terminal Output"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -431,7 +452,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
               <button
                 onClick={() => setIsMaximized(!isMaximized)}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition"
+                className="p-1.5 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title transition dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white"
                 title={isMaximized ? 'Minimize' : 'Maximize'}
               >
                 {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -439,7 +460,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition"
+                className="p-1.5 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title transition dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:text-white dark:hover:border-slate-700"
                 title="Close Window"
               >
                 <X className="w-4 h-4" />
@@ -448,17 +469,17 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
           </div>
 
           {/* Quick Preset Command Pills Toolbar */}
-          <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-900 flex items-center justify-between gap-3 select-none font-mono text-[10px]">
+          <div className="px-4 py-2 bg-slate-100/80 border-b theme-border flex items-center justify-between gap-3 select-none font-mono text-[10px] dark:bg-slate-950/80 dark:border-slate-900">
             <div className="flex items-center gap-2 overflow-x-auto">
-              <span className="text-slate-500 shrink-0 font-bold">Quick Presets:</span>
+              <span className="text-slate-700 dark:text-slate-500 shrink-0 font-bold">Quick Presets:</span>
               {presetCommands.map(cmd => (
                 <button
                   key={cmd}
                   onClick={() => handleRunCommand(cmd)}
                   disabled={isExecuting}
-                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-blue-600 hover:text-white text-slate-300 border border-slate-800 transition shrink-0 cursor-pointer font-bold flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-md bg-white hover:bg-blue-600 hover:text-white text-slate-700 border theme-border transition shrink-0 cursor-pointer font-bold flex items-center gap-1 shadow-sm dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800"
                 >
-                  <Play className="w-2.5 h-2.5 text-emerald-400 fill-current" />
+                  <Play className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 fill-current" />
                   <span>{cmd}</span>
                 </button>
               ))}
@@ -466,32 +487,32 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
             <button
               onClick={() => setShowAiCopilot(!showAiCopilot)}
-              className="text-purple-400 hover:text-purple-300 font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+              className="text-purple-700 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-bold flex items-center gap-1 shrink-0 cursor-pointer"
             >
-              <Lightbulb className="w-3 h-3 text-purple-400" />
+              <Lightbulb className="w-3 h-3 text-purple-700 dark:text-purple-400" />
               <span>{showAiCopilot ? 'Hide AI Solver Drawer' : 'Problem ➔ Command Assistant'}</span>
             </button>
           </div>
 
           {/* AI Natural Language Problem ➔ Command Solver Input Bar */}
-          <div className="px-4 py-2.5 bg-[#080d1a] border-b border-slate-800/80 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
+          <div className="px-4 py-2.5 bg-white border-b theme-border flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 dark:bg-[#080d1a] dark:border-slate-800/80">
             <div className="flex items-center gap-2 flex-1 card-bg-subtle px-3 py-1.5 rounded-xl border border-purple-500/30">
-              <Sparkles className="w-4 h-4 text-purple-400 shrink-0 animate-pulse" />
+              <Sparkles className="w-4 h-4 text-purple-700 dark:text-purple-400 shrink-0 animate-pulse" />
               <input
                 type="text"
                 value={aiProblemQuery}
                 onChange={(e) => handleInputChange(e.target.value)}
                 placeholder="Ask AI Copilot in Hindi/English (e.g. 'error log in docker', 'mera server setup kya h')..."
-                className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
+                className="w-full bg-transparent text-xs text-title placeholder-slate-500 focus:outline-none font-sans dark:text-slate-100 dark:placeholder-slate-500"
               />
               {(isTyping || isAiThinking) && (
-                <div className="flex items-center gap-1.5 text-purple-400 font-mono text-[10px] shrink-0 font-bold animate-pulse">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-400 font-mono text-[10px] shrink-0 font-bold animate-pulse">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-700 dark:text-purple-400" />
                   <span>{isTyping ? 'Waiting for typing complete...' : 'AI Thinking & Analyzing...'}</span>
                 </div>
               )}
               {aiProblemQuery && !isTyping && !isAiThinking && (
-                <button onClick={() => { setAiProblemQuery(''); setSuggestedCommand(''); setAiExplanation(''); }} className="text-slate-500 hover:text-slate-300 text-xs">
+                <button onClick={() => { setAiProblemQuery(''); setSuggestedCommand(''); setAiExplanation(''); }} className="text-subtitle hover:text-title text-xs dark:text-slate-500 dark:hover:text-slate-300">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -501,15 +522,15 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
               <div className="flex items-center gap-2 bg-purple-950/40 border border-purple-500/40 px-3 py-1.5 rounded-xl animate-fadeIn">
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider shrink-0">
+                    <span className="text-[10px] font-mono text-purple-700 dark:text-purple-300 font-bold uppercase tracking-wider shrink-0">
                       ✨ AI Suggested:
                     </span>
-                    <code className="text-xs font-mono text-emerald-400 font-bold truncate max-w-xs md:max-w-md">
+                    <code className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold truncate max-w-xs md:max-w-md">
                       {suggestedCommand}
                     </code>
                   </div>
                   {aiExplanation && (
-                    <span className="text-[10px] text-slate-400 truncate max-w-md">
+                    <span className="text-[10px] text-subtitle truncate max-w-md dark:text-slate-400">
                       {aiExplanation}
                     </span>
                   )}
@@ -533,25 +554,25 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
             {/* Main Terminal Screen */}
             <div 
               onClick={() => inputRef.current?.focus()}
-              className="p-4 flex-1 overflow-y-auto font-mono text-xs leading-relaxed space-y-3 bg-[#03060f] cursor-text"
+              className="p-4 flex-1 overflow-y-auto font-mono text-xs leading-relaxed space-y-3 bg-white cursor-text dark:bg-[#03060f]"
             >
-              <div className="text-slate-500 text-[11px] pb-2 border-b border-slate-900">
+              <div className="text-slate-700 text-[11px] pb-2 border-b theme-border dark:text-slate-500 dark:border-slate-900">
                 Connected to <b>{serverUser}@{serverHost}</b>. Type shell commands directly below or use AI Copilot solver above. Type <b className="text-blue-400">help</b> for instructions, <b className="text-blue-400">clear</b> to clear.
               </div>
 
               {history.map((item) => (
                 <div key={item.id} className="space-y-1">
                   {/* Command Line Prompt */}
-                  <div className="flex items-center gap-2 text-slate-300 flex-wrap">
-                    <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
-                    <span className="text-slate-100 font-bold">{item.command}</span>
-                    <span className="text-[10px] text-slate-600 font-mono ml-auto">[{item.time}]</span>
+                  <div className="flex items-center gap-2 text-slate-700 flex-wrap dark:text-slate-300">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                    <span className="text-title font-bold">{item.command}</span>
+                    <span className="text-[10px] text-subtitle font-mono ml-auto dark:text-slate-600">[{item.time}]</span>
                   </div>
 
                   {/* Command Output */}
                   <pre className={`p-3 rounded-lg text-[11px] overflow-x-auto border font-mono whitespace-pre-wrap leading-relaxed ${
                     item.exitCode === 0
-                      ? 'bg-slate-950/90 text-slate-200 border-slate-900 shadow-inner'
+                      ? 'bg-slate-50 text-title border-slate-200 shadow-inner dark:bg-slate-950/90 dark:text-slate-200 dark:border-slate-900'
                       : 'bg-rose-950/30 text-rose-300 border-rose-900/50 shadow-inner'
                   }`}>
                     {item.output}
@@ -562,18 +583,18 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
               {/* Glowing Thinking & Execution Loader Block */}
               {isExecuting && (
                 <div className="space-y-1.5 animate-pulse my-2">
-                  <div className="flex items-center gap-2 text-slate-300 font-mono text-xs">
-                    <span className="text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
-                    <span className="text-blue-400 font-bold">{executingCmd || commandInput}</span>
+                  <div className="flex items-center gap-2 text-slate-700 font-mono text-xs dark:text-slate-300">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{serverUser}@{serverHost}:~$</span>
+                    <span className="text-blue-700 dark:text-blue-400 font-bold">{executingCmd || commandInput}</span>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-blue-300 font-mono text-xs flex items-center gap-3 shadow-lg glow-blue">
-                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin shrink-0" />
+                  <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-300 text-blue-900 font-mono text-xs flex items-center gap-3 shadow-lg shadow-blue-100 dark:bg-blue-950/40 dark:border-blue-500/40 dark:text-blue-300 dark:shadow-none dark:glow-blue">
+                    <Loader2 className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <span className="font-extrabold text-blue-400 tracking-wide uppercase text-[10px] block">
+                      <span className="font-extrabold text-blue-700 dark:text-blue-400 tracking-wide uppercase text-[10px] block">
                         ⚡ SSH COMMAND EXECUTING ON REMOTE SERVER...
                       </span>
-                      <span className="text-slate-200 text-[11px] font-semibold">
-                        Thinking & Fetching live response from <b className="text-blue-300 font-bold">{serverUser}@{serverHost}</b>...
+                      <span className="text-slate-800 text-[11px] font-semibold dark:text-slate-200">
+                        Thinking & Fetching live response from <b className="text-blue-700 dark:text-blue-300 font-bold">{serverUser}@{serverHost}</b>...
                       </span>
                     </div>
                   </div>
@@ -581,8 +602,8 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
               )}
 
               {/* Live Active Command Input Line */}
-              <div className="flex items-center gap-2 pt-2 text-slate-200 font-mono">
-                <span className="text-emerald-400 font-bold shrink-0">{serverUser}@{serverHost}:~$</span>
+              <div className="flex items-center gap-2 pt-2 text-title font-mono dark:text-slate-200">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">{serverUser}@{serverHost}:~$</span>
                 <input
                   ref={inputRef}
                   type="text"
@@ -591,14 +612,14 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                   onChange={(e) => setCommandInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={isExecuting ? 'Executing command on server...' : 'Type command (e.g. docker ps)...'}
-                  className="flex-1 bg-transparent text-slate-100 font-mono text-xs focus:outline-none border-none placeholder-slate-600"
+                  className="flex-1 bg-transparent text-title font-mono text-xs focus:outline-none border-none placeholder-slate-600 dark:text-slate-100 dark:placeholder-slate-600"
                 />
                 {isExecuting ? (
                   <Loader2 className="w-4 h-4 text-blue-500 animate-spin shrink-0" />
                 ) : (
                   <button
                     onClick={() => handleRunCommand()}
-                    className="p-1 text-slate-400 hover:text-emerald-400 transition"
+                    className="p-1 text-subtitle hover:text-emerald-500 transition dark:text-slate-400 dark:hover:text-emerald-400"
                     title="Run Command (Enter)"
                   >
                     <Send className="w-3.5 h-3.5" />
@@ -616,19 +637,19 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                   initial={{ x: 300, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: 300, opacity: 0 }}
-                  className="w-80 border-l border-slate-800 bg-[#090e1c] flex flex-col h-full font-sans text-xs overflow-y-auto shrink-0 shadow-2xl p-4 space-y-4"
+                  className="w-80 border-l theme-border bg-slate-50 flex flex-col h-full font-sans text-xs overflow-y-auto shrink-0 shadow-2xl p-4 space-y-4 dark:border-slate-800 dark:bg-[#090e1c]"
                 >
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                    <div className="flex items-center gap-2 font-bold text-slate-200 text-xs">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
+                  <div className="flex items-center justify-between pb-3 border-b theme-border dark:border-slate-800">
+                    <div className="flex items-center gap-2 font-bold text-title text-xs dark:text-slate-200">
+                      <Sparkles className="w-4 h-4 text-purple-700 dark:text-purple-400" />
                       <span>Problem ➔ Command Solver</span>
                     </div>
-                    <button onClick={() => setShowAiCopilot(false)} className="text-slate-500 hover:text-slate-300">
+                    <button onClick={() => setShowAiCopilot(false)} className="text-subtitle hover:text-title dark:text-slate-500 dark:hover:text-slate-300">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-slate-700 leading-relaxed dark:text-slate-400">
                     Click any problem below to automatically generate and execute the exact shell command on <b>{serverUser}@{serverHost}</b>:
                   </p>
 
@@ -637,20 +658,20 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                       <div
                         key={idx}
                         onClick={() => handleRunCommand(item.command)}
-                        className="p-3 rounded-xl card-bg-subtle border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group space-y-1.5"
+                        className="p-3 rounded-xl card-bg-subtle border theme-border hover:border-purple-500/50 transition cursor-pointer group space-y-1.5 dark:border-slate-800"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-[11px] text-purple-300 group-hover:text-purple-200">
+                          <span className="font-extrabold text-[11px] text-purple-700 group-hover:text-purple-800 dark:text-purple-300 dark:group-hover:text-purple-200">
                             {item.problem}
                           </span>
-                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold">
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20 font-bold">
                             {item.category}
                           </span>
                         </div>
-                        <code className="text-[10px] font-mono text-emerald-400 block truncate font-bold">
+                        <code className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 block truncate font-bold">
                           {item.command}
                         </code>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[10px] text-slate-700 dark:text-slate-400">
                           {item.description}
                         </p>
                       </div>
@@ -673,13 +694,13 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-slate-900/35 dark:bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="glass-panel w-full max-w-lg rounded-2xl border border-rose-500/50 bg-[#0c0406] shadow-2xl p-6 space-y-5 text-slate-100 font-sans"
+              className="glass-panel w-full max-w-lg rounded-2xl border border-rose-500/40 bg-white shadow-2xl p-6 space-y-5 text-title font-sans dark:border-rose-500/50 dark:bg-[#0c0406] dark:text-slate-100"
             >
               <div className="flex items-start justify-between border-b border-rose-900/50 pb-4">
                 <div className="flex items-center gap-3">
@@ -697,15 +718,15 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                 </div>
                 <button
                   onClick={() => { setSecurityRiskAlert(null); setPendingDangerousCmd(''); }}
-                  className="text-slate-500 hover:text-slate-300 transition"
+                  className="text-subtitle hover:text-title transition dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 font-mono text-xs space-y-1">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase block">Target Command Attempted:</span>
+                <div className="p-3 rounded-xl bg-slate-50 border theme-border font-mono text-xs space-y-1 dark:bg-slate-950/80 dark:border-slate-800">
+                  <span className="text-[10px] text-subtitle font-bold uppercase block dark:text-slate-500">Target Command Attempted:</span>
                   <code className="text-rose-400 font-bold text-xs break-all block">
                     {pendingDangerousCmd}
                   </code>
@@ -716,15 +737,15 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                   <p className="leading-relaxed">{securityRiskAlert.reason}</p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/40 text-xs text-amber-200 space-y-2 font-mono">
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-400/50 text-xs text-amber-800 space-y-2 font-mono dark:bg-amber-950/30 dark:border-amber-500/40 dark:text-amber-200">
                   <span className="font-extrabold text-amber-400 block uppercase text-[10px] tracking-wide">
                     🔐 ZERO-TRUST DIRECTIVE: NATIVE SERVER LOGIN REQUIRED
                   </span>
-                  <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
+                  <p className="text-[11px] text-subtitle font-sans leading-relaxed dark:text-slate-300">
                     D-OpsPilot AI web interface prohibits running destructive commands directly via API. To execute this dangerous command on <b>{serverUser}@{serverHost}</b>, please open your native terminal and log in directly:
                   </p>
                   
-                  <div className="p-2.5 rounded-lg bg-black border border-amber-500/30 text-amber-300 font-mono text-xs flex items-center justify-between gap-2">
+                  <div className="p-2.5 rounded-lg bg-white border border-amber-400/40 text-amber-700 font-mono text-xs flex items-center justify-between gap-2 dark:bg-black dark:border-amber-500/30 dark:text-amber-300">
                     <code className="truncate font-bold">
                       ssh -i ~/.ssh/id_rsa_no_pass {serverUser}@{serverHost}
                     </code>
@@ -758,4 +779,6 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       </AnimatePresence>
     </AnimatePresence>
   );
+
+  return createPortal(modal, document.body);
 };
