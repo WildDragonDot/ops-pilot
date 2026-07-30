@@ -1075,15 +1075,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </button>
                 )}
 
-                <div className="flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[9px]">
+                <div className="flex items-center p-0.5 rounded-lg card-bg-subtle border theme-border font-mono text-[9px]">
                   {(['ALL', 'INFO', 'OK', 'WARN', 'ERR'] as const).map(lvl => (
                     <button
                       key={lvl}
                       onClick={() => setLogFilter(lvl)}
                       className={`px-1.5 py-0.5 rounded-md font-bold transition cursor-pointer ${
                         logFilter === lvl
-                          ? 'bg-blue-600 text-white'
-                          : 'text-slate-400 hover:text-slate-200'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-subtitle hover:text-title'
                       }`}
                     >
                       {lvl}
@@ -1130,16 +1130,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div 
                 ref={logContainerRef}
                 onScroll={handleLogScroll}
-                className="p-3 rounded-lg bg-slate-950 text-slate-100 font-mono text-[10px] space-y-1.5 min-h-[220px] max-h-[320px] overflow-y-auto border border-slate-800 shadow-inner flex-1"
+                className="p-3.5 rounded-xl bg-[#070b14] text-slate-100 font-mono text-[10px] space-y-1.5 min-h-[220px] max-h-[320px] overflow-y-auto border border-slate-800 shadow-lg flex-1"
               >
                 {filteredLogs.length === 0 ? (
                   <div className="text-slate-500 text-center py-4">No logs matching filter level '{logFilter}'</div>
                 ) : (
                   <>
                     {filteredLogs.map((log) => (
-                      <div key={log.id} className="flex items-start gap-2">
-                        <span className="text-slate-500 shrink-0">[{log.time}]</span>
-                        <span className={`px-1 py-0.2 rounded text-[8px] font-extrabold shrink-0 ${
+                      <div key={log.id} className="flex items-start gap-2 leading-relaxed">
+                        <span className="text-cyan-400 font-bold shrink-0">[{log.time}]</span>
+                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-extrabold shrink-0 ${
                           log.level === 'OK'
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                             : log.level === 'ERR'
@@ -1150,7 +1150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         }`}>
                           {log.level}
                         </span>
-                        <span className="text-slate-200 leading-tight font-mono break-all">{log.message}</span>
+                        <span className="text-slate-200 font-mono break-all">{log.message}</span>
                       </div>
                     ))}
                     <div ref={logEndRef} />
