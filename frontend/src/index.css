@@ -348,6 +348,28 @@ textarea::placeholder,
   border-color: var(--border-color);
 }
 
+/* Social login buttons (Google, GitHub) — theme-aware */
+.theme-social-btn {
+  background-color: var(--bg-input);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.theme-social-btn:hover {
+  background-color: var(--bg-card-subtle);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+}
+
+/* Divider (OR text) background matches card */
+.theme-divider-bg {
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+}
+.theme-divider-line {
+  border-color: var(--border-color);
+}
+
 /* Alerts / step cards using custom vars */
 .theme-alert-cyan {
   background-color: var(--alert-cyan-bg);

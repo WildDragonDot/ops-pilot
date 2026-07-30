@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 
 export interface ToastNotification {
   id: string;
+  dbId?: string; // Database ID when persisted
   type: 'success' | 'warning' | 'danger' | 'info';
   title: string;
   message: string;
@@ -42,13 +43,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (data?.notifications?.length > 0) {
           const persisted: ToastNotification[] = data.notifications.map((n: any) => ({
             id: n.id,
+            dbId: n.id,
             type: n.type,
             title: n.title,
             message: n.message,
             timestamp: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             read: n.read,
             persisted: true,
-            hideToast: true
+            hideToast: true // Hide initial DB history from floating toast popup
           }));
           setNotifications(persisted);
           setUnreadCount(data.unreadCount || 0);
@@ -71,45 +73,50 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setNotifications(prev => [newToast, ...prev.slice(0, 19)]);
     setUnreadCount(c => c + 1);
 
+    // Do not persist connection health pings to DB
+    const isSystemStatus = toast.title?.toLowerCase().includes('live stream') || toast.title?.toLowerCase().includes('connected');
+
     // Persist to DB if authenticated (fire-and-forget)
-    if (token) {
+    if (token && !isSystemStatus) {
       persistNotification({ type: toast.type, title: toast.title, message: toast.message })
         .then(result => {
           if (result?.notification) {
-            // Replace temp ID with real DB id
+            // Keep in-memory id unchanged so setTimeout timer stays valid, attach dbId for API
             setNotifications(prev =>
-              prev.map(n => n.id === id ? { ...n, id: result.notification.id, persisted: true } : n)
+              prev.map(n => n.id === id ? { ...n, dbId: result.notification.id, persisted: true } : n)
             );
           }
         })
         .catch(() => {});
     }
 
-    // Auto-dismiss in-memory toast after 5 seconds
+    // Auto-dismiss floating toast popup after 3.5 seconds
     setTimeout(() => {
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, hideToast: true } : n));
-    }, 5000);
+    }, 3500);
   }, [token]);
 
   const removeNotification = useCallback((id: string) => {
     setNotifications(prev => {
-      const n = prev.find(n => n.id === id);
-      // If persisted, delete from DB too
-      if (n?.persisted && token) {
-        deleteNotificationApi(id).catch(() => {});
+      const n = prev.find(item => item.id === id || item.dbId === id);
+      const dbIdToDelete = n?.dbId;
+      if (n?.persisted && token && dbIdToDelete) {
+        deleteNotificationApi(dbIdToDelete).catch(() => {});
       }
-      return prev.filter(n => n.id !== id);
+      return prev.filter(item => item.id !== id && item.dbId !== id);
     });
   }, [token]);
 
   const markRead = useCallback((id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+    setNotifications(prev => {
+      const n = prev.find(item => item.id === id || item.dbId === id);
+      const dbIdToMark = n?.dbId;
+      if (token && dbIdToMark) {
+        markNotificationRead(dbIdToMark).catch(() => {});
+      }
+      return prev.map(item => (item.id === id || item.dbId === id) ? { ...item, read: true } : item);
+    });
     setUnreadCount(c => Math.max(0, c - 1));
-    if (token) {
-      markNotificationRead(id).catch(() => {});
-    }
   }, [token]);
 
   const markAllRead = useCallback(() => {
