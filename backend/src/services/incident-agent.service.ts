@@ -194,7 +194,8 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
   }
 
   const serverHost = (project as any)?.serverHost?.trim();
-  const gitUrl = (project as any)?.gitUrl ? (project as any).gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot';
+  const rawGitUrl = (project as any)?.gitUrl?.trim() || '';
+  const gitUrl = rawGitUrl ? rawGitUrl.replace('https://github.com/', '') : '';
   const gitBranch = (project as any)?.gitBranch || 'main';
 
   let effectiveRootCause = scenario.rootCause;
@@ -227,14 +228,14 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
       const dirs = await listRemoteServerDirectories({ host: serverHost, user: 'ubuntu', port: 22 }, '/home/ubuntu');
       effectiveRootCause = `Remote Server Project Discovery Completed (${serverHost}): Discovered ${dirs.length} active application/project root directories on host:\n` +
         dirs.map((d, i) => `  ${i + 1}. 📁 ${d}`).join('\n') +
-        `\n\nYou can set target application directory path in Project Setup to scope OpsPilot AI to any specific folder.`;
+        `\n\nYou can set target application directory path in Project Setup to scope D-OpsPilot AI to any specific folder.`;
       approvalTitle = `Target Remote Server Application Directory (${serverHost})`;
       approvalDesc = `Target one of the discovered application directories on remote host to scope monitoring.`;
       approvalCommands = dirs.slice(0, 5).map(d => `cd "${d}" && ls -la`);
     } catch (e) {
       effectiveRootCause = `Discovered 3 active project root directories on remote server (${serverHost}): /home/ubuntu/finance-lock, /var/www, /opt.`;
     }
-  } else if (!serverHost) {
+  } else if (!serverHost && gitUrl) {
     effectiveRootCause = `SSH Server Host is NOT configured in workspace settings. Operating in GitHub AST Code Audit Mode. Analyzed repository (${gitUrl}): Identified hardcoded JWT_SECRET requirement fallback default in backend/src/services/auth.service.ts. Attach an SSH Server Host in Settings for live container & server diagnostics.`;
     approvalTitle = 'Purge Insecure JWT Secret Fallback & Enforce Env Requirement';
     approvalDesc = 'Replace hardcoded fallback string in auth.service.ts with process.env.JWT_SECRET requirement check and push commit to remote main.';
@@ -244,6 +245,14 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
       'git push origin main'
     ];
     approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
+  } else if (!serverHost && !gitUrl) {
+    effectiveRootCause = `Workspace Connection Setup Required: Neither SSH Server Host nor GitHub Repository URL is configured for ${project.name}. Attach a GitHub repository URL or Server SSH Host in Project Settings.`;
+    approvalTitle = 'Configure Workspace Connection Credentials';
+    approvalDesc = 'Attach GitHub PAT token or Server SSH host in Project Setup.';
+    approvalCommands = [
+      'echo "Open Project Setup to configure GitHub PAT or Server SSH Host"'
+    ];
+    approvalDiff = '';
   }
 
   const incidentTitle = (userPrompt && userPrompt.length > 5)
