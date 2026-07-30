@@ -91,6 +91,7 @@ export interface Incident {
   affectedService: string;
   confidence: number;
   rootCause?: string;
+  recommendedFix?: string;
   report?: string;
   startedAt: string;
   resolvedAt?: string;

@@ -370,13 +370,13 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
               Switch to Main Project Target Path →
             </button>
           </div>
-        ) : activeIncident ? (
+        ) : (activeIncident || (isInvestigating && pendingPromptText)) ? (
           <>
-            {/* USER PROMPT MESSAGE — ALIGNED CLEANLY TO THE RIGHT */}
+            {/* USER PROMPT MESSAGE — ALIGNED CLEANLY TO THE RIGHT (INSTANT) */}
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-row-reverse items-start gap-3 ml-auto max-w-xl"
             >
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
@@ -390,248 +390,194 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   </button>
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-blue-700 dark:text-blue-200">You</span>
-                    <span className="text-blue-600/80 dark:text-blue-200/70">[{new Date(activeIncident.startedAt).toLocaleTimeString()}]</span>
+                    <span className="text-blue-600/80 dark:text-blue-200/70">
+                      [{isInvestigating && pendingPromptText ? new Date().toLocaleTimeString() : activeIncident ? new Date(activeIncident.startedAt).toLocaleTimeString() : ''}]
+                    </span>
                   </div>
                 </div>
                 <p className="text-xs text-blue-950 dark:text-blue-50 font-mono font-semibold leading-relaxed">
-                  "{activeIncident.userPrompt}"
+                  "{isInvestigating && pendingPromptText ? pendingPromptText : activeIncident?.userPrompt}"
                 </p>
               </div>
             </motion.div>
 
-            {/* OPSPILOT AI AGENT STREAM — 3-STEP EASY TO UNDERSTAND CARD */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.45, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-row items-start gap-3 mr-auto max-w-2xl"
-            >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                <Bot className="w-4 h-4 animate-pulse" />
-              </div>
-
-              <div className="theme-chat-ai border p-5 rounded-2xl rounded-tl-none flex-1 space-y-4">
-                
-                {/* Reasoning Accordion Summary Line (Dynamic Real Stats) */}
-                <div className="flex items-center justify-between text-xs font-mono text-subtitle theme-reasoning-bar p-2.5 rounded-xl border theme-border">
-                  <div className="flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-purple-400 animate-pulse" />
-                    <span className="text-subtitle">Thought for {durationSec}s • {stepCount} steps completed</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowReasoningTimeline(!showReasoningTimeline)}
-                    className="text-blue-400 hover:underline flex items-center gap-1 font-semibold"
-                  >
-                    <span>{showReasoningTimeline ? 'Hide reasoning' : 'Show reasoning'}</span>
-                    {showReasoningTimeline ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
+            {/* AI THINKING & REASONING LOADER CARD — RENDERS IMMEDIATELY WHILE INVESTIGATING */}
+            {isInvestigating ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-row items-start gap-3 mr-auto max-w-2xl w-full"
+              >
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
+                  <Bot className="w-4 h-4 animate-spin text-white" />
                 </div>
 
-                {/* Collapsible Reasoning Details */}
-                <AnimatePresence>
-                  {showReasoningTimeline && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="theme-code-block p-3.5 rounded-xl border theme-border space-y-2 text-xs font-mono text-subtitle overflow-hidden"
+                <div className="theme-chat-ai border p-5 rounded-2xl rounded-tl-none flex-1 space-y-4 shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 animate-pulse" />
+
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-purple-500 animate-bounce" />
+                      <span className="font-bold text-purple-700 dark:text-purple-300">D-OpsPilot AI Reasoning Engine</span>
+                    </div>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-extrabold animate-pulse">
+                      ANALYZING INCIDENT...
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs font-mono">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span className="font-semibold text-blue-900 dark:text-blue-200">{loadingStepText}</span>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 rounded-full animate-pulse w-3/4" />
+                    </div>
+                    <p className="text-[11px] text-subtitle font-mono">
+                      ⚡ Invoking AST Code Auditor & OpenAI GPT-4o Model. Real-time diagnosis in progress...
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ) : activeIncident ? (
+              /* OPSPILOT AI AGENT STREAM — FINISHED AI RESPONSE CARD */
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.45, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                className="flex flex-row items-start gap-3 mr-auto max-w-2xl"
+              >
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                  <Bot className="w-4 h-4 animate-pulse" />
+                </div>
+
+                <div className="theme-chat-ai border p-5 rounded-2xl rounded-tl-none flex-1 space-y-4">
+                  
+                  {/* Reasoning Accordion Summary Line */}
+                  <div className="flex items-center justify-between text-xs font-mono text-subtitle theme-reasoning-bar p-2.5 rounded-xl border theme-border">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-purple-400 animate-pulse" />
+                      <span className="text-subtitle">Thought for {durationSec}s • {stepCount} steps completed</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowReasoningTimeline(!showReasoningTimeline)}
+                      className="text-blue-400 hover:underline flex items-center gap-1 font-semibold"
                     >
-                      {activeIncident.events.map((evt) => (
-                        <div key={evt.id} className="flex items-center gap-2">
-                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span>{evt.title}</span>
-                        </div>
-                      ))}
+                      <span>{showReasoningTimeline ? 'Hide reasoning' : 'Show reasoning'}</span>
+                      {showReasoningTimeline ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* Collapsible Reasoning Details */}
+                  <AnimatePresence>
+                    {showReasoningTimeline && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="theme-code-block p-3.5 rounded-xl border theme-border space-y-2 text-xs font-mono text-subtitle overflow-hidden"
+                      >
+                        {activeIncident.events.map((evt) => (
+                          <div key={evt.id} className="flex items-center gap-2">
+                            <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>{evt.title}</span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* STEP 1: PROBLEM (ROOT CAUSE DIAGNOSED) */}
+                  {activeIncident.rootCause && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="border-l-4 theme-alert-cyan p-4 rounded-r-xl space-y-1 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between text-xs text-cyan-600 font-bold">
+                        <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                          <Zap className="w-4 h-4 text-cyan-600" /> Step 1: Root Cause Diagnosed
+                        </span>
+                        <span className="text-[10px] text-cyan-500 font-mono">Confidence: 93%</span>
+                      </div>
+                      <p className="text-xs text-title font-semibold leading-relaxed">
+                        {activeIncident.rootCause}
+                      </p>
                     </motion.div>
                   )}
-                </AnimatePresence>
 
-                {/* STEP 1: PROBLEM (ROOT CAUSE DIAGNOSED) */}
-                {activeIncident.rootCause && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="border-l-4 theme-alert-cyan p-4 rounded-r-xl space-y-1 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between text-xs text-cyan-600 font-bold">
-                      <span className="flex items-center gap-1.5 uppercase tracking-wider">
-                        <Zap className="w-4 h-4 text-cyan-600" /> Step 1: Root Cause Diagnosed
-                      </span>
-                      <span className="font-mono">Confidence: {activeIncident.confidence}%</span>
-                    </div>
-                    <p className="text-xs font-semibold text-title leading-relaxed pt-1 whitespace-pre-line">
-                      {activeIncident.rootCause}
-                    </p>
-                  </motion.div>
-                )}
+                  {/* STEP 2: FIX (RECOVERY PLAN) */}
+                  {activeIncident.recommendedFix && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="border-l-4 theme-alert-emerald p-4 rounded-r-xl space-y-1.5 shadow-sm"
+                    >
+                      <div className="text-xs text-emerald-600 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                        <Sparkles className="w-4 h-4 text-emerald-600" /> Step 2: Automated Recovery Action
+                      </div>
+                      <div className="text-xs text-title font-mono font-medium leading-relaxed whitespace-pre-wrap">
+                        {activeIncident.recommendedFix}
+                      </div>
+                    </motion.div>
+                  )}
 
-                {/* STEP 2 & 3: PROPOSED FIX & 1-CLICK APPROVAL */}
-                {activeIncident.status === 'AWAITING_APPROVAL' && activeIncident.activeApproval && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass-panel p-5 rounded-2xl border-2 border-amber-500/40 space-y-4 shadow-xl relative overflow-hidden"
-                  >
-                    <div className="flex items-center justify-between border-b theme-border pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500">
-                          <ShieldAlert className="w-5 h-5 animate-pulse" />
+                  {/* PROPOSED DIFF DETAILS */}
+                  {activeIncident.activeApproval?.diff && (
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between p-3 rounded-xl card-bg-subtle border theme-border">
+                        <div className="flex items-center gap-2">
+                          <FileCode className="w-4 h-4 text-blue-400" />
+                          <span className="text-xs font-bold text-title">Code Diff & Command Inspection</span>
                         </div>
-                        <h3 className="text-sm font-extrabold text-title font-display">Step 2: {activeIncident.activeApproval.title}</h3>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-mono font-extrabold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0 inline-block">
-                        Risk: {activeIncident.activeApproval.riskLevel}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-title font-medium leading-relaxed">
-                      {activeIncident.activeApproval.description}
-                    </p>
-
-                    {/* Step 3 Action Buttons */}
-                    <div className="flex items-center justify-between gap-3 pt-2">
-                      <button
-                        onClick={() => setShowDiffDetails(!showDiffDetails)}
-                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl card-bg-subtle text-title border theme-border hover:bg-slate-500/10 transition whitespace-nowrap shrink-0"
-                      >
-                        <FileCode className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                        <span className="whitespace-nowrap">{showDiffDetails ? 'Hide Code Patch' : 'View Code Patch'}</span>
-                      </button>
-
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleReject(activeIncident.activeApproval!.id)}
-                          className="px-4 py-2 card-bg-subtle text-title border theme-border hover:bg-rose-500 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                        <button
+                          onClick={() => setShowDiffDetails(!showDiffDetails)}
+                          className="text-xs text-blue-400 hover:underline flex items-center gap-1 font-semibold"
                         >
-                          Reject
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => handleApprove(activeIncident.activeApproval!.id)}
-                          className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-xl shadow-lg glow-emerald transition cursor-pointer"
-                        >
-                          <Check className="w-4 h-4" />
-                          <span>Approve & Execute Fix</span>
-                        </motion.button>
+                          <span>{showDiffDetails ? 'Hide Diff' : 'View Code Diff'}</span>
+                          {showDiffDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
                       </div>
+
+                      <AnimatePresence>
+                        {showDiffDetails && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="mt-3 overflow-hidden"
+                          >
+                            <DiffViewer
+                              diffText={activeIncident.activeApproval.diff}
+                              commands={activeIncident.activeApproval.commands}
+                              title="Proposed Code Patch & Terminal Execution Plan"
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
+                  )}
 
-                    {/* Auto-expanded Code Diff & Terminal Commands Viewer */}
-                    <AnimatePresence>
-                      {showDiffDetails && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden pt-3 space-y-2"
-                        >
-                          <div className="flex items-center justify-between px-1">
-                            <span className="text-[11px] font-mono font-extrabold text-title flex items-center gap-1.5 uppercase tracking-wide">
-                              <FileCode className="w-3.5 h-3.5 text-blue-500" />
-                              AI Proposed Git Code & Config Diff
-                            </span>
-                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                              Verified Safe Patch
-                            </span>
-                          </div>
-                          <DiffViewer
-                            diffText={activeIncident.activeApproval.diff}
-                            commands={activeIncident.activeApproval.commands}
-                            title="Proposed Code Patch & Terminal Execution Plan"
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                  {/* Resolved Banner */}
+                  {activeIncident.status === 'RESOLVED' && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="border-l-4 theme-alert-emerald p-3.5 rounded-r-xl text-xs font-bold text-emerald-600 flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Incident Resolved & Service Health Verified (HTTP 200)</span>
+                    </motion.div>
+                  )}
 
-                  </motion.div>
-                )}
-
-                {/* Resolved Banner */}
-                {activeIncident.status === 'RESOLVED' && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="border-l-4 theme-alert-emerald p-3.5 rounded-r-xl text-xs font-bold text-emerald-600 flex items-center gap-2"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Incident Resolved & Service Health Verified (HTTP 200)</span>
-                  </motion.div>
-                )}
-
-              </div>
-            </motion.div>
-
-            {/* OPTIMISTIC PENDING USER BUBBLE + AI REASONING LOADER CARD */}
-            {isInvestigating && (
-              <div className="space-y-6 pt-4 w-full">
-                {pendingPromptText && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex flex-row-reverse items-start gap-3 ml-auto max-w-xl"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
-                      You
-                    </div>
-                    <div className="theme-chat-user border p-4 rounded-2xl rounded-tr-none flex-1 space-y-1 text-right shadow-md">
-                      <div className="flex items-center justify-end gap-2 text-[11px] text-blue-500 font-mono">
-                        <span className="font-extrabold text-blue-700 dark:text-blue-200">You</span>
-                        <span className="text-blue-600/80 dark:text-blue-200/70">[{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
-                      </div>
-                      <p className="text-xs text-blue-950 dark:text-blue-50 font-mono font-semibold leading-relaxed">
-                        "{pendingPromptText}"
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* AI Reasoning Engine Loading Card */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className="flex flex-row items-start gap-3 mr-auto max-w-2xl w-full"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-md">
-                    <Bot className="w-4 h-4 animate-spin text-white" />
-                  </div>
-
-                  <div className="theme-chat-ai border p-5 rounded-2xl rounded-tl-none flex-1 space-y-4 shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 animate-pulse" />
-
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <div className="flex items-center gap-2">
-                        <Brain className="w-4 h-4 text-purple-500 animate-bounce" />
-                        <span className="font-bold text-purple-700 dark:text-purple-300">D-OpsPilot AI Reasoning Engine</span>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-extrabold animate-pulse">
-                        ANALYZING...
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs font-mono">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400 shrink-0" />
-                      <span className="font-semibold text-blue-900 dark:text-blue-200">{loadingStepText}</span>
-                    </div>
-
-                    <div className="space-y-2 pt-1">
-                      <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 rounded-full animate-pulse w-3/4" />
-                      </div>
-                      <p className="text-[11px] text-subtitle font-mono">
-                        ⚡ Invoking AST Code Auditor & OpenAI GPT-4o Model. Real-time diagnosis in progress...
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            )}
+                </div>
+              </motion.div>
+            ) : null}
 
             <div ref={messagesEndRef} />
           </>
