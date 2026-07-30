@@ -17,8 +17,9 @@ function getIp(req: Request): string {
 export async function createIncident(req: AuthenticatedRequest, res: Response) {
   const { userPrompt, scenarioKey, projectId } = req.body;
   const user = req.user;
+  const githubToken = typeof req.headers['x-github-token'] === 'string' ? req.headers['x-github-token'] : undefined;
   try {
-    const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId);
+    const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId, githubToken);
 
     // Write audit log — incident investigation triggered
     if (user) {

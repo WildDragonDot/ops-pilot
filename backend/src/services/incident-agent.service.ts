@@ -241,7 +241,12 @@ export async function getIncidentById(id: string) {
   return normalizeIncidentForProject(inc);
 }
 
-export async function createAndRunIncident(userPrompt: string, scenarioKey: string = 'DATABASE_STOPPED', projectId?: string) {
+export async function createAndRunIncident(
+  userPrompt: string, 
+  scenarioKey: string = 'DATABASE_STOPPED', 
+  projectId?: string,
+  githubToken?: string
+) {
   const scenario = activeScenarios[scenarioKey] || activeScenarios['DATABASE_STOPPED'];
   const incidentId = `inc-${Date.now()}`;
   const approvalId = `appr-${Date.now()}`;
@@ -253,6 +258,21 @@ export async function createAndRunIncident(userPrompt: string, scenarioKey: stri
 
   if (!project) {
     throw new Error('A selected project is required before creating an incident.');
+  }
+
+  // Auto-clone or sync repository using user's GitHub PAT Token
+  if (project.gitUrl) {
+    try {
+      const { cloneOrSyncRepository } = await import('./repo-clone.service.js');
+      await cloneOrSyncRepository(
+        project.id,
+        project.gitUrl,
+        (project as any)?.gitBranch || 'main',
+        githubToken
+      );
+    } catch (e) {
+      logger.warn('Git repo sync notice in incident run:', e);
+    }
   }
 
   const serverHost = (project as any)?.serverHost?.trim();
