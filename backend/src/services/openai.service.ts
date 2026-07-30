@@ -343,7 +343,11 @@ Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
   };
 }
 
-export async function generateAIIncidentAnalysis(userPrompt: string, projectContext: any): Promise<{
+export async function generateAIIncidentAnalysis(
+  userPrompt: string, 
+  projectContext: any,
+  liveGitContext?: any
+): Promise<{
   title?: string;
   rootCause: string;
   confidence: number;
@@ -359,6 +363,16 @@ export async function generateAIIncidentAnalysis(userPrompt: string, projectCont
   }
 
   try {
+    const gitInfoStr = liveGitContext?.connected && liveGitContext?.repository
+      ? `Live GitHub API Data:
+  - Repository: ${liveGitContext.repository.fullName}
+  - Default Branch: ${liveGitContext.repository.defaultBranch}
+  - Current Target Branch: ${liveGitContext.targetBranch || 'main'}
+  - Total Branches: ${liveGitContext.branchesCount || 1}
+  - Open Issues: ${liveGitContext.repository.openIssues || 0}
+  - Recent Commits: ${JSON.stringify(liveGitContext.recentCommits || [])}`
+      : 'Live GitHub API Data: Repository not connected via API';
+
     const prompt = `You are D-OpsPilot AI Incident Commander & Senior DevOps Engineer. Analyze the user's prompt for the project and generate a realistic, high-quality incident diagnosis, root cause, recovery plan, shell commands, and code patch diff.
 
 Project Details:
@@ -367,8 +381,12 @@ Project Details:
 - Git Repository: ${projectContext?.gitUrl || 'N/A'}
 - Server Host: ${projectContext?.serverHost || 'N/A'}
 
+${gitInfoStr}
+
 User Input Prompt:
 "${userPrompt}"
+
+IMPORTANT: Answer the user's prompt specifically using the live GitHub / project details provided above. If they ask about commit counts, branches, code bugs, or configuration errors, answer directly and accurately in the rootCause field.
 
 Return a JSON object with EXACTLY these fields:
 {

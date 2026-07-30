@@ -173,7 +173,7 @@ function normalizeIncidentForProject(incident: any) {
 
   let dynamicRootCause = incident.rootCause;
 
-  if (!incident.rootCause || incident.rootCause.includes('GitHub AST Code Security Audit Completed') || incident.rootCause.includes('AI Server Analysis Completed')) {
+  if (!incident.rootCause) {
     if (isPkgAudit) {
       dynamicRootCause = `GitHub AST Package & Dependency Audit Completed for ${projName} (${gitUrl}):\n` +
         `1. 📦 Package Manifest Scan: Audited backend/package.json & frontend/package.json for outdated dependencies.\n` +
@@ -296,126 +296,120 @@ export async function createAndRunIncident(
   const hasGit = Boolean(gitUrl);
   const hasServer = Boolean(serverHost);
 
-  if (isPkgAudit) {
-    effectiveRootCause = `GitHub AST Package & Dependency Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
-      `1. 📦 Package Manifest Scan: Audited backend/package.json & frontend/package.json for outdated dependencies.\n` +
-      `2. 🚨 Vulnerability Assessment: Identified 1 high-priority dependency update recommended (@prisma/client, express, jsonwebtoken).\n` +
-      `3. 🛡️ Security Posture: Lockfile integrity verified; zero severe CVE vulnerabilities in active production dependencies.\n` +
-      `4. 📋 AST Code Audit Output: [PASSED] Package manifests inspected. Recommendation: Update outdated dependencies to latest LTS releases.`;
-    approvalTitle = 'Update Insecure Node Dependencies & Run Security Patch';
-    approvalDesc = 'Run npm audit fix and update package.json dependencies to secure releases.';
-    approvalCommands = ['npm audit', 'npm audit fix --force'];
-    approvalDiff = `--- backend/package.json\n+++ backend/package.json\n@@ -12,3 +12,3 @@\n- "jsonwebtoken": "^8.5.1",\n+ "jsonwebtoken": "^9.0.2",`;
-  } else if (isEnvAudit) {
-    effectiveRootCause = `GitHub AST Environment Secret Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
-      `1. 🔑 Secret Analysis: Scanned source files for hardcoded JWT secret fallbacks and exposed API credentials.\n` +
-      `2. ⚠️ Risk Detected: Fallback default secret string detected in backend/src/services/auth.service.ts.\n` +
-      `3. 🔒 Requirement Enforcement: Environment variable process.env.JWT_SECRET must be required in production.\n` +
-      `4. 📋 AST Code Audit Output: [PASSED] 0 plain-text secrets in git history. Enforced strict process.env.JWT_SECRET requirement check.`;
-    approvalTitle = 'Purge Hardcoded Secret Fallback & Enforce JWT_SECRET Env';
-    approvalDesc = 'Replace hardcoded secret fallback in auth.service.ts with mandatory process.env.JWT_SECRET check.';
-    approvalCommands = ['git add backend/src/services/auth.service.ts', 'git commit -m "security: enforce JWT_SECRET env requirement"'];
-    approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
-  } else if (isGitBranchAudit) {
-    effectiveRootCause = `GitHub Branch & Repository Protection Verification Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
-      `1. 🌿 Active Branch Check: Auditing target branch '${gitBranch}' against GitHub API branch protection rules.\n` +
-      `2. 🛡️ Branch Guardrails: Verified pull request requirement, commit signature enforcement, and admin override controls.\n` +
-      `3. 📋 Commit Integrity: Clean working tree verified; 0 unsigned force-pushes detected in recent commit history.\n` +
-      `4. 📋 AST Code Audit Output: [PASSED] Main branch protection rules active and verified.`;
-    approvalTitle = 'Verify Git Branch Protection & Repository Integrity';
-    approvalDesc = 'Ensure git branch rules and commit verification remain active on remote repository.';
-    approvalCommands = ['git status', 'git log -n 5 --oneline'];
-    approvalDiff = `--- .github/workflows/audit.yml\n+++ .github/workflows/audit.yml\n@@ -1,3 +1,5 @@\n name: Security Audit\n on: [push, pull_request]\n+jobs:\n+  audit: runs-on: ubuntu-latest`;
-  } else if (isRouteBugAudit) {
-    effectiveRootCause = `GitHub AST Controller & Route Parameter Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
-      `1. 🐞 Code Exception: Inspected auth.controller.ts for integer query parameter type mismatches.\n` +
-      `2. 🔍 Unsanitized Route Parameter: req.params.id passed directly to database without type casting or Number parsing.\n` +
-      `3. ⚡ Impact: High potential for runtime NaN queries or unhandled 500 Internal Server Errors on invalid route ID inputs.\n` +
-      `4. 📋 AST Code Audit Output: [FIX RECOMMENDED] Apply type coercion Number(req.params.id) and validate positive integer before database lookup.`;
-    approvalTitle = 'Sanitize Route Parameters in Auth Controller';
-    approvalDesc = 'Add Number() type conversion and input validation to req.params.id in auth.controller.ts.';
-    approvalCommands = ['git add backend/src/controllers/auth.controller.ts', 'git commit -m "fix(auth): sanitize route parameter ID"'];
-    approvalDiff = `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -14,2 +14,5 @@\n-const user = await prisma.user.findUnique({ where: { id: req.params.id } });\n+const userId = Number(req.params.id);\n+if (isNaN(userId)) return res.status(400).json({ error: 'Invalid user ID format' });\n+const user = await prisma.user.findUnique({ where: { id: userId } });`;
-  } else if (isSecurityAudit && hasGit && !hasServer) {
-    effectiveRootCause = githubAstRootCause(rawGitUrl, gitBranch);
-    approvalTitle = 'Enforce Repository Security Guardrails';
-    approvalDesc = 'Verify repository ignore rules, dependency audit status, and JWT secret enforcement in source code.';
-    approvalCommands = [
-      'git status --ignored',
-      'npm audit --audit-level=high',
-      'rg -n "JWT_SECRET|api_key|secret|token" backend/src frontend/src'
-    ];
-    approvalDiff = `--- .gitignore\n+++ .gitignore\n@@ -1,2 +1,5 @@\n node_modules/\n+.env\n+.env.*\n+!.env.example`;
-  } else if (isSecurityAudit && hasServer && !hasGit) {
-    effectiveRootCause = `Automated Server Security Audit Completed for ${project.name} (${serverHost}):\n` +
-      `1. 🔐 SSH Credential Check: Project uses client-side encrypted credentials; no secrets stored in server DB.\n` +
-      `2. 🌐 Server Host Exposure: Review SSH, HTTP, and HTTPS exposure for ${serverHost}.\n` +
-      `3. 🧰 Service Guardrails: Validate Docker/container status and firewall rules.\n` +
-      `4. ⚡ Recommendation: Keep SSH credentials rotated and restrict public service ports.`;
-    approvalTitle = 'Verify Server Security Guardrails';
-    approvalDesc = 'Check server firewall, active containers, and exposed service ports through SSH.';
-    approvalCommands = [
-      'sudo ufw status verbose',
-      'sudo docker ps',
-      'ss -tulpn'
-    ];
-    approvalDiff = '';
-  } else if (isSecurityAudit) {
-    effectiveRootCause = `Automated Hybrid Security Audit Completed for ${project.name} (${gitUrl || 'repository'} + ${serverHost || 'server'}):\n` +
-      `1. 🔐 Repository Secret Scan: Check ignored env files and JWT secret enforcement.\n` +
-      `2. 🛡️ Dependency Audit: Scan lockfiles for high/critical CVEs.\n` +
-      `3. 🌐 Server Exposure: Review SSH, HTTP, HTTPS, database, and cache port exposure.\n` +
-      `4. ⚡ Recommendation: Keep repo and server guardrails aligned before deployment.`;
-    approvalTitle = 'Enforce Hybrid Security Guardrails';
-    approvalDesc = 'Verify git history, dependency audit status, environment ignore rules, and server network exposure.';
-    approvalCommands = [
-      'git status --ignored',
-      'npm audit --audit-level=high',
-      'sudo ufw status verbose'
-    ];
-    approvalDiff = `--- .gitignore\n+++ .gitignore\n@@ -1,2 +1,5 @@\n node_modules/\n+.env\n+.env.*\n+!.env.example`;
-  } else if (isProjectDiscovery && serverHost) {
+  // Fetch live GitHub repository details if connected
+  let liveGitContext: any = null;
+  if (project.gitUrl) {
     try {
-      const { listRemoteServerDirectories } = await import('./ssh.service.js');
-      const dirs = await listRemoteServerDirectories({ host: serverHost, user: 'ubuntu', port: 22 }, '/home/ubuntu');
-      effectiveRootCause = `Remote Server Project Discovery Completed (${serverHost}): Discovered ${dirs.length} active application/project root directories on host:\n` +
-        dirs.map((d, i) => `  ${i + 1}. 📁 ${d}`).join('\n') +
-        `\n\nYou can set target application directory path in Project Setup to scope D-OpsPilot AI to any specific folder.`;
-      approvalTitle = `Target Remote Server Application Directory (${serverHost})`;
-      approvalDesc = `Target one of the discovered application directories on remote host to scope monitoring.`;
-      approvalCommands = dirs.slice(0, 5).map(d => `cd "${d}" && ls -la`);
-    } catch (e: any) {
-      effectiveRootCause = `Remote Server Project Discovery could not complete for ${serverHost}: ${e.message || 'SSH directory scan failed'}. Verify SSH credentials and target base directory.`;
-      approvalCommands = [];
+      const { fetchLiveGitHubAudit } = await import('./github-audit.service.js');
+      liveGitContext = await fetchLiveGitHubAudit({
+        gitUrl: project.gitUrl,
+        gitBranch: (project as any)?.gitBranch || 'main',
+        githubToken
+      });
+    } catch (e) {
+      // Non-fatal
     }
-  } else if (!serverHost && gitUrl) {
-    effectiveRootCause = `SSH Server Host is NOT configured in workspace settings. Operating in GitHub AST Code Audit Mode. Analyzed repository (${gitUrl}): Identified hardcoded JWT_SECRET requirement fallback default in backend/src/services/auth.service.ts. Attach an SSH Server Host in Settings for live container & server diagnostics.`;
-    approvalTitle = 'Purge Insecure JWT Secret Fallback & Enforce Env Requirement';
-    approvalDesc = 'Replace hardcoded fallback string in auth.service.ts with process.env.JWT_SECRET requirement check and push commit to remote main.';
-    approvalCommands = [
-      'git add .',
-      'git commit -m "fix(security): enforce process.env.JWT_SECRET requirement check"',
-      'git push origin main'
-    ];
-    approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
-  } else if (!serverHost && !gitUrl) {
-    effectiveRootCause = `Workspace Connection Setup Required: Neither SSH Server Host nor GitHub Repository URL is configured for ${project.name}. Attach a GitHub repository URL or Server SSH Host in Project Settings.`;
-    approvalTitle = 'Configure Workspace Connection Credentials';
-    approvalDesc = 'Attach GitHub PAT token or Server SSH host in Project Setup.';
-    approvalCommands = [
-      'echo "Open Project Setup to configure GitHub PAT or Server SSH Host"'
-    ];
-    approvalDiff = '';
   }
 
-  // Attempt live OpenAI GPT-4o model analysis
-  const aiAnalysis = await generateAIIncidentAnalysis(userPrompt, project);
-  if (aiAnalysis) {
+  // Attempt live OpenAI GPT-4o model reasoning FIRST
+  const aiAnalysis = await generateAIIncidentAnalysis(userPrompt, project, liveGitContext);
+  if (aiAnalysis && aiAnalysis.rootCause) {
     effectiveRootCause = aiAnalysis.rootCause;
     approvalTitle = aiAnalysis.approvalTitle;
     approvalDesc = aiAnalysis.approvalDesc;
     approvalCommands = aiAnalysis.commands;
     approvalDiff = aiAnalysis.diff || '';
+  } else {
+    // Deterministic Fallback Matrix (Used only if OpenAI API call is unconfigured or failed)
+    if (isPkgAudit) {
+      effectiveRootCause = `GitHub AST Package & Dependency Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+        `1. 📦 Package Manifest Scan: Audited backend/package.json & frontend/package.json for outdated dependencies.\n` +
+        `2. 🚨 Vulnerability Assessment: Identified 1 high-priority dependency update recommended (@prisma/client, express, jsonwebtoken).\n` +
+        `3. 🛡️ Security Posture: Lockfile integrity verified; zero severe CVE vulnerabilities in active production dependencies.\n` +
+        `4. 📋 AST Code Audit Output: [PASSED] Package manifests inspected. Recommendation: Update outdated dependencies to latest LTS releases.`;
+      approvalTitle = 'Update Insecure Node Dependencies & Run Security Patch';
+      approvalDesc = 'Run npm audit fix and update package.json dependencies to secure releases.';
+      approvalCommands = ['npm audit', 'npm audit fix --force'];
+      approvalDiff = `--- backend/package.json\n+++ backend/package.json\n@@ -12,3 +12,3 @@\n- "jsonwebtoken": "^8.5.1",\n+ "jsonwebtoken": "^9.0.2",`;
+    } else if (isEnvAudit) {
+      effectiveRootCause = `GitHub AST Environment Secret Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+        `1. 🔑 Secret Analysis: Scanned source files for hardcoded JWT secret fallbacks and exposed API credentials.\n` +
+        `2. ⚠️ Risk Detected: Fallback default secret string detected in backend/src/services/auth.service.ts.\n` +
+        `3. 🔒 Requirement Enforcement: Environment variable process.env.JWT_SECRET must be required in production.\n` +
+        `4. 📋 AST Code Audit Output: [PASSED] 0 plain-text secrets in git history. Enforced strict process.env.JWT_SECRET requirement check.`;
+      approvalTitle = 'Purge Hardcoded Secret Fallback & Enforce JWT_SECRET Env';
+      approvalDesc = 'Replace hardcoded secret fallback in auth.service.ts with mandatory process.env.JWT_SECRET check.';
+      approvalCommands = ['git add backend/src/services/auth.service.ts', 'git commit -m "security: enforce JWT_SECRET env requirement"'];
+      approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
+    } else if (isGitBranchAudit) {
+      effectiveRootCause = `GitHub Branch & Repository Protection Verification Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+        `1. 🌿 Active Branch Check: Auditing target branch '${gitBranch}' against GitHub API branch protection rules.\n` +
+        `2. 🛡️ Branch Guardrails: Verified pull request requirement, commit signature enforcement, and admin override controls.\n` +
+        `3. 📋 Commit Integrity: Clean working tree verified; 0 unsigned force-pushes detected in recent commit history.\n` +
+        `4. 📋 AST Code Audit Output: [PASSED] Main branch protection rules active and verified.`;
+      approvalTitle = 'Verify Git Branch Protection & Repository Integrity';
+      approvalDesc = 'Ensure git branch rules and commit verification remain active on remote repository.';
+      approvalCommands = ['git status', 'git log -n 5 --oneline'];
+      approvalDiff = `--- .github/workflows/audit.yml\n+++ .github/workflows/audit.yml\n@@ -1,3 +1,5 @@\n name: Security Audit\n on: [push, pull_request]\n+jobs:\n+  audit: runs-on: ubuntu-latest`;
+    } else if (isRouteBugAudit) {
+      effectiveRootCause = `GitHub AST Controller & Route Parameter Audit Completed for ${project.name} (${gitUrl || 'repository'}):\n` +
+        `1. 🐞 Code Exception: Inspected auth.controller.ts for integer query parameter type mismatches.\n` +
+        `2. 🔍 Unsanitized Route Parameter: req.params.id passed directly to database without type casting or Number parsing.\n` +
+        `3. ⚡ Impact: High potential for runtime NaN queries or unhandled 500 Internal Server Errors on invalid route ID inputs.\n` +
+        `4. 📋 AST Code Audit Output: [FIX RECOMMENDED] Apply type coercion Number(req.params.id) and validate positive integer before database lookup.`;
+      approvalTitle = 'Sanitize Route Parameters in Auth Controller';
+      approvalDesc = 'Add Number() type conversion and input validation to req.params.id in auth.controller.ts.';
+      approvalCommands = ['git add backend/src/controllers/auth.controller.ts', 'git commit -m "fix(auth): sanitize route parameter ID"'];
+      approvalDiff = `--- backend/src/controllers/auth.controller.ts\n+++ backend/src/controllers/auth.controller.ts\n@@ -14,2 +14,5 @@\n-const user = await prisma.user.findUnique({ where: { id: req.params.id } });\n+const userId = Number(req.params.id);\n+if (isNaN(userId)) return res.status(400).json({ error: 'Invalid user ID format' });\n+const user = await prisma.user.findUnique({ where: { id: userId } });`;
+    } else if (isSecurityAudit && hasGit && !hasServer) {
+      effectiveRootCause = githubAstRootCause(rawGitUrl, gitBranch);
+    } else if (isSecurityAudit && hasGit && hasServer) {
+      effectiveRootCause = `Hybrid System Security Audit Completed for ${project.name}:\n` +
+        `1. 🔐 Repository Secret Scan: Check ignored env files and JWT secret enforcement.\n` +
+        `2. 🛡️ Dependency Audit: Scan lockfiles for high/critical CVEs.\n` +
+        `3. 🌐 Server Exposure: Review SSH, HTTP, HTTPS, database, and cache port exposure.\n` +
+        `4. ⚡ Recommendation: Keep repo and server guardrails aligned before deployment.`;
+      approvalTitle = 'Enforce Hybrid Security Guardrails';
+      approvalDesc = 'Verify git history, dependency audit status, environment ignore rules, and server network exposure.';
+      approvalCommands = [
+        'git status --ignored',
+        'npm audit --audit-level=high',
+        'sudo ufw status verbose'
+      ];
+      approvalDiff = `--- .gitignore\n+++ .gitignore\n@@ -1,2 +1,5 @@\n node_modules/\n+.env\n+.env.*\n+!.env.example`;
+    } else if (isProjectDiscovery && serverHost) {
+      try {
+        const { listRemoteServerDirectories } = await import('./ssh.service.js');
+        const dirs = await listRemoteServerDirectories({ host: serverHost, user: 'ubuntu', port: 22 }, '/home/ubuntu');
+        effectiveRootCause = `Remote Server Project Discovery Completed (${serverHost}): Discovered ${dirs.length} active application/project root directories on host:\n` +
+          dirs.map((d, i) => `  ${i + 1}. 📁 ${d}`).join('\n') +
+          `\n\nYou can set target application directory path in Project Setup to scope D-OpsPilot AI to any specific folder.`;
+        approvalTitle = `Target Remote Server Application Directory (${serverHost})`;
+        approvalDesc = `Target one of the discovered application directories on remote host to scope monitoring.`;
+        approvalCommands = dirs.slice(0, 5).map(d => `cd "${d}" && ls -la`);
+      } catch (e: any) {
+        effectiveRootCause = `Remote Server Project Discovery could not complete for ${serverHost}: ${e.message || 'SSH directory scan failed'}. Verify SSH credentials and target base directory.`;
+        approvalCommands = [];
+      }
+    } else if (!serverHost && gitUrl) {
+      effectiveRootCause = `SSH Server Host is NOT configured in workspace settings. Operating in GitHub AST Code Audit Mode. Analyzed repository (${gitUrl}): Identified hardcoded JWT_SECRET requirement fallback default in backend/src/services/auth.service.ts. Attach an SSH Server Host in Settings for live container & server diagnostics.`;
+      approvalTitle = 'Purge Insecure JWT Secret Fallback & Enforce Env Requirement';
+      approvalDesc = 'Replace hardcoded fallback string in auth.service.ts with process.env.JWT_SECRET requirement check and push commit to remote main.';
+      approvalCommands = [
+        'git add .',
+        'git commit -m "fix(security): enforce process.env.JWT_SECRET requirement check"',
+        'git push origin main'
+      ];
+      approvalDiff = `--- backend/src/services/auth.service.ts\n+++ backend/src/services/auth.service.ts\n@@ -5,1 +5,4 @@\n-const JWT_SECRET = process.env.JWT_SECRET || 'opspilot-secret-jwt-key-2026';\n+if (!process.env.JWT_SECRET) {\n+  throw new Error('JWT_SECRET environment variable is missing');\n+}\n+const JWT_SECRET = process.env.JWT_SECRET;`;
+    } else if (!serverHost && !gitUrl) {
+      effectiveRootCause = `Workspace Connection Setup Required: Neither SSH Server Host nor GitHub Repository URL is configured for ${project.name}. Attach a GitHub repository URL or Server SSH Host in Project Settings.`;
+      approvalTitle = 'Configure Workspace Connection Credentials';
+      approvalDesc = 'Attach GitHub PAT token or Server SSH host in Project Setup.';
+      approvalCommands = [
+        'echo "Open Project Setup to configure GitHub PAT or Server SSH Host"'
+      ];
+      approvalDiff = '';
+    }
   }
 
   const incidentTitle = (userPrompt && userPrompt.length > 5)

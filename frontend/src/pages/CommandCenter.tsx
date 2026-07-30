@@ -127,7 +127,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         `3. 🔒 Requirement Enforcement: Environment variable process.env.JWT_SECRET must be required in production.\n` +
         `4. 📋 AST Code Audit Output: [PASSED] 0 plain-text secrets in git history. Enforced strict process.env.JWT_SECRET requirement check.`;
     }
-    if (lower.includes('branch') || lower.includes('main') || lower.includes('commit')) {
+    if (lower.includes('branch') || lower.includes('main protection') || lower.includes('branch guardrail')) {
       return `GitHub Branch & Repository Protection Verification Completed for ${project?.name || 'Repository Workspace'}:\n` +
         `1. 🌿 Active Branch Check: Auditing target branch main against GitHub API branch protection rules.\n` +
         `2. 🛡️ Branch Guardrails: Verified pull request requirement, commit signature enforcement, and admin override controls.\n` +
@@ -586,11 +586,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                       </span>
                       <span className="text-[10px] text-cyan-500 font-mono">Confidence: {activeIncident?.confidence || 98}%</span>
                     </div>
-                    {renderFormattedPoints(
-                      (activeIncident?.rootCause && !activeIncident.rootCause.includes('GitHub AST Code Security Audit Completed'))
-                        ? activeIncident.rootCause
-                        : getPromptFallbackRootCause(activeIncident?.userPrompt)
-                    )}
+                    {renderFormattedPoints(activeIncident?.rootCause || getPromptFallbackRootCause(activeIncident?.userPrompt))}
                   </motion.div>
 
                   {/* STEP 2: FIX (RECOVERY PLAN) */}
