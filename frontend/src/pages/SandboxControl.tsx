@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Play, RotateCcw, Activity, Server, Database, Cpu, Check, RefreshCw, Zap } from 'lucide-react';
 import { Project } from '../types';
 
+import { useOutletContext } from 'react-router-dom';
+
 interface SandboxControlProps {
   project: Project | null;
   onInjectFailure: (scenarioKey: string) => void;
@@ -16,6 +18,10 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
   onResetEnv,
   onNavigateTab
 }) => {
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [injectingKey, setInjectingKey] = useState<string | null>(null);
@@ -88,6 +94,24 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Vacant Path Banner */}
+      {isVacantPath && (
+        <div className="glass-panel p-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 space-y-3 text-center">
+          <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 font-mono uppercase tracking-wider">
+            0 Microservice Containers Deployed in Target Path: {activeTargetPath}
+          </h3>
+          <p className="text-xs text-subtitle max-w-lg mx-auto">
+            This target server folder contains no active microservices or container compose stacks. Failure injection is disabled for vacant target paths.
+          </p>
+          <button
+            onClick={() => outletCtx?.onSelectTargetPath?.('/home/ubuntu/finance-lock')}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            Switch to Active Microservice Stack (/home/ubuntu/finance-lock) →
+          </button>
+        </div>
+      )}
 
       {/* Active Outage Banner Notice (Optional Navigation) */}
       {activeOutageBanner && (

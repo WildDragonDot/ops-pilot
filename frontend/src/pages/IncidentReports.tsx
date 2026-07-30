@@ -4,12 +4,19 @@ import { Copy, Check, Download } from 'lucide-react';
 import { Incident } from '../types';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
+import { useOutletContext } from 'react-router-dom';
+
 interface IncidentReportsProps {
   incidents: Incident[];
 }
 
 export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) => {
-  const resolvedIncidents = incidents.filter(i => i.report);
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+
+  const filteredIncidents = isVacantPath ? [] : incidents;
+  const resolvedIncidents = filteredIncidents.filter(i => i.report);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(
     resolvedIncidents.length > 0 ? resolvedIncidents[0].id : null
   );
@@ -72,12 +79,30 @@ export const IncidentReports: React.FC<IncidentReportsProps> = ({ incidents }) =
               onClick={handleCopyReport}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-500" />}
-              <span>{copied ? 'Copied' : 'Copy Markdown'}</span>
+              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'Copied!' : 'Copy Markdown'}</span>
             </button>
           </div>
         )}
       </div>
+
+      {/* Vacant Path Banner */}
+      {isVacantPath && (
+        <div className="glass-panel p-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 space-y-3 text-center">
+          <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 font-mono uppercase tracking-wider">
+            0 Post-Mortem Reports in Target Path: {activeTargetPath}
+          </h3>
+          <p className="text-xs text-subtitle max-w-lg mx-auto">
+            This target server folder has no recorded incident outages or post-mortem analysis files. Switch back to the active microservice stack to view incident reports.
+          </p>
+          <button
+            onClick={() => outletCtx?.onSelectTargetPath?.('/home/ubuntu/finance-lock')}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            Switch to Active Microservice Stack (/home/ubuntu/finance-lock) →
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:sticky lg:top-6 space-y-2.5">

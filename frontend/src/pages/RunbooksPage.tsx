@@ -38,7 +38,7 @@ interface RunbooksPageProps {
 }
 
 export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
-  const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
   const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
   const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -227,9 +227,9 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
 
   const runbooks = isServerConfigured ? serverRunbooks : githubRunbooks;
 
-  const filteredRunbooks = selectedCategory === 'ALL'
-    ? runbooks
-    : runbooks.filter(r => r.category === selectedCategory);
+  const filteredRunbooks = isVacantPath 
+    ? [] 
+    : runbooks.filter(rb => selectedCategory === 'ALL' || rb.category === selectedCategory);
 
   const handleExecuteRunbook = async (rb: Runbook) => {
     setRunningId(rb.id);
@@ -296,7 +296,7 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold font-mono">
-              {isServerConfigured ? 'OpsPilot Automated Infrastructure Workflows' : '● REPOSITORY WORKFLOW AUTOMATIONS (GitHub AST Mode)'}
+              {isServerConfigured ? 'D-OpsPilot Automated Infrastructure Workflows' : '● REPOSITORY WORKFLOW AUTOMATIONS (GitHub AST Mode)'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-title tracking-tight">Runbook Automation Engine</h1>
@@ -323,6 +323,24 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
           ))}
         </div>
       </div>
+
+      {/* Vacant Path Banner */}
+      {isVacantPath && (
+        <div className="glass-panel p-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 space-y-3 text-center">
+          <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 font-mono uppercase tracking-wider">
+            0 Active Runbooks in Target Path: {activeTargetPath}
+          </h3>
+          <p className="text-xs text-subtitle max-w-lg mx-auto">
+            This target server folder contains no running Docker microservices or active runbook triggers. Switch back to the active microservice stack to run operational automation.
+          </p>
+          <button
+            onClick={() => outletCtx?.onSelectTargetPath?.('/home/ubuntu/finance-lock')}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            Switch to Active Microservice Stack (/home/ubuntu/finance-lock) →
+          </button>
+        </div>
+      )}
 
       {/* Runbooks Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

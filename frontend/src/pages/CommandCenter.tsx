@@ -33,13 +33,22 @@ import { DiffViewer } from '../components/DiffViewer';
 import { TerminalConsole } from '../components/TerminalConsole';
 import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
 
+import { useOutletContext } from 'react-router-dom';
+
 interface CommandCenterProps {
   incidents: Incident[];
   project?: Project | null;
   onRefreshIncidents: () => void;
 }
 
-export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project, onRefreshIncidents }) => {
+export const CommandCenter: React.FC<CommandCenterProps> = ({
+  incidents,
+  project,
+  onRefreshIncidents
+}) => {
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
+  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
+  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
   const mode = getProjectOperatingMode(project);
   const modeBadge = getModeBadgeInfo(mode);
   const [promptText, setPromptText] = useState<string>('');
@@ -266,12 +275,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
               onChange={(e) => setActiveIncidentId(e.target.value)}
               className="bg-slate-100 dark:bg-[#161b22] text-slate-900 dark:text-slate-100 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[180px] sm:max-w-[240px] truncate shadow-xs"
             >
-              {incidents.length === 0 && (
+              {(isVacantPath || incidents.length === 0) && (
                 <option value="" className="bg-white dark:bg-[#0d1117] text-slate-800 dark:text-slate-200">
-                  No Active Incident
+                  {isVacantPath ? '0 Incidents (Target Vacant)' : 'No Active Incident'}
                 </option>
               )}
-              {incidents.map(inc => (
+              {!isVacantPath && incidents.map(inc => (
                 <option key={inc.id} value={inc.id} className="bg-white dark:bg-[#0d1117] text-slate-800 dark:text-slate-200 py-1">
                   #{inc.id} — {inc.title}
                 </option>
@@ -320,7 +329,22 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
 
       {/* Clean Linear Conversation Stream */}
       <div className="flex-1 space-y-6 py-2">
-        {activeIncident ? (
+        {isVacantPath ? (
+          <div className="glass-panel p-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 space-y-3 text-center my-6">
+            <h3 className="text-sm font-bold text-amber-600 dark:text-amber-400 font-mono uppercase tracking-wider">
+              Target Path {activeTargetPath} is Vacant (0 Active Incidents)
+            </h3>
+            <p className="text-xs text-subtitle max-w-lg mx-auto">
+              No active outages or diagnostic traces are registered for this target server path. Switch back to the active microservice stack to inspect container logs & incident streams.
+            </p>
+            <button
+              onClick={() => outletCtx?.onSelectTargetPath?.('/home/ubuntu/finance-lock')}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+            >
+              Switch to Active Microservice Stack (/home/ubuntu/finance-lock) →
+            </button>
+          </div>
+        ) : activeIncident ? (
           <>
             {/* USER PROMPT MESSAGE — ALIGNED CLEANLY TO THE RIGHT */}
             <motion.div 
