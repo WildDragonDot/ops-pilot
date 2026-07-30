@@ -76,6 +76,41 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }, 2200);
     return () => clearInterval(interval);
   }, [isInvestigating]);
+
+  const [submittedPrompt, setSubmittedPrompt] = useState<string>('');
+
+  const renderFormattedPoints = (text: string) => {
+    if (!text) return null;
+
+    const rawPoints = text.split(/(?=\b[1-9]\.\s)/g).map(p => p.trim()).filter(Boolean);
+
+    if (rawPoints.length > 1) {
+      return (
+        <div className="space-y-2.5 pt-2">
+          {rawPoints.map((pt, idx) => {
+            const cleanText = pt.replace(/^[1-9]\.\s*/, '');
+            return (
+              <div key={idx} className="flex items-start gap-2.5 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-mono">
+                <span className="w-5 h-5 rounded-lg bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-mono text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                  {idx + 1}
+                </span>
+                <div className="flex-1 text-title font-medium leading-relaxed">
+                  {cleanText}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <p className="text-xs font-semibold text-title leading-relaxed pt-1.5 whitespace-pre-line font-mono">
+        {text}
+      </p>
+    );
+  };
+
   const [showDiffDetails, setShowDiffDetails] = useState<boolean>(false);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [copiedSlackReport, setCopiedSlackReport] = useState<boolean>(false);
@@ -198,6 +233,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
     try {
       setPendingPromptText(textToSend);
+      setSubmittedPrompt(textToSend);
       setPromptText('');
       setIsInvestigating(true);
 
@@ -396,7 +432,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                   </div>
                 </div>
                 <p className="text-xs text-blue-950 dark:text-blue-50 font-mono font-semibold leading-relaxed">
-                  "{isInvestigating && pendingPromptText ? pendingPromptText : activeIncident?.userPrompt}"
+                  "{pendingPromptText || submittedPrompt || activeIncident?.userPrompt}"
                 </p>
               </div>
             </motion.div>
@@ -503,9 +539,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                         </span>
                         <span className="text-[10px] text-cyan-500 font-mono">Confidence: 93%</span>
                       </div>
-                      <p className="text-xs text-title font-semibold leading-relaxed">
-                        {activeIncident.rootCause}
-                      </p>
+                      {renderFormattedPoints(activeIncident.rootCause)}
                     </motion.div>
                   )}
 
