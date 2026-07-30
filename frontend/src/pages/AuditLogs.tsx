@@ -24,7 +24,7 @@ interface AuditLogEntry {
   user: string;
   userEmail: string;
   action: string;
-  category: 'AUTH' | 'APPROVAL' | 'CODE_PATCH' | 'FAILURE_INJECTION' | 'SCAN';
+  category: 'AUTH' | 'INCIDENT' | 'APPROVAL' | 'CODE_PATCH' | 'FAILURE_INJECTION' | 'SCAN';
   target: string;
   ipAddress: string;
   status: 'SUCCESS' | 'WARNING' | 'FAILED';
@@ -168,7 +168,7 @@ export const AuditLogs: React.FC = () => {
             
             {/* Category Filter Pills */}
             <div className="flex items-center gap-1 overflow-x-auto p-1 rounded-xl card-bg-subtle border theme-border">
-              {['ALL', 'APPROVAL', 'SCAN', 'FAILURE_INJECTION', 'AUTH'].map(cat => (
+              {['ALL', 'INCIDENT', 'APPROVAL', 'SCAN', 'FAILURE_INJECTION', 'AUTH'].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}

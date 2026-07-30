@@ -1,10 +1,19 @@
 import { prisma } from '../services/db.service.js';
+function getRequestIp(req) {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    const firstForwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    return (firstForwarded?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || 'unknown').replace('::ffff:', '');
+}
 export async function getAuditLogs(req, res) {
     try {
         const userEmail = req.user?.email || 'admin@opspilot.ai';
         const userName = req.user?.name || 'Chandan Vishwakarma';
         const projectId = req.query.projectId;
+        const requestIp = getRequestIp(req);
         const incidentWhere = projectId ? { projectId } : {};
+        const scanWhere = projectId
+            ? { repository: { projectId } }
+            : {};
         const incidents = await prisma.incident.findMany({
             where: incidentWhere,
             include: { approvals: true, events: true },
@@ -12,6 +21,8 @@ export async function getAuditLogs(req, res) {
             take: 20
         });
         const scans = await prisma.repositoryScan.findMany({
+            where: scanWhere,
+            include: { repository: true },
             orderBy: { startedAt: 'desc' },
             take: 10
         });
@@ -30,9 +41,9 @@ export async function getAuditLogs(req, res) {
                 user: userName,
                 userEmail: userEmail,
                 action: 'TRIGGERED_INCIDENT_INVESTIGATION',
-                category: 'APPROVAL',
+                category: 'INCIDENT',
                 target: `Incident #${inc.id}`,
-                ipAddress: '192.168.1.104',
+                ipAddress: requestIp,
                 status: inc.status === 'RESOLVED' ? 'SUCCESS' : 'WARNING',
                 details: `Prompt: "${inc.userPrompt}" — Status: ${inc.status}`
             });
@@ -46,7 +57,7 @@ export async function getAuditLogs(req, res) {
                         action: appr.status === 'APPROVED' ? 'APPROVED_INCIDENT_FIX' : 'REJECTED_INCIDENT_FIX',
                         category: 'APPROVAL',
                         target: `Fix #${appr.id} (${inc.title})`,
-                        ipAddress: '192.168.1.104',
+                        ipAddress: requestIp,
                         status: appr.status === 'APPROVED' ? 'SUCCESS' : 'FAILED',
                         details: `Action: ${appr.actionType} — ${appr.title}`
                     });
@@ -64,10 +75,10 @@ export async function getAuditLogs(req, res) {
                     userEmail: 'agent@system.internal',
                     action: 'TRIGGERED_REPO_SCAN',
                     category: 'SCAN',
-                    target: repoName,
+                    target: s.repository?.name || repoName,
                     ipAddress: '127.0.0.1',
                     status: 'SUCCESS',
-                    details: `Target Branch: ${targetBranch} — Overall Score: ${s.overallScore}/100 Grade ${grade}`
+                    details: `Target Branch: ${s.repository?.defaultBranch || targetBranch} — Overall Score: ${s.overallScore}/100 Grade ${grade}`
                 });
             });
         }
@@ -80,7 +91,7 @@ export async function getAuditLogs(req, res) {
             action: 'USER_LOGIN',
             category: 'AUTH',
             target: project?.name || 'D-OpsPilot Workspace',
-            ipAddress: '192.168.1.104',
+            ipAddress: requestIp,
             status: 'SUCCESS',
             details: 'User authenticated via JWT Bearer Token Session.'
         });

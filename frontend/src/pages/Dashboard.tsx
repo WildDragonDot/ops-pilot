@@ -917,7 +917,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <span className="text-xl font-extrabold text-title">{realScore}</span>
                       <span className="text-[10px] text-subtitle font-bold">/ 100</span>
                     </div>
-                    <span className="px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[8px] font-bold font-mono">
+                    <span className="px-2.5 py-0.5 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/30 text-[10px] font-extrabold font-mono leading-none">
                       {realGrade}
                     </span>
                   </div>
@@ -999,11 +999,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onClick={() => navigate('/settings?tab=guardrails')}
 	            className="glass-panel p-3.5 rounded-xl theme-border border space-y-2 cursor-pointer hover:border-emerald-500/40 transition group self-start col-span-2"
           >
-            <div className="flex flex-col items-start gap-1 border-b theme-border pb-2">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono flex items-center gap-1">
+            <div className="flex items-center justify-between gap-2 border-b theme-border pb-2">
+              <span className="min-w-0 text-[9px] font-bold uppercase tracking-wider text-subtitle font-mono flex items-center gap-1">
                 <Lock className="w-3 h-3 text-emerald-500 shrink-0" /> <span>AI Safety Policies</span>
               </span>
-              <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold flex items-center gap-1">
+              <span className="shrink-0 text-[8px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-extrabold flex items-center gap-1">
                 ARMED <ExternalLink className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
               </span>
             </div>
