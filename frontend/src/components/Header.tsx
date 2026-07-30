@@ -109,15 +109,8 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="h-16 header-bg backdrop-blur-xl border-b px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 gap-3">
         
-        {/* Left Section: Project Switcher + Search Bar */}
+        {/* Left Section: Search Bar & Command Palette Trigger */}
         <div className="flex items-center gap-3 shrink-0">
-          <ProjectSwitcher
-            projects={projects}
-            activeProject={project}
-            onSelectProject={onSelectProject}
-            onOpenSetupModal={onOpenSetupModal}
-          />
-
           {/* Search Bar - Fixed width, no flex grow collision */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
