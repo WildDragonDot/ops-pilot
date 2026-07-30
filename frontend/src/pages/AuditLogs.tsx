@@ -38,9 +38,9 @@ interface AuditLogEntry {
 
 export const AuditLogs: React.FC = () => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; project?: any }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ec2-user/test-node-repo';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ec2-user/test-node-repo';
   const project = outletCtx?.project;
+  const activeTargetPath = outletCtx?.selectedTargetPath || project?.rootPath || '';
+  const isVacantPath = false;
   const isAdmin = useHasRole('ADMIN');
 
   const [searchTerm, setSearchTerm] = useState<string>('');

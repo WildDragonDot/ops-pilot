@@ -17,8 +17,8 @@ interface ApprovalsPageProps {
 
 export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project, onRefreshIncidents }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ec2-user/test-node-repo';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ec2-user/test-node-repo';
+  const activeTargetPath = outletCtx?.selectedTargetPath || project?.rootPath || '';
+  const isVacantPath = false;
 
   const mode = getProjectOperatingMode(project);
   const hasGitUrl = mode === 'GITHUB_ONLY' || mode === 'HYBRID_BOTH';

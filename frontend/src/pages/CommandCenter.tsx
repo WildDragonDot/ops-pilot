@@ -48,8 +48,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onRefreshIncidents
 }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (p: string) => void }>();
-  const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ec2-user/test-node-repo';
-  const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ec2-user/test-node-repo';
+  const activeTargetPath = outletCtx?.selectedTargetPath || project?.rootPath || '';
+  const isVacantPath = false;
   const mode = getProjectOperatingMode(project);
   const modeBadge = getModeBadgeInfo(mode);
   const [promptText, setPromptText] = useState<string>('');
