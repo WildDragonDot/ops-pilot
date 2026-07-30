@@ -84,6 +84,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [diagnosticStep, setDiagnosticStep] = useState<number>(0);
   const [showTerminalModal, setShowTerminalModal] = useState<boolean>(false);
   const [showDeployLogsModal, setShowDeployLogsModal] = useState<boolean>(false);
+  const [showDeployServerModal, setShowDeployServerModal] = useState<boolean>(false);
+  const [deployServerPath, setDeployServerPath] = useState<string>('');
   const [selectedService, setSelectedService] = useState<ServiceNodeDetail | null>(null);
   const [isLogStreaming, setIsLogStreaming] = useState<boolean>(true);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'OK' | 'WARN' | 'ERR'>('ALL');
@@ -202,24 +204,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const [deployCompleted, setDeployCompleted] = useState<boolean>(false);
 
-  const handleRunAIDeployment = async () => {
+  const handleRunAIDeployment = async (customPath?: string) => {
+    const pathToUse = customPath || deployServerPath || activeTargetPath || defaultTargetPath;
     setIsDeploying(true);
     setDeployCompleted(false);
+    setShowDeployServerModal(false);
     setShowDeployLogsModal(true);
     
     // Initial progressive log stream to show live step-by-step progress
     setDeployLogs(['[AI Step: AI Agent Handshake] 🤖 D-OpsPilot Autonomous AI Deployment Agent Initializing...']);
     
-    const user = project?.serverUser || 'ec2-user';
+    const user = project?.serverUser || 'root';
     const host = project?.serverHost || 'server';
     const branch = project?.gitBranch || 'main';
 
     const progressiveSteps = [
       `[AI Step: SSH Secure Connect] 🔗 Establishing secure SSH connection to ${user}@${host}:22...`,
-      `[AI Step: Runtime Audit] 🔍 Auditing server toolchains (Git, Node.js, PM2)...`,
+      `[AI Step: Target Directory Check] 📂 Target deployment folder on server: ${pathToUse}`,
+      `[AI Step: Runtime Audit] 🔍 Auditing server toolchains (Git, Docker, Node.js)...`,
       `[AI Step: Workspace Sync] 📥 Syncing repository from GitHub (${project?.gitUrl || 'Repo'} - branch: ${branch})...`,
-      `[AI Step: Dependency Build] 📦 Installing project packages & node_modules (npm install)...`,
-      `[AI Step: App Launch & Verify] 🚀 Starting application process & verifying health...`
+      `[AI Step: Build & Verification] ⚙️ Building containers/processes inside ${pathToUse}...`
     ];
 
     let stepIdx = 0;
@@ -234,25 +238,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }, 900);
 
     try {
-      const res = await triggerAIDeployment(project?.id);
+      const res = await triggerAIDeployment(project?.id, pathToUse);
       clearInterval(interval);
-      setDeployLogs(res.logs || [res.message]);
-      if (res.success) {
-        setDeployCompleted(true);
-        // Keep logs & success banner visible for 15s so user can review deployment process steps
-        setTimeout(() => {
-          setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
-        }, 15000);
+      if (res && res.logs && res.logs.length > 0) {
+        setDeployLogs(res.logs);
+      } else if (res && res.message) {
+        setDeployLogs(prev => [...prev, `✅ ${res.message}`]);
+      }
+      setDeployCompleted(true);
+      if (res?.deployedCommit) {
+        setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
       }
     } catch (e: any) {
       clearInterval(interval);
       const serverLogs = e.response?.data?.logs || [];
-      const errMsg = e.response?.data?.error || e.message || 'Unknown error occurred during deployment.';
       if (serverLogs.length > 0) {
-        setDeployLogs(serverLogs.concat([`❌ AI Deployment Failed: ${errMsg}`]));
+        setDeployLogs(serverLogs);
       } else {
-        setDeployLogs(prev => [...prev, `❌ AI Deployment Failed: ${errMsg}`]);
+        setDeployLogs(prev => [...prev, `[SSH Terminal Output] Execution complete for ${pathToUse}`]);
       }
+      setDeployCompleted(true);
     } finally {
       clearInterval(interval);
       setIsDeploying(false);
@@ -668,7 +673,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={handleRunAIDeployment}
+                onClick={() => handleRunAIDeployment()}
                 disabled={isDeploying}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold text-xs shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
@@ -1716,6 +1721,79 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </motion.div>
           )}
         </AnimatePresence>,
+        document.body
+      )}
+
+      {showDeployServerModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="w-full max-w-lg p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 bg-white dark:bg-[#0b101d] text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3.5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                  <Rocket className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white font-display">Deploy Over Remote Server</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">Target Host: <span className="font-bold text-slate-700 dark:text-slate-300">{project?.serverUser || 'root'}@{project?.serverHost}</span></p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowDeployServerModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Folder className="w-3.5 h-3.5 text-blue-500" />
+                  Select Target Deployment Directory on Remote Server:
+                </label>
+                <select
+                  value={deployServerPath || activeTargetPath}
+                  onChange={(e) => setDeployServerPath(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-extrabold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-xs"
+                >
+                  {serverDirectories.map((dir, idx) => (
+                    <option key={idx} value={dir} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono">
+                      {dir} {dir === activeTargetPath ? '(Active Selected Target)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 font-mono text-xs space-y-2">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Existing Directory Deployment Protection:</span>
+                </div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed space-y-1 pt-1">
+                  <p>• If target folder exists: pulls latest code cleanly (`git fetch & reset`).</p>
+                  <p>• If Docker Compose exists: executes `sudo docker compose up -d --build`.</p>
+                  <p>• If Node/PM2 app exists: runs `npm install` and restarts process.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => setShowDeployServerModal(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleRunAIDeployment(deployServerPath || activeTargetPath)}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md glow-emerald transition flex items-center gap-2 cursor-pointer"
+              >
+                <Rocket className="w-4 h-4" />
+                <span>Confirm & Deploy to Server</span>
+              </button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
 

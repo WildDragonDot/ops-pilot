@@ -7,9 +7,10 @@ set -e
 cleanup() {
     echo ""
     echo "Stopping OpsPilot AI services..."
-    # Kill all child jobs running in background
     trap - SIGINT SIGTERM EXIT
-    kill 0 2>/dev/null
+    pkill -P $$ 2>/dev/null || true
+    lsof -ti :5080 | xargs kill -9 2>/dev/null || true
+    lsof -ti :3000 | xargs kill -9 2>/dev/null || true
     exit 0
 }
 

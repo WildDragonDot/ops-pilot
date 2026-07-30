@@ -529,7 +529,7 @@ export async function fetchDeploymentGap(projectId?: string): Promise<{
   return apiFetch(`${API_BASE}/projects/${projectId}/deploy-gap`, { headers: getAuthHeaders(projectId) });
 }
 
-export async function triggerAIDeployment(projectId?: string): Promise<{
+export async function triggerAIDeployment(projectId?: string, targetPath?: string): Promise<{
   success: boolean;
   message: string;
   deployedCommit: string;
@@ -539,6 +539,6 @@ export async function triggerAIDeployment(projectId?: string): Promise<{
   return apiFetch(`${API_BASE}/projects/ai-deploy`, {
     method: 'POST',
     headers: getAuthHeaders(projectId),
-    body: JSON.stringify({ projectId })
+    body: JSON.stringify({ projectId, targetPath })
   });
 }

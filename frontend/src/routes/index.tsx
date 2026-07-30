@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Cpu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Project, Scan, Incident } from '../types';
@@ -19,9 +20,9 @@ const ProjectSelectionPage = lazy(() => import('../pages/ProjectSelectionPage').
 const RepoAuditor = lazy(() => import('../pages/RepoAuditor').then(m => ({ default: m.RepoAuditor })));
 const CommandCenter = lazy(() => import('../pages/CommandCenter').then(m => ({ default: m.CommandCenter })));
 const ApprovalsPage = lazy(() => import('../pages/ApprovalsPage').then(m => ({ default: m.ApprovalsPage })));
-const IncidentReports = lazy(() => import('../pages/IncidentReports').then(m => ({ default: m.IncidentReports })));
 const RunbooksPage = lazy(() => import('../pages/RunbooksPage').then(m => ({ default: m.RunbooksPage })));
 const AuditLogs = lazy(() => import('../pages/AuditLogs').then(m => ({ default: m.AuditLogs })));
+const IncidentReports = lazy(() => import('../pages/IncidentReports').then(m => ({ default: m.IncidentReports })));
 const SandboxControl = lazy(() => import('../pages/SandboxControl').then(m => ({ default: m.SandboxControl })));
 const SettingsPage = lazy(() => import('../pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -29,9 +30,83 @@ const RegisterPage = lazy(() => import('../pages/RegisterPage').then(m => ({ def
 const ProjectSetupModal = lazy(() => import('../components/ProjectSetupModal').then(m => ({ default: m.ProjectSetupModal })));
 
 function RouteFallback() {
+  const [loadingStep, setLoadingStep] = useState<number>(0);
+  const [progress, setProgress] = useState<number>(18);
+
+  const steps = [
+    'Establishing Autonomous AI Agent Core...',
+    'Syncing Infrastructure Security Matrix...',
+    'Initializing D-OpsPilot Real-Time Engine...'
+  ];
+
+  useEffect(() => {
+    const stepTimer = setInterval(() => {
+      setLoadingStep((prev) => (prev + 1) % steps.length);
+    }, 1200);
+
+    const progressTimer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 96) return 18;
+        return Math.min(96, prev + Math.floor(Math.random() * 12) + 6);
+      });
+    }, 280);
+
+    return () => {
+      clearInterval(stepTimer);
+      clearInterval(progressTimer);
+    };
+  }, []);
+
   return (
-    <div className="min-h-[320px] flex items-center justify-center text-subtitle font-mono text-xs">
-      Loading workspace...
+    <div className="min-h-[75vh] w-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Ambient Glow */}
+      <div className="absolute w-72 h-72 rounded-full bg-gradient-to-tr from-blue-600/20 via-indigo-500/15 to-purple-600/20 blur-3xl animate-pulse pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col items-center space-y-6 max-w-sm w-full text-center">
+        {/* Orbital Concentric Rings Logo */}
+        <div className="relative w-24 h-24 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-500/30 dark:border-blue-400/20 animate-spin" style={{ animationDuration: '12s' }} />
+          <div className="absolute inset-2 rounded-full border border-indigo-500/40 dark:border-indigo-400/30 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '8s' }} />
+          <div className="absolute inset-0 rounded-full bg-blue-500/10 animate-ping opacity-30" />
+          
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 p-0.5 shadow-2xl glow-blue relative z-10 flex items-center justify-center">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+              <Cpu className="w-7 h-7 text-blue-400 animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        {/* Brand Banner */}
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 dark:bg-slate-950/90 border border-slate-700/80 dark:border-slate-800 shadow-xl backdrop-blur-md">
+            <span className="font-extrabold text-white font-display tracking-wider text-sm bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+              D-OpsPilot AI
+            </span>
+            <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[9px] font-extrabold uppercase border border-emerald-500/30">
+              AGENT READY
+            </span>
+          </div>
+        </div>
+
+        {/* Dynamic Rotating Progress Text & Live Percentage */}
+        <div className="space-y-2.5 w-full">
+          <div className="flex items-center justify-between font-mono text-xs text-slate-600 dark:text-slate-300 font-medium px-1">
+            <div className="flex items-center gap-2 truncate max-w-[240px]">
+              <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+              <span className="truncate">{steps[loadingStep]}</span>
+            </div>
+            <span className="font-bold text-blue-600 dark:text-blue-400 shrink-0 font-mono">{progress}%</span>
+          </div>
+
+          {/* Active Running Glowing Progress Bar */}
+          <div className="w-full bg-slate-200 dark:bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-300 dark:border-slate-800/80 shadow-inner p-0.5 relative">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full transition-all duration-300 ease-out shadow-md glow-blue"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -231,6 +306,7 @@ export function AppRoutes() {
                   onScanRepo={handleScanRepo}
                   isScanning={isScanning}
                   onPatchApplied={(updatedScan) => setScan(updatedScan)}
+                  onNavigateTab={(tab) => navigate(tab === 'overview' ? '/' : `/${tab}`)}
                 />
               ) : (
                 <Navigate to="/dashboard" replace />
