@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, 
@@ -74,6 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onInjectFailure
 }) => {
   const outletCtx = useOutletContext<{ selectedTargetPath?: string; onSelectTargetPath?: (path: string) => void }>();
+  const navigate = useNavigate();
 
   const [activeEnv, setActiveEnv] = useState<'PROD' | 'STAGING' | 'DEV'>('PROD');
   const [loadingScenario, setLoadingScenario] = useState<string | null>(null);
@@ -1017,7 +1018,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* AI Safety & Guardrails Summary Card */}
           <div 
-            onClick={() => onNavigateTab('settings')}
+            onClick={() => navigate('/settings?tab=guardrails')}
             className="glass-panel p-4 rounded-xl theme-border border space-y-2 cursor-pointer hover:border-emerald-500/40 transition group"
           >
             <div className="flex items-center justify-between border-b theme-border pb-2">

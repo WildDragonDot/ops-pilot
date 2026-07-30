@@ -38,6 +38,8 @@ import { fetchProjects, removeProject, testConnection } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { Project } from '../types';
 
+import { useSearchParams } from 'react-router-dom';
+
 interface SettingsPageProps {
   onOpenSetupModal?: () => void;
 }
@@ -46,7 +48,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const { user } = useAuth();
   const { addNotification } = useNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<'projects' | 'ai' | 'webhooks' | 'guardrails' | 'team' | 'vault'>('projects');
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as 'projects' | 'ai' | 'webhooks' | 'guardrails' | 'team' | 'vault' | null;
+
+  const [activeTab, setActiveTab] = useState<'projects' | 'ai' | 'webhooks' | 'guardrails' | 'team' | 'vault'>(tabParam || 'projects');
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   const [projectsList, setProjectsList] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
