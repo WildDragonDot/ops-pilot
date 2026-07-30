@@ -88,7 +88,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
           },
           {
             id: 'agent',
-            label: 'OpsPilot AI Agent',
+            label: 'D-OpsPilot AI Agent',
             port: 5080,
             protocol: 'LOCAL ENGINE',
             latency: '1ms',

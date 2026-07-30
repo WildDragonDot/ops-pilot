@@ -65,7 +65,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-slate-100">
-                OpsPilot AI
+                D-OpsPilot AI
               </span>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
                 DevOps Agent
@@ -107,7 +107,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-bold font-mono">
-                OpsPilot AI Workspaces
+                D-OpsPilot AI Workspaces
               </span>
               <span className="flex items-center gap-1 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                 <Shield className="w-3.5 h-3.5 text-emerald-500" />
@@ -290,7 +290,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
 
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800 py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
-        OpsPilot AI — Autonomous Incident Commander & Zero-DB Security Architecture
+        D-OpsPilot AI — Autonomous Incident Commander & Zero-DB Security Architecture
       </footer>
 
     </div>

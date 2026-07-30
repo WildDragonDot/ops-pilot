@@ -85,7 +85,7 @@ export function AppRoutes() {
             </svg>
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-bold text-title font-mono tracking-tight">Initializing OpsPilot AI...</h3>
+            <h3 className="text-lg font-bold text-title font-mono tracking-tight">Initializing D-OpsPilot AI...</h3>
             <p className="text-xs text-subtitle font-mono">Verifying authentication vault & loading workspace session</p>
           </div>
           <div className="space-y-3 pt-2">

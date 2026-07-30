@@ -45,7 +45,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, onRefre
         </div>
         <h1 className="text-2xl font-bold text-title tracking-tight">Operational Approvals Queue</h1>
         <p className="text-xs text-subtitle max-w-2xl leading-relaxed">
-          OpsPilot AI pauses execution before taking write actions, service restarts, database updates, or code patches. Review diffs and risk metrics below.
+          D-OpsPilot AI pauses execution before taking write actions, service restarts, database updates, or code patches. Review diffs and risk metrics below.
         </p>
       </div>
 

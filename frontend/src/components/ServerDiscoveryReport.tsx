@@ -230,7 +230,7 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
       <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-900/20 via-indigo-900/15 to-purple-900/20 border border-blue-500/30 space-y-2 shadow-md">
         <div className="flex items-center gap-2 text-xs font-extrabold text-blue-400">
           <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-          <span className="uppercase tracking-wide font-display">OpsPilot AI SRE Audit Recommendations & System Guidance</span>
+          <span className="uppercase tracking-wide font-display">D-OpsPilot AI SRE Audit Recommendations & System Guidance</span>
         </div>
 
         <div className="space-y-1.5 text-xs text-slate-200 font-sans">

@@ -217,7 +217,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     {
       id: 'init-1',
       command: 'opspilot --version',
-      output: 'OpsPilot Real-Time Server SSH Shell v1.0.0 (Connected via AES-256 WebCrypto Vault)',
+      output: 'D-OpsPilot Real-Time Server SSH Shell v1.0.0 (Connected via AES-256 WebCrypto Vault)',
       exitCode: 0,
       time: new Date().toTimeString().split(' ')[0]
     }
@@ -719,7 +719,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                     🔐 ZERO-TRUST DIRECTIVE: NATIVE SERVER LOGIN REQUIRED
                   </span>
                   <p className="text-[11px] text-slate-300 font-sans leading-relaxed">
-                    OpsPilot AI web interface prohibits running destructive commands directly via API. To execute this dangerous command on <b>{serverUser}@{serverHost}</b>, please open your native terminal and log in directly:
+                    D-OpsPilot AI web interface prohibits running destructive commands directly via API. To execute this dangerous command on <b>{serverUser}@{serverHost}</b>, please open your native terminal and log in directly:
                   </p>
                   
                   <div className="p-2.5 rounded-lg bg-black border border-amber-500/30 text-amber-300 font-mono text-xs flex items-center justify-between gap-2">

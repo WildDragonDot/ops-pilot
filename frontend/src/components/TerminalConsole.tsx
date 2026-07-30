@@ -87,7 +87,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incide
       {/* Terminal Screen Output */}
       <div className="p-4 max-h-[65vh] overflow-y-auto space-y-3 font-mono text-xs leading-relaxed">
         <div className="text-slate-500">
-          OpsPilot Agent v1.0.0 (x86_64-apple-darwin26) - OpenAI Tool Calling Session Initialized.
+          D-OpsPilot Agent v1.0.0 (x86_64-apple-darwin26) - OpenAI Tool Calling Session Initialized.
         </div>
 
         {toolCalls.length === 0 ? (

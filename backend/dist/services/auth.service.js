@@ -84,7 +84,7 @@ export async function authenticateFirebaseUser(firebaseUid, email, name, provide
     if (!org) {
         org = await prisma.organization.create({
             data: {
-                name: 'OpsPilot Workspace',
+                name: 'D-OpsPilot Workspace',
                 slug: `opspilot-${Date.now()}`
             }
         });

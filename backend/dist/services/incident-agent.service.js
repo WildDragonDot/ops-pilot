@@ -309,7 +309,7 @@ async function executeAgentReasoning(incidentId, scenarioKey, effectiveRootCause
    • Stack: Nginx Reverse Proxy & SSL Endpoints
    • Status: RUNNING
 
-OpsPilot AI is actively connected to ${serverHost} and monitoring all 3 project roots.`;
+D-OpsPilot AI is actively connected to ${serverHost} and monitoring all 3 project roots.`;
         await new Promise(r => setTimeout(r, 600));
         await addEvent('PLAN', `Auditing Real Application Projects on Server (${serverHost})`, {
             steps: [
@@ -366,7 +366,7 @@ OpsPilot AI is actively connected to ${serverHost} and monitoring all 3 project 
 4. 📋 Live Host Output:
 ${sshOutput.substring(0, 800) || 'All target services running within normal operational limits.'}
 
-OpsPilot AI is monitoring ${serverHost}. Zero active critical outages detected.`;
+D-OpsPilot AI is monitoring ${serverHost}. Zero active critical outages detected.`;
         await new Promise(r => setTimeout(r, 600));
         await addEvent('PLAN', `Analyzing Request: "${incident?.userPrompt || 'Server Query'}"`, {
             steps: [
@@ -470,12 +470,12 @@ export async function approveIncidentFix(approvalId) {
 
 ## Executive Summary
 
-OpsPilot AI detected a production failure resulting in ${incident?.title}.
+D-OpsPilot AI detected a production failure resulting in ${incident?.title}.
 
 Root cause determined with **${incident?.confidence}% confidence**:
 > ${incident?.rootCause}
 
-Following operator approval, OpsPilot AI executed recovery actions, restored service health (HTTP 200), and passed verifications.
+Following operator approval, D-OpsPilot AI executed recovery actions, restored service health (HTTP 200), and passed verifications.
 
 ---
 

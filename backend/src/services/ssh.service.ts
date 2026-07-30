@@ -80,7 +80,7 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
 
   // Backend Security Shield Guardrail
   if (c.includes('rm -rf /') || c.includes('rm -r /') || c.includes('mkfs') || c.includes(':(){ :|:& };:') || c === 'reboot' || c === 'shutdown' || c.includes('poweroff')) {
-    return '[SECURITY SHIELD BLOCKED] High-risk destructive command intercepted by OpsPilot AI Security Engine. Execution denied on remote host.';
+    return '[SECURITY SHIELD BLOCKED] High-risk destructive command intercepted by D-OpsPilot AI Security Engine. Execution denied on remote host.';
   }
 
   if (safeCmd === 'htop' || safeCmd.includes('htop')) {

@@ -62,7 +62,7 @@ export async function getAuditLogs(req: Request, res: Response) {
       logs.push({
         id: `log-scan-${s.id}`,
         timestamp: new Date(s.startedAt).toISOString().replace('T', ' ').substring(0, 19),
-        user: 'OpsPilot Autonomous Agent',
+        user: 'D-OpsPilot Autonomous Agent',
         userEmail: 'agent@system.internal',
         action: 'TRIGGERED_REPO_SCAN',
         category: 'SCAN',

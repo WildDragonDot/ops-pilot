@@ -5,7 +5,7 @@ export async function auditCodebaseWithOpenAI(files) {
         return null; // Fallback to local scanner
     }
     try {
-        const prompt = `You are OpsPilot AI GitHub Audit Agent. Review the following repository source code files for security vulnerabilities, hardcoded secrets, runtime bugs, and commit risks. Return a JSON object with overallScore (0-100), securityScore, qualityScore, testingScore, summary, and a list of findings (each with severity: CRITICAL|HIGH|MEDIUM|LOW, category: SECURITY|BUG|COMMIT_RISK|TESTING, title, filePath, line, impact, recommendation, patch diff string).
+        const prompt = `You are D-OpsPilot AI GitHub Audit Agent. Review the following repository source code files for security vulnerabilities, hardcoded secrets, runtime bugs, and commit risks. Return a JSON object with overallScore (0-100), securityScore, qualityScore, testingScore, summary, and a list of findings (each with severity: CRITICAL|HIGH|MEDIUM|LOW, category: SECURITY|BUG|COMMIT_RISK|TESTING, title, filePath, line, impact, recommendation, patch diff string).
 
 Files to audit:
 ${files.map(f => `--- FILE: ${f.path} ---\n${f.content.substring(0, 1500)}`).join('\n\n')}`;
@@ -72,12 +72,16 @@ export async function runOpenAIIncidentReasoning(prompt, context) {
             messages: [
                 {
                     role: 'system',
-                    content: 'You are OpsPilot AI Incident Commander. Investigate production failures using tool calls, synthesize root causes, and propose safe recovery patches.'
+                    content: 'You are D-OpsPilot AI Incident Commander. Investigate production failures using tool calls, synthesize root causes, and propose safe recovery patches.'
                 },
                 { role: 'user', content: prompt }
             ],
             tools
         });
+        const choice = response.choices[0]?.message;
+        if (choice?.tool_calls && choice.tool_calls.length > 0) {
+            return { toolCalls: choice.tool_calls };
+        }
     }
     catch (error) {
         console.error('⚠️ OpenAI Tool Calling notice:', error?.message || error);
@@ -90,7 +94,7 @@ export async function generateAICommandFromPrompt(query, serverContext) {
     const user = serverContext?.user || 'ubuntu';
     if (hasOpenAIKey() && openai) {
         try {
-            const prompt = `You are OpsPilot AI Command Copilot. The user is logged into remote server ${user}@${host}.
+            const prompt = `You are D-OpsPilot AI Command Copilot. The user is logged into remote server ${user}@${host}.
 The active containers running on this server are:
 - finance-lock-redis (Redis 7)
 - finance-lock-nanodep (MicroMDM NanoDEP on port 8082)

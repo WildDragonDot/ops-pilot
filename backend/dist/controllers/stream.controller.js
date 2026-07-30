@@ -6,7 +6,7 @@ export function eventStreamHandler(req, res) {
     res.flushHeaders();
     sseClients.push(res);
     // Send initial connected ping
-    res.write(`data: ${JSON.stringify({ type: 'info', title: 'Live Stream Connected', message: 'OpsPilot AI Real-time Event Stream Active' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'info', title: 'Live Stream Connected', message: 'D-OpsPilot AI Real-time Event Stream Active' })}\n\n`);
     req.on('close', () => {
         const index = sseClients.indexOf(res);
         if (index !== -1) {

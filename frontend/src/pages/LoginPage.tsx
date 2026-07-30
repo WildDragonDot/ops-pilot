@@ -110,7 +110,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   // Live Auto-typing Log Stream state for landing page showcase
   const [logIndex, setLogIndex] = useState<number>(0);
   const liveLogs = [
-    { text: 'OpsPilot AI Autonomous Agent initialized on port 5080...', type: 'info' },
+    { text: 'D-OpsPilot AI Autonomous Agent initialized on port 5080...', type: 'info' },
     { text: 'Auditing repository backend/src/services/auth.service.ts...', type: 'info' },
     { text: 'CRITICAL RISK DETECTED: Hardcoded JWT secret fallback in auth.service.ts:5', type: 'danger' },
     { text: 'Generating automated AST security patch...', type: 'warning' },
@@ -506,7 +506,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
 
       {/* Landing Page Footer */}
       <footer className="max-w-7xl w-full mx-auto border-t border-slate-800/80 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-mono relative z-10">
-        <span>© 2026 OpsPilot AI — Production DevOps Commander & Code Intelligence</span>
+        <span>© 2026 D-OpsPilot AI — Production DevOps Commander & Code Intelligence</span>
         <div className="flex items-center gap-4">
           <span>SOC2 Type II</span>
           <span>•</span>

@@ -86,7 +86,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // AI Persona Prompt
-  const defaultSystemPrompt = `You are OpsPilot AI, a Senior SRE & Autonomous DevOps Engineer. You inspect container logs, trace root cause failures, enforce zero-downtime micro-patches, and verify HTTP 200 health check recovery.`;
+  const defaultSystemPrompt = `You are D-OpsPilot AI, a Senior SRE & Autonomous DevOps Engineer. You inspect container logs, trace root cause failures, enforce zero-downtime micro-patches, and verify HTTP 200 health check recovery.`;
   const [systemPrompt, setSystemPrompt] = useState<string>(() => localStorage.getItem('opspilot_system_prompt') || defaultSystemPrompt);
 
   // Webhook settings
@@ -718,7 +718,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                   <div className="glass-panel p-6 rounded-xl theme-border border text-center space-y-2.5">
                     <Server className="w-6 h-6 text-subtitle mx-auto" />
                     <h3 className="text-xs font-bold text-title">No Connected Projects</h3>
-                    <p className="text-[11px] text-subtitle max-w-xs mx-auto">Set up your first project to connect OpsPilot AI with a repository and server host.</p>
+                    <p className="text-[11px] text-subtitle max-w-xs mx-auto">Set up your first project to connect D-OpsPilot AI with a repository and server host.</p>
                     {onOpenSetupModal && (
                       <motion.button
                         whileHover={{ scale: 1.02 }}
@@ -973,10 +973,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       <span className="text-[9px] text-subtitle font-mono uppercase block">Preset Personas:</span>
                       <div className="flex flex-wrap gap-1">
                         {[
-                          { label: 'Strict SRE', prompt: 'You are OpsPilot AI, a Strict SRE. Prioritize system uptime, minimal code changes, and immediate rollback on errors.' },
-                          { label: 'Security Auditor', prompt: 'You are OpsPilot AI, a Security Auditor. Focus strictly on credential leaks, CVE vulnerabilities, and IAM permissions.' },
-                          { label: 'Speed Operator', prompt: 'You are OpsPilot AI, a Speed-First Operator. Resolve incidents rapidly using automated container restarts and quick patches.' },
-                          { label: 'Compliance', prompt: 'You are OpsPilot AI, a Compliance Officer. Require explicit audit logging and operator sign-off before executing commands.' },
+                          { label: 'Strict SRE', prompt: 'You are D-OpsPilot AI, a Strict SRE. Prioritize system uptime, minimal code changes, and immediate rollback on errors.' },
+                          { label: 'Security Auditor', prompt: 'You are D-OpsPilot AI, a Security Auditor. Focus strictly on credential leaks, CVE vulnerabilities, and IAM permissions.' },
+                          { label: 'Speed Operator', prompt: 'You are D-OpsPilot AI, a Speed-First Operator. Resolve incidents rapidly using automated container restarts and quick patches.' },
+                          { label: 'Compliance', prompt: 'You are D-OpsPilot AI, a Compliance Officer. Require explicit audit logging and operator sign-off before executing commands.' },
                         ].map((preset, pIdx) => (
                           <button
                             key={pIdx}
@@ -1112,7 +1112,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       <Shield className="w-3.5 h-3.5 text-emerald-500" />
                       <span>AI Automated Safety Guardrails & Policies</span>
                     </h2>
-                    <p className="text-[11px] text-subtitle">Toggle automated guardrails to strictly control what actions OpsPilot AI can perform autonomously.</p>
+                    <p className="text-[11px] text-subtitle">Toggle automated guardrails to strictly control what actions D-OpsPilot AI can perform autonomously.</p>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5">
@@ -1160,7 +1160,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       <span>Forbidden Terminal Commands Filter ({forbiddenCmds.length})</span>
                     </h3>
                   </div>
-                  <p className="text-[11px] text-subtitle">OpsPilot AI agent is strictly blocked from executing any command pattern listed below.</p>
+                  <p className="text-[11px] text-subtitle">D-OpsPilot AI agent is strictly blocked from executing any command pattern listed below.</p>
 
                   <div className="flex gap-2">
                     <input

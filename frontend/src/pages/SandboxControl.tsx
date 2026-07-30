@@ -84,7 +84,7 @@ export const SandboxControl: React.FC<SandboxControlProps> = ({
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Failure Injection Engine</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
-            Safely simulate production outages, host misconfigurations, and code bugs in an isolated sandbox environment to evaluate OpsPilot AI's autonomous recovery agent.
+            Safely simulate production outages, host misconfigurations, and code bugs in an isolated sandbox environment to evaluate D-OpsPilot AI's autonomous recovery agent.
           </p>
         </div>
       </div>

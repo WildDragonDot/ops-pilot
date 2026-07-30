@@ -252,7 +252,7 @@ export async function executeServerCommand(req: Request, res: Response) {
 
   const trimmed = command.trim();
   if (trimmed.startsWith('rm -rf /') || trimmed.includes('mkfs') || trimmed.includes('dd if=')) {
-    return res.status(403).json({ error: 'Command blocked by OpsPilot AI Safety Policy' });
+    return res.status(403).json({ error: 'Command blocked by D-OpsPilot AI Safety Policy' });
   }
 
   let serverHost = '34.224.80.31';

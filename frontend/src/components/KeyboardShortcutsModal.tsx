@@ -64,7 +64,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-title flex items-center gap-2">
-                OpsPilot AI Shortcuts
+                D-OpsPilot AI Shortcuts
               </h3>
               <p className="text-xs text-subtitle">
                 Quick key bindings for high-velocity navigation & actions
@@ -120,7 +120,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
         {/* Modal Footer */}
         <div className="px-6 py-3 border-t theme-border card-bg-subtle flex items-center justify-between text-[11px] text-subtitle font-mono">
           <span>Press <kbd className="px-1.5 py-0.5 rounded border theme-border font-bold">Esc</kbd> to dismiss</span>
-          <span className="text-blue-500 font-semibold">OpsPilot AI v1.0</span>
+          <span className="text-blue-500 font-semibold">D-OpsPilot AI v1.0</span>
         </div>
       </div>
     </div>

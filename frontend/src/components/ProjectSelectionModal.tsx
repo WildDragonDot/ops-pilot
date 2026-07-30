@@ -37,7 +37,7 @@ export const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-[10px] font-bold font-mono">
-                  OpsPilot AI Workspaces
+                  D-OpsPilot AI Workspaces
                 </span>
                 <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                   <Shield className="w-3 h-3 text-emerald-500" />
@@ -181,7 +181,7 @@ export const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
           <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              <span>OpsPilot AI multi-project routing engine active</span>
+              <span>D-OpsPilot AI multi-project routing engine active</span>
             </span>
             <span className="font-mono text-[10px]">Zero-DB Encrypted Storage</span>
           </div>
