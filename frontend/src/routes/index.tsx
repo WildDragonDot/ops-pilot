@@ -1,20 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DashboardLayout } from '../layouts/DashboardLayout';
-import { Dashboard } from '../pages/Dashboard';
-import { ProjectSelectionPage } from '../pages/ProjectSelectionPage';
-import { RepoAuditor } from '../pages/RepoAuditor';
-import { CommandCenter } from '../pages/CommandCenter';
-import { ApprovalsPage } from '../pages/ApprovalsPage';
-import { IncidentReports } from '../pages/IncidentReports';
-import { RunbooksPage } from '../pages/RunbooksPage';
-import { AuditLogs } from '../pages/AuditLogs';
-import { SandboxControl } from '../pages/SandboxControl';
-import { SettingsPage } from '../pages/SettingsPage';
-import { LoginPage } from '../pages/LoginPage';
-import { RegisterPage } from '../pages/RegisterPage';
-import { ProjectSetupModal } from '../components/ProjectSetupModal';
 import { Project, Scan, Incident } from '../types';
 import { 
   fetchProject, 
@@ -25,6 +12,28 @@ import {
   injectFailure, 
   resetEnvironment 
 } from '../services/api';
+
+const Dashboard = lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const ProjectSelectionPage = lazy(() => import('../pages/ProjectSelectionPage').then(m => ({ default: m.ProjectSelectionPage })));
+const RepoAuditor = lazy(() => import('../pages/RepoAuditor').then(m => ({ default: m.RepoAuditor })));
+const CommandCenter = lazy(() => import('../pages/CommandCenter').then(m => ({ default: m.CommandCenter })));
+const ApprovalsPage = lazy(() => import('../pages/ApprovalsPage').then(m => ({ default: m.ApprovalsPage })));
+const IncidentReports = lazy(() => import('../pages/IncidentReports').then(m => ({ default: m.IncidentReports })));
+const RunbooksPage = lazy(() => import('../pages/RunbooksPage').then(m => ({ default: m.RunbooksPage })));
+const AuditLogs = lazy(() => import('../pages/AuditLogs').then(m => ({ default: m.AuditLogs })));
+const SandboxControl = lazy(() => import('../pages/SandboxControl').then(m => ({ default: m.SandboxControl })));
+const SettingsPage = lazy(() => import('../pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('../pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const ProjectSetupModal = lazy(() => import('../components/ProjectSetupModal').then(m => ({ default: m.ProjectSetupModal })));
+
+function RouteFallback() {
+  return (
+    <div className="min-h-[320px] flex items-center justify-center text-subtitle font-mono text-xs">
+      Loading workspace...
+    </div>
+  );
+}
 
 export function AppRoutes() {
   const { user, isLoading: authLoading } = useAuth();
@@ -111,11 +120,13 @@ export function AppRoutes() {
 
   if (!user) {
     return (
-      <Routes>
-        <Route path="/login" element={<LoginPage onSwitchToRegister={() => navigate('/register')} />} />
-        <Route path="/register" element={<RegisterPage onSwitchToLogin={() => navigate('/login')} />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage onSwitchToRegister={() => navigate('/register')} />} />
+          <Route path="/register" element={<RegisterPage onSwitchToLogin={() => navigate('/login')} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
     );
   }
 
@@ -155,23 +166,24 @@ export function AppRoutes() {
 
   return (
     <>
-      <Routes>
-        {/* Standalone Landing Route (NO Sidebar, NO Top Navbar) */}
-        <Route
-          path="/projects"
-          element={
-            <ProjectSelectionPage
-              projects={projects}
-              activeProject={project}
-              onSelectProject={(selectedP) => {
-                handleSelectProject(selectedP);
-                navigate('/dashboard');
-              }}
-              onOpenSetupModal={() => setIsSetupModalOpen(true)}
-              onProjectDeleted={(deletedId) => setProjects(prev => prev.filter(p => p.id !== deletedId))}
-            />
-          }
-        />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {/* Standalone Landing Route (NO Sidebar, NO Top Navbar) */}
+          <Route
+            path="/projects"
+            element={
+              <ProjectSelectionPage
+                projects={projects}
+                activeProject={project}
+                onSelectProject={(selectedP) => {
+                  handleSelectProject(selectedP);
+                  navigate('/dashboard');
+                }}
+                onOpenSetupModal={() => setIsSetupModalOpen(true)}
+                onProjectDeleted={(deletedId) => setProjects(prev => prev.filter(p => p.id !== deletedId))}
+              />
+            }
+          />
 
         {/* Workspace Layout Routes (WITH Sidebar and Top Header) */}
         <Route
@@ -270,18 +282,23 @@ export function AppRoutes() {
           <Route path="/settings" element={<SettingsPage onOpenSetupModal={() => setIsSetupModalOpen(true)} />} />
           <Route path="*" element={<Navigate to="/projects" replace />} />
         </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
 
       {/* 4-Step Add Project Wizard */}
-      <ProjectSetupModal
-        isOpen={isSetupModalOpen}
-        onClose={() => setIsSetupModalOpen(false)}
-        onProjectCreated={(newProject) => {
-          setProjects(prev => [newProject, ...prev]);
-          handleSelectProject(newProject);
-          navigate('/dashboard');
-        }}
-      />
+      {isSetupModalOpen && (
+        <Suspense fallback={null}>
+          <ProjectSetupModal
+            isOpen={isSetupModalOpen}
+            onClose={() => setIsSetupModalOpen(false)}
+            onProjectCreated={(newProject) => {
+              setProjects(prev => [newProject, ...prev]);
+              handleSelectProject(newProject);
+              navigate('/dashboard');
+            }}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
