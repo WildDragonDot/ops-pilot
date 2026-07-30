@@ -263,7 +263,7 @@ Example JSON: {"projects": ["/var/www/app", "/root/service"]}`;
       }
     }
   } catch (err: any) {
-    if (!err?.message?.includes('429') && !err?.status === 429) {
+    if (!err?.message?.includes('429') && err?.status !== 429) {
       logger.warn('OpenAI directory filter notice:', err?.message || err);
     }
   }
