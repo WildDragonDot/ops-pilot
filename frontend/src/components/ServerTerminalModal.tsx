@@ -100,6 +100,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     try {
       setIsExecuting(true);
       setExecutingCmd(targetCmd);
+      setCommandInput('');
       setCmdHistoryList(prev => [...prev, targetCmd]);
       setHistoryIndex(-1);
 
