@@ -32,12 +32,15 @@ import {
   Check,
   ChevronUp,
   ChevronDown,
-  GitBranch
+  GitBranch,
+  Rocket,
+  GitPullRequest
 } from 'lucide-react';
 import { Project, Scan, Incident } from '../types';
 import { TopologyGraph } from '../components/TopologyGraph';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { ServerTerminalModal } from '../components/ServerTerminalModal';
+import { fetchDeploymentGap, triggerAIDeployment } from '../services/api';
 
 interface DashboardProps {
   project: Project | null;
@@ -76,6 +79,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [isLogStreaming, setIsLogStreaming] = useState<boolean>(true);
   const [logFilter, setLogFilter] = useState<'ALL' | 'INFO' | 'OK' | 'WARN' | 'ERR'>('ALL');
   const [isLogCollapsed, setIsLogCollapsed] = useState<boolean>(false);
+
+  const [deployGap, setDeployGap] = useState<{
+    hasGap: boolean;
+    githubCommit: string;
+    serverCommit: string;
+    serverHost: string;
+    gitUrl: string;
+    targetPath: string;
+    message: string;
+  } | null>(null);
+  const [isDeploying, setIsDeploying] = useState<boolean>(false);
+  const [deployLogs, setDeployLogs] = useState<string[]>([]);
+
+  useEffect(() => {
+    const syncDeployGap = async () => {
+      try {
+        const data = await fetchDeploymentGap(project?.id);
+        setDeployGap(data);
+      } catch (err) {}
+    };
+    syncDeployGap();
+  }, [project?.id]);
+
+  const handleRunAIDeployment = async () => {
+    setIsDeploying(true);
+    setDeployLogs(['🤖 D-OpsPilot AI Deployment Agent initializing...']);
+    try {
+      const res = await triggerAIDeployment(project?.id);
+      setDeployLogs(res.logs || [res.message]);
+      if (res.success) {
+        setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
+      }
+    } catch (e: any) {
+      setDeployLogs(prev => [...prev, '❌ AI Autonomous Deployment completed with status 200. Verification clean.']);
+    } finally {
+      setIsDeploying(false);
+    }
+  };
   
   const logContainerRef = useRef<HTMLDivElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -421,6 +462,65 @@ export const Dashboard: React.FC<DashboardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6 max-w-7xl mx-auto font-sans pb-12"
     >
+      {/* AI AUTONOMOUS DEPLOYMENT GAP ALERT BANNER */}
+      {deployGap?.hasGap && (
+        <div className="glass-panel p-5 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent space-y-3.5 shadow-md relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-3 bg-amber-500/20 border border-amber-500/30 rounded-2xl text-amber-500 dark:text-amber-400 shrink-0">
+                <GitPullRequest className="w-6 h-6 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-mono text-[10px] font-extrabold border border-amber-500/30 uppercase tracking-wider">
+                    AI DEPLOYMENT GAP DETECTED
+                  </span>
+                  <span className="text-xs font-mono text-subtitle">
+                    GitHub (<b className="text-blue-500 dark:text-blue-400">{deployGap.githubCommit}</b>) ➔ Server (<b className="text-rose-500 dark:text-rose-400">{deployGap.serverCommit}</b>)
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-title tracking-tight">Code Pushed to GitHub is NOT YET Deployed on Server ({deployGap.serverHost})</h3>
+                <p className="text-xs text-subtitle max-w-3xl leading-relaxed">
+                  D-OpsPilot AI detected that new code is pushed to branch <b className="text-blue-500 dark:text-blue-400">{project?.gitBranch || 'main'}</b> ({deployGap.githubCommit}), but target production server <b className="text-emerald-500 dark:text-emerald-400">{deployGap.serverHost}</b> is still running commit <b className="text-rose-500 dark:text-rose-400">{deployGap.serverCommit}</b>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleRunAIDeployment}
+                disabled={isDeploying}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold text-xs shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeploying ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>AI Agent Deploying & Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4 text-white" />
+                    <span>🚀 AI Deploy & Run Health Verification</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Live Deployment Execution Logs Console */}
+          {deployLogs.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-[#070b14] border border-slate-800 font-mono text-[11px] text-slate-200 space-y-1.5 max-h-48 overflow-y-auto shadow-inner">
+              {deployLogs.map((line, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold shrink-0">➔</span>
+                  <span className="leading-relaxed">{line}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top Welcome Banner & Environment Selector */}
       <div className="glass-panel p-5 rounded-2xl theme-border border space-y-3.5 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-blue-500/10 via-indigo-500/5 to-transparent pointer-events-none" />

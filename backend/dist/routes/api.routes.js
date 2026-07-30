@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { register, login, firebaseAuth, getMe } from '../controllers/auth.controller.js';
-import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv, suggestAICommand, analyzeLogsWithAIController } from '../controllers/project.controller.js';
+import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv, suggestAICommand, analyzeLogsWithAIController, checkDeploymentGap, executeAIDeployment } from '../controllers/project.controller.js';
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
@@ -12,9 +12,11 @@ export const router = Router();
 router.post('/auth/register', register);
 router.post('/auth/login', login);
 router.post('/auth/firebase', firebaseAuth);
-// AI Command & Log Intelligence Routes
+// AI Command, Log Intelligence & Deployment Routes
 router.post('/ai/suggest-command', requireAuth, suggestAICommand);
 router.post('/ai/analyze-logs', requireAuth, analyzeLogsWithAIController);
+router.get('/projects/:id/deploy-gap', requireAuth, checkDeploymentGap);
+router.post('/projects/ai-deploy', requireAuth, executeAIDeployment);
 // Protected Authentication Profile
 router.get('/auth/me', requireAuth, getMe);
 // Protected Project & Environment Routes

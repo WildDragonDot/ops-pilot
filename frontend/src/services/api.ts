@@ -302,3 +302,34 @@ export async function fetchAuditLogs(): Promise<any[]> {
   const data = await res.json();
   return data.logs || [];
 }
+
+export async function fetchDeploymentGap(projectId?: string): Promise<{
+  hasGap: boolean;
+  githubCommit: string;
+  serverCommit: string;
+  serverHost: string;
+  gitUrl: string;
+  targetPath: string;
+  message: string;
+}> {
+  const id = projectId || 'demo-project';
+  const res = await fetch(`${API_BASE}/projects/${id}/deploy-gap`, { headers: getAuthHeaders(id) });
+  if (!res.ok) throw new Error('Failed to fetch deployment gap status');
+  return res.json();
+}
+
+export async function triggerAIDeployment(projectId?: string): Promise<{
+  success: boolean;
+  message: string;
+  deployedCommit: string;
+  serverHost: string;
+  logs: string[];
+}> {
+  const res = await fetch(`${API_BASE}/projects/ai-deploy`, {
+    method: 'POST',
+    headers: getAuthHeaders(projectId),
+    body: JSON.stringify({ projectId })
+  });
+  if (!res.ok) throw new Error('AI Autonomous Deployment failed');
+  return res.json();
+}
