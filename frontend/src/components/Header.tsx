@@ -110,17 +110,17 @@ export const Header: React.FC<HeaderProps> = ({
       <header className="h-16 header-bg backdrop-blur-xl border-b px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 gap-3">
         
         {/* Left Section: Search Bar & Command Palette Trigger */}
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Search Bar - Fixed width, no flex grow collision */}
+        <div className="flex items-center gap-3 flex-1 max-w-2xl">
+          {/* Search Bar - Expanded width for modern header layout */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
-            className="hidden md:flex items-center gap-2 card-bg-subtle px-3 py-1.5 rounded-xl border theme-border text-xs w-48 lg:w-60 xl:w-64 hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shrink-0"
+            className="hidden sm:flex items-center gap-2.5 card-bg-subtle px-3.5 py-2 rounded-xl border theme-border text-xs w-64 md:w-80 lg:w-[420px] xl:w-[540px] hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shrink-0 shadow-xs group"
           >
-            <Search className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <Search className="w-4 h-4 text-blue-500 group-hover:text-blue-400 transition-colors shrink-0" />
             <span className="flex-1 text-subtitle font-mono text-[11px] truncate">
-              Search commands (⌘K)...
+              Search commands, incidents & servers (⌘K)...
             </span>
-            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-subtitle border theme-border font-mono shrink-0">⌘K</kbd>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-subtitle border theme-border font-mono shrink-0 font-bold bg-slate-900/50">⌘K</kbd>
           </div>
         </div>
 
