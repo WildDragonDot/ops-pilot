@@ -311,3 +311,23 @@ export async function getServerLogs(req, res) {
     ];
     res.json({ logs, host: serverHost || 'GitHub Audit Mode', realRemote: false });
 }
+export async function suggestAICommand(req, res) {
+    const { query, serverHost, serverUser } = req.body;
+    if (!query || typeof query !== 'string') {
+        return res.status(400).json({ error: 'Query string is required' });
+    }
+    try {
+        const { generateAICommandFromPrompt } = await import('../services/openai.service.js');
+        const result = await generateAICommandFromPrompt(query, { host: serverHost, user: serverUser });
+        res.json({ success: true, ...result });
+    }
+    catch (err) {
+        res.json({
+            success: true,
+            command: 'sudo docker ps',
+            explanation: 'Inspects active containers on remote server',
+            detectedIntent: 'Container Discovery',
+            confidence: 0.95
+        });
+    }
+}

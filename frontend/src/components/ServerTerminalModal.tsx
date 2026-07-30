@@ -20,7 +20,7 @@ import {
   Lightbulb,
   ChevronRight
 } from 'lucide-react';
-import { executeCommandOnServer } from '../services/api';
+import { executeCommandOnServer, suggestAICommandApi } from '../services/api';
 
 interface ServerTerminalModalProps {
   isOpen: boolean;
@@ -199,65 +199,38 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleProblemSearch = (query: string) => {
+  const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
+  const [aiExplanation, setAiExplanation] = useState<string>('');
+
+  const handleProblemSearch = async (query: string) => {
     setAiProblemQuery(query);
     const q = query.toLowerCase().trim();
     if (!q) {
       setSuggestedCommand('');
+      setAiExplanation('');
       return;
     }
 
-    if (q.includes('apk') || q.includes('mdm')) {
-      setSuggestedCommand("sudo grep 'mdm-agent.apk' /var/log/nginx/access.log | tail -n 20");
-      return;
-    }
-    if (q.includes('nginx') && q.includes('error')) {
-      setSuggestedCommand('sudo tail -n 30 /var/log/nginx/error.log');
-      return;
-    }
-    if (q.includes('nginx') && (q.includes('log') || q.includes('access'))) {
-      setSuggestedCommand('sudo tail -n 30 /var/log/nginx/access.log');
-      return;
-    }
-    if (q.includes('docker') && q.includes('log')) {
-      setSuggestedCommand('sudo docker logs --tail 30 finance-lock-nanomdm');
-      return;
-    }
-    if (q.includes('docker') || q.includes('container')) {
-      setSuggestedCommand('sudo docker ps');
-      return;
-    }
-    if (q.includes('ram') || q.includes('memory') || q.includes('htop')) {
-      setSuggestedCommand('free -m && top -b -n 1 | head -n 15');
-      return;
-    }
-    if (q.includes('disk') || q.includes('storage') || q.includes('space')) {
-      setSuggestedCommand('df -h /');
-      return;
-    }
-    if (q.includes('port') || q.includes('listen') || q.includes('netstat')) {
-      setSuggestedCommand('sudo netstat -tulpn');
-      return;
-    }
-    if (q.includes('restart') && q.includes('redis')) {
-      setSuggestedCommand('sudo docker restart finance-lock-redis');
-      return;
-    }
-    if (q.includes('restart') && q.includes('postgres')) {
-      setSuggestedCommand('sudo docker restart finance-lock-postgres');
-      return;
-    }
-
-    const match = PROBLEM_COMMAND_DATABASE.find(item => 
-      item.problem.toLowerCase().includes(q) || 
-      item.command.toLowerCase().includes(q) ||
-      item.description.toLowerCase().includes(q)
-    );
-
-    if (match) {
-      setSuggestedCommand(match.command);
-    } else {
-      setSuggestedCommand(`sudo docker ps`);
+    try {
+      setIsAiThinking(true);
+      const res = await suggestAICommandApi(query, serverHost, serverUser);
+      if (res && res.command) {
+        setSuggestedCommand(res.command);
+        setAiExplanation(res.explanation || '');
+      }
+    } catch (e) {
+      if (q.includes('setup') || q.includes('system') || q.includes('server') || q.includes('details') || q.includes('info') || q.includes('kya h')) {
+        setSuggestedCommand('uname -a && uptime && sudo docker ps');
+        setAiExplanation('Displays OS kernel details, server uptime & load, and all active Docker containers');
+      } else if (q.includes('apk') || q.includes('mdm')) {
+        setSuggestedCommand("sudo grep 'mdm-agent.apk' /var/log/nginx/access.log | tail -n 20");
+        setAiExplanation('Filters Nginx access logs for MDM agent APK download requests');
+      } else {
+        setSuggestedCommand('sudo docker ps');
+        setAiExplanation('Lists active Docker containers on remote host');
+      }
+    } finally {
+      setIsAiThinking(false);
     }
   };
 
@@ -387,11 +360,12 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                 type="text"
                 value={aiProblemQuery}
                 onChange={(e) => handleProblemSearch(e.target.value)}
-                placeholder="Ask AI Copilot for a command (e.g. 'nginx access logs', 'check ram & cpu', 'mdm apk logs')..."
+                placeholder="Ask AI Copilot in Hindi/English (e.g. 'mera server setup kya h', 'nginx logs dekho', 'ram memory check')..."
                 className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
               />
-              {aiProblemQuery && (
-                <button onClick={() => { setAiProblemQuery(''); setSuggestedCommand(''); }} className="text-slate-500 hover:text-slate-300 text-xs">
+              {isAiThinking && <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin shrink-0" />}
+              {aiProblemQuery && !isAiThinking && (
+                <button onClick={() => { setAiProblemQuery(''); setSuggestedCommand(''); setAiExplanation(''); }} className="text-slate-500 hover:text-slate-300 text-xs">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -399,16 +373,26 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
 
             {suggestedCommand && (
               <div className="flex items-center gap-2 bg-purple-950/40 border border-purple-500/40 px-3 py-1.5 rounded-xl animate-fadeIn">
-                <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider shrink-0">
-                  Suggested:
-                </span>
-                <code className="text-xs font-mono text-emerald-400 font-bold truncate max-w-xs md:max-w-md">
-                  {suggestedCommand}
-                </code>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider shrink-0">
+                      ✨ AI Suggested:
+                    </span>
+                    <code className="text-xs font-mono text-emerald-400 font-bold truncate max-w-xs md:max-w-md">
+                      {suggestedCommand}
+                    </code>
+                  </div>
+                  {aiExplanation && (
+                    <span className="text-[10px] text-slate-400 truncate max-w-md">
+                      {aiExplanation}
+                    </span>
+                  )}
+                </div>
+
                 <button
                   onClick={() => handleRunCommand(suggestedCommand)}
                   disabled={isExecuting}
-                  className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                  className="px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0 ml-1"
                 >
                   <Play className="w-3 h-3 fill-current" />
                   <span>Run Now</span>

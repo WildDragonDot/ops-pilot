@@ -111,6 +111,21 @@ export async function testConnection(
   return res.json();
 }
 
+export async function suggestAICommandApi(query: string, serverHost?: string, serverUser?: string): Promise<{
+  command: string;
+  explanation: string;
+  detectedIntent: string;
+  confidence: number;
+}> {
+  const res = await fetch(`${API_BASE}/ai/suggest-command`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ query, serverHost, serverUser })
+  });
+  if (!res.ok) throw new Error('AI Command Suggestion failed');
+  return res.json();
+}
+
 export async function removeProject(id: string): Promise<any> {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: 'DELETE',
