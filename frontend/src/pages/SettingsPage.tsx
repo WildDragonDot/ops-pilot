@@ -85,7 +85,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [testResult, setTestResult] = useState<{ tested: boolean; success: boolean; gitMsg?: string; sshMsg?: string; gitSuccess?: boolean; sshSuccess?: boolean } | null>(null);
 
   // AI Model & API Parameters
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('opspilot_openai_key') || 'sk-proj-78a9f2bc31948e9102ab0541');
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('opspilot_openai_key') || '');
   const [showApiKey, setShowApiKey] = useState<boolean>(false);
   const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem('opspilot_selected_model') || 'gpt-4o');
   const [reasoningTemperature, setReasoningTemperature] = useState<number>(() => {
