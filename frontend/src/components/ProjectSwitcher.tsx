@@ -22,20 +22,20 @@ export const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({
     <div className="relative font-sans w-full">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#090d18] hover:bg-[#0f172a] text-slate-200 text-xs font-semibold border border-slate-800 transition shadow-md group cursor-pointer"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900/90 hover:bg-slate-200 dark:hover:bg-slate-800/90 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-800 transition shadow-xs group cursor-pointer"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <Server className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-          <span className="truncate font-extrabold text-slate-100 tracking-tight">
+          <Server className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+          <span className="truncate font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
             {activeProject?.name || 'Select Project'}
           </span>
         </div>
 
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>

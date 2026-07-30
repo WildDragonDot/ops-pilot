@@ -114,13 +114,13 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Search Bar - Expanded width for modern header layout */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
-            className="hidden sm:flex items-center gap-2.5 card-bg-subtle px-3.5 py-2 rounded-xl border theme-border text-xs w-64 md:w-80 lg:w-[420px] xl:w-[540px] hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shrink-0 shadow-xs group"
+            className="hidden sm:flex items-center gap-2.5 bg-slate-100 dark:bg-slate-900/90 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs w-64 md:w-80 lg:w-[420px] xl:w-[540px] hover:border-blue-500 transition cursor-pointer whitespace-nowrap shrink-0 shadow-xs group"
           >
-            <Search className="w-4 h-4 text-blue-500 group-hover:text-blue-400 transition-colors shrink-0" />
-            <span className="flex-1 text-subtitle font-mono text-[11px] truncate">
+            <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
+            <span className="flex-1 text-slate-600 dark:text-slate-400 font-mono text-[11px] truncate">
               Search commands, incidents & servers (⌘K)...
             </span>
-            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-subtitle border theme-border font-mono shrink-0 font-bold bg-slate-900/50">⌘K</kbd>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 font-mono shrink-0 font-bold bg-white dark:bg-slate-950">⌘K</kbd>
           </div>
         </div>
 
