@@ -1398,12 +1398,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </AnimatePresence>
 
       {/* Interactive Remote SSH Server Command Terminal */}
-      <ServerTerminalModal
-        isOpen={showTerminalModal}
-        onClose={() => setShowTerminalModal(false)}
-        serverHost={project?.serverHost || '34.224.80.31'}
-        serverUser={project?.serverUser && project?.serverUser !== 'root' ? project.serverUser : 'ubuntu'}
-      />
+      {Boolean(project?.serverHost?.trim()) && (
+        <ServerTerminalModal
+          isOpen={showTerminalModal}
+          onClose={() => setShowTerminalModal(false)}
+          projectId={project?.id}
+          serverHost={project?.serverHost || ''}
+          serverUser={project?.serverUser && project?.serverUser !== 'root' ? project.serverUser : 'ubuntu'}
+        />
+      )}
 
     </motion.div>
   );

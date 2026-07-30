@@ -7,6 +7,7 @@ import { DiffViewer } from '../components/DiffViewer';
 import { useOutletContext } from 'react-router-dom';
 
 import { Project } from '../types';
+import { getProjectOperatingMode } from '../utils/projectMode';
 
 interface ApprovalsPageProps {
   incidents: Incident[];
@@ -19,17 +20,41 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project
   const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
   const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
 
-  const hasGitUrl = Boolean(project?.gitUrl?.trim());
+  const mode = getProjectOperatingMode(project);
+  const hasGitUrl = mode === 'GITHUB_ONLY' || mode === 'HYBRID_BOTH';
+  const hasServer = mode === 'SERVER_ONLY' || mode === 'HYBRID_BOTH';
 
   const filteredIncidents = isVacantPath ? [] : incidents.filter(i => {
     if (!i.activeApproval) return false;
     const commandsStr = JSON.stringify(i.activeApproval.commands || '');
     const isGitPatchApproval = commandsStr.includes('git add') || commandsStr.includes('git push') || commandsStr.includes('auth.service.ts');
+    const isServerApproval = commandsStr.includes('docker') || commandsStr.includes('sudo') || commandsStr.includes('systemctl') || commandsStr.includes('ufw');
     if (isGitPatchApproval && !hasGitUrl) {
       return false; // Filter out GitHub git push approvals when GitHub is NOT connected!
     }
+    if (isServerApproval && !hasServer && !isGitPatchApproval) {
+      return false;
+    }
     return true;
   });
+
+  const modeLabel = mode === 'GITHUB_ONLY'
+    ? 'GitHub AST code approvals only'
+    : mode === 'SERVER_ONLY'
+      ? 'Server infrastructure approvals only'
+      : mode === 'HYBRID_BOTH'
+        ? 'Hybrid GitHub + server approvals'
+        : 'Local sandbox approvals';
+
+  const cleanRollbackPlan = (rollbackPlan?: string | null) => {
+    if (mode === 'GITHUB_ONLY' && rollbackPlan?.toLowerCase().includes('docker')) {
+      return 'Revert the generated code patch with git restore or a follow-up commit, then rerun the repository audit.';
+    }
+    if (mode === 'SERVER_ONLY' && rollbackPlan?.toLowerCase().includes('git')) {
+      return 'Re-run the previous server command or restore the service configuration backup, then recheck service health.';
+    }
+    return rollbackPlan || 'No rollback plan supplied.';
+  };
 
   const allApprovals = filteredIncidents
     .filter(i => i.activeApproval)
@@ -65,7 +90,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project
         </div>
         <h1 className="text-2xl font-bold text-title tracking-tight">Operational Approvals Queue</h1>
         <p className="text-xs text-subtitle max-w-2xl leading-relaxed">
-          D-OpsPilot AI pauses execution before taking write actions, service restarts, database updates, or code patches. Review diffs and risk metrics below.
+          {modeLabel}. D-OpsPilot AI only shows approval actions that match the selected project's connected systems.
         </p>
       </div>
 
@@ -143,7 +168,7 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project
               <DiffViewer diffText={approval.diff} commands={approval.commands} />
 
               <div className="card-bg-subtle p-3 rounded-xl border theme-border text-xs font-mono">
-                <b className="text-title">Rollback Plan:</b> <span className="text-subtitle">{approval.rollbackPlan}</span>
+                <b className="text-title">Rollback Plan:</b> <span className="text-subtitle">{cleanRollbackPlan(approval.rollbackPlan)}</span>
               </div>
             </motion.div>
           ))

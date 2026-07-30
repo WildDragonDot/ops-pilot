@@ -211,13 +211,17 @@ export function AppRoutes() {
           <Route
             path="/auditor"
             element={
-              <RepoAuditor
-                scan={scan}
-                project={project}
-                onScanRepo={handleScanRepo}
-                isScanning={isScanning}
-                onPatchApplied={(updatedScan) => setScan(updatedScan)}
-              />
+              project?.gitUrl?.trim() ? (
+                <RepoAuditor
+                  scan={scan}
+                  project={project}
+                  onScanRepo={handleScanRepo}
+                  isScanning={isScanning}
+                  onPatchApplied={(updatedScan) => setScan(updatedScan)}
+                />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
             }
           />
           <Route

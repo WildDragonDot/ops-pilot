@@ -86,7 +86,7 @@ export const ProjectSwitcher: React.FC<ProjectSwitcherProps> = ({
                             {p.name}
                           </span>
                           <span className={`text-[10px] font-mono block truncate ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                            {p.serverHost ? `${p.serverUser || 'root'}@${p.serverHost}` : 'Local Sandbox Engine'}
+                            {p.serverHost ? `${p.serverUser || 'root'}@${p.serverHost}` : p.gitUrl ? 'GitHub AST Mode' : 'Local Sandbox Engine'}
                           </span>
                         </div>
                       </div>

@@ -25,6 +25,7 @@ import { executeCommandOnServer, suggestAICommandApi } from '../services/api';
 interface ServerTerminalModalProps {
   isOpen: boolean;
   onClose: () => void;
+  projectId?: string;
   serverHost?: string;
   serverUser?: string;
 }
@@ -150,9 +151,10 @@ const checkCommandSecurityRisk = (cmd: string): SecurityRiskResult | null => {
   return null;
 };
 
-export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
-  isOpen,
-  onClose,
+export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  projectId,
   serverHost = '34.224.80.31',
   serverUser = 'ubuntu'
 }) => {
@@ -287,7 +289,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       setCmdHistoryList(prev => [...prev, targetCmd]);
       setHistoryIndex(-1);
 
-      const res = await executeCommandOnServer(targetCmd);
+      const res = await executeCommandOnServer(targetCmd, projectId);
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
 

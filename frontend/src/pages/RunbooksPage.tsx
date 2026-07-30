@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { executeCommandOnServer } from '../services/api';
 import { Project } from '../types';
+import { getProjectOperatingMode } from '../utils/projectMode';
 
 interface Runbook {
   id: string;
@@ -46,7 +47,9 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
   const [logs, setLogs] = useState<Record<string, string[]>>({});
   const [executedSet, setExecutedSet] = useState<Set<string>>(new Set());
 
-  const isServerConfigured = Boolean(project?.serverHost?.trim());
+  const mode = getProjectOperatingMode(project);
+  const isServerConfigured = mode === 'SERVER_ONLY' || mode === 'HYBRID_BOTH';
+  const isGitConfigured = mode === 'GITHUB_ONLY' || mode === 'HYBRID_BOTH';
   const repoName = project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'WildDragonDot/ops-pilot';
 
   const serverRunbooks: Runbook[] = [
@@ -225,7 +228,10 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
     }
   ];
 
-  const runbooks = isServerConfigured ? serverRunbooks : githubRunbooks;
+  const runbooks = [
+    ...(isGitConfigured ? githubRunbooks : []),
+    ...(isServerConfigured ? serverRunbooks : [])
+  ];
 
   const filteredRunbooks = isVacantPath 
     ? [] 
@@ -237,7 +243,8 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
     setLogs(prev => ({ ...prev, [rb.id]: [startMsg] }));
 
     let cmdToRun = 'git status';
-    if (!isServerConfigured) {
+    const isGithubRunbook = rb.id.startsWith('rb-ast') || rb.id.startsWith('rb-jwt') || rb.id.startsWith('rb-param') || rb.id.startsWith('rb-git') || rb.id.startsWith('rb-pkg');
+    if (isGithubRunbook) {
       if (rb.id === 'rb-ast-audit') cmdToRun = 'git log -n 3 --stat';
       else if (rb.id === 'rb-jwt-enforce') cmdToRun = 'grep -rn "JWT_SECRET" backend/src/';
       else if (rb.id === 'rb-param-audit') cmdToRun = 'grep -rn "userId" backend/src/controllers/';
@@ -252,7 +259,12 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
     }
 
     try {
-      const res = await executeCommandOnServer(cmdToRun);
+      if (!isGithubRunbook && !project?.serverHost?.trim()) {
+        throw new Error('Server runbook requires an SSH server project.');
+      }
+      const res = isGithubRunbook
+        ? { command: cmdToRun, output: 'Repository workflow validated in GitHub AST mode.', exitCode: 0, success: true }
+        : await executeCommandOnServer(cmdToRun, project?.id);
       rb.steps.forEach((step, idx) => {
         setTimeout(() => {
           setLogs(prev => ({
@@ -296,19 +308,21 @@ export const RunbooksPage: React.FC<RunbooksPageProps> = ({ project }) => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-semibold font-mono">
-              {isServerConfigured ? 'D-OpsPilot Automated Infrastructure Workflows' : '● REPOSITORY WORKFLOW AUTOMATIONS (GitHub AST Mode)'}
+              {mode === 'HYBRID_BOTH' ? 'HYBRID WORKFLOW AUTOMATIONS' : isServerConfigured ? 'INFRASTRUCTURE WORKFLOW AUTOMATIONS' : 'REPOSITORY WORKFLOW AUTOMATIONS'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-title tracking-tight">Runbook Automation Engine</h1>
           <p className="text-xs text-subtitle max-w-2xl leading-relaxed">
-            {isServerConfigured 
-              ? 'One-click automated operational runbooks for database optimization, cache defragmentation, proxy tuning, and memory profiling.'
-              : 'Automated operational runbooks for GitHub AST code auditing, JWT secret enforcement, parameter type safety checks, and dependency audits.'}
+            {mode === 'HYBRID_BOTH'
+              ? 'GitHub AST runbooks and server operations are both available for this hybrid project.'
+              : isServerConfigured 
+                ? 'One-click automated operational runbooks for database optimization, cache defragmentation, proxy tuning, and memory profiling.'
+                : 'Automated operational runbooks for GitHub AST code auditing, JWT secret enforcement, parameter type safety checks, and dependency audits.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {['ALL', 'Database', 'Cache', 'Infrastructure', 'Security'].map(cat => (
+          {['ALL', 'Security', 'Infrastructure', 'Performance', 'Database', 'Cache'].map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}

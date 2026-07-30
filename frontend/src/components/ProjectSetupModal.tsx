@@ -77,16 +77,20 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const [sshPassword, setSshPassword] = useState('');
 
   const handleScanServerDirectories = async () => {
+    if (!serverHost.trim()) {
+      setDiscoveredDirs([]);
+      return;
+    }
     setScanningDirs(true);
     try {
       const creds: ProjectCredentials = {
-        serverHost: serverHost || '34.224.80.31',
+        serverHost: serverHost.trim(),
         serverPort: parseInt(serverPort, 10) || 22,
         serverUser: serverUser || 'ubuntu',
         sshKey: sshAuthMethod === 'KEY' ? sshKey : undefined
       };
       const res = await scanDirectoriesApi({
-        serverHost: serverHost || '34.224.80.31',
+        serverHost: serverHost.trim(),
         serverPort: parseInt(serverPort, 10) || 22,
         serverUser: serverUser || 'ubuntu'
       }, creds);

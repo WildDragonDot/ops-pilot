@@ -226,23 +226,28 @@ export async function executeServerCommand(req, res) {
     if (trimmed.startsWith('rm -rf /') || trimmed.includes('mkfs') || trimmed.includes('dd if=')) {
         return res.status(403).json({ error: 'Command blocked by D-OpsPilot AI Safety Policy' });
     }
-    let serverHost = '34.224.80.31';
+    let serverHost = '';
     let serverUser = 'ubuntu';
+    let serverPort = 22;
     if (projectId) {
         try {
             const proj = await prisma.project.findUnique({ where: { id: String(projectId) } });
             if (proj?.serverHost) {
                 serverHost = proj.serverHost;
                 serverUser = proj.serverUser || 'ubuntu';
+                serverPort = proj.serverPort || 22;
             }
         }
         catch (e) { }
+    }
+    if (!serverHost) {
+        return res.status(400).json({ error: 'Server command execution requires a project with an SSH server host.' });
     }
     const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']);
     const headerSshPass = getHeaderString(req.headers['x-server-pass']);
     const creds = {
         host: serverHost,
-        port: 22,
+        port: serverPort,
         user: serverUser,
         key: headerSshKey,
         password: headerSshPass
@@ -340,12 +345,15 @@ export async function scanServerDirectories(req, res) {
     const sshKey = getHeaderString(req.headers['x-server-ssh-key']);
     const sshPassword = getHeaderString(req.headers['x-server-pass']) || getHeaderString(req.headers['x-server-ssh-pass']);
     const creds = {
-        host: serverHost || '34.224.80.31',
+        host: serverHost,
         port: Number(serverPort) || 22,
         user: serverUser || 'ubuntu',
         sshKey,
         password: sshPassword
     };
+    if (!creds.host?.trim()) {
+        return res.status(400).json({ error: 'Directory scan requires an SSH server host.' });
+    }
     try {
         const { listRemoteServerDirectories } = await import('../services/ssh.service.js');
         const directories = await listRemoteServerDirectories(creds, baseDir || '/home/ubuntu');
@@ -434,9 +442,13 @@ export async function executeAIDeployment(req, res) {
     const project = projectId
         ? await prisma.project.findUnique({ where: { id: String(projectId) } })
         : await prisma.project.findFirst();
-    const serverHost = project?.serverHost?.trim() || '34.224.80.31';
+    const serverHost = project?.serverHost?.trim();
+    const gitUrl = project?.gitUrl?.trim();
     const targetPath = project?.rootPath || '/home/ubuntu/finance-lock';
     const now = new Date().toISOString();
+    if (!serverHost || !gitUrl) {
+        return res.status(400).json({ error: 'AI deployment requires both a GitHub repository and an SSH server host.' });
+    }
     const logs = [
         `[${now}] 🤖 D-OpsPilot Autonomous AI Deployment Agent Initialized`,
         `[${now}] 🔗 Establishing secure SSH connection to ubuntu@${serverHost}:22...`,

@@ -140,7 +140,7 @@ export const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
                         <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[11px]">
                           <span>SSH Server:</span>
                           <strong className="text-slate-800 dark:text-slate-200">
-                            {p.serverHost ? `${p.serverUser || 'root'}@${p.serverHost}:${p.serverPort || 22}` : 'Local Sandbox Engine'}
+                            {p.serverHost ? `${p.serverUser || 'root'}@${p.serverHost}:${p.serverPort || 22}` : p.gitUrl ? 'Not attached (GitHub-only)' : 'Local Sandbox Engine'}
                           </strong>
                         </div>
                         {p.gitUrl && (

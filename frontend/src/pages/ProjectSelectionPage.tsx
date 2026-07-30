@@ -226,9 +226,9 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                       </span>
-                      <span>{p.serverHost ? 'SSH SERVER CONNECTED' : 'LOCAL ENGINE ONLINE'}</span>
+                      <span>{p.serverHost && p.gitUrl ? 'HYBRID CONNECTED' : p.serverHost ? 'SSH SERVER CONNECTED' : p.gitUrl ? 'GITHUB AST MODE' : 'LOCAL ENGINE ONLINE'}</span>
                     </div>
-                    <span className="text-[9px] opacity-80">{p.serverHost ? `PORT ${p.serverPort || 22}` : 'SANDBOX'}</span>
+                    <span className="text-[9px] opacity-80">{p.serverHost ? `PORT ${p.serverPort || 22}` : p.gitUrl ? 'REPO' : 'SANDBOX'}</span>
                   </div>
 
                   {/* Server & GitHub Config */}
@@ -236,7 +236,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[11px]">
                       <span>SSH Host:</span>
                       <strong className="text-slate-800 dark:text-slate-200">
-                        {p.serverHost ? `${p.serverUser || 'root'}@${p.serverHost}` : 'Local Sandbox Engine'}
+                        {p.serverHost ? `${p.serverUser || 'root'}@${p.serverHost}` : p.gitUrl ? 'Not attached (GitHub-only)' : 'Local Sandbox Engine'}
                       </strong>
                     </div>
                     {p.gitUrl && (

@@ -279,11 +279,11 @@ export async function fetchPostMortemReport(incidentId: string): Promise<string>
   return data.report;
 }
 
-export async function executeCommandOnServer(command: string): Promise<{ success: boolean; command: string; output: string; exitCode: number; cwd?: string }> {
+export async function executeCommandOnServer(command: string, projectId?: string): Promise<{ success: boolean; command: string; output: string; exitCode: number; cwd?: string }> {
   const res = await fetch(`${API_BASE}/projects/exec`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ command }),
+    headers: getAuthHeaders(projectId),
+    body: JSON.stringify({ command, projectId }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

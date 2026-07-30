@@ -744,7 +744,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {projectsList.map((proj, idx) => {
-                      const sshString = proj.serverHost ? `${proj.serverUser || 'root'}@${proj.serverHost}:${proj.serverPort || 22}` : 'Local Sandbox Engine';
+                      const sshString = proj.serverHost ? `${proj.serverUser || 'root'}@${proj.serverHost}:${proj.serverPort || 22}` : proj.gitUrl ? 'Not attached (GitHub-only)' : 'Local Sandbox Engine';
                       return (
                         <div
                           key={proj.id}

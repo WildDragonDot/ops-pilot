@@ -25,25 +25,34 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleFetchLogs = async (containerName: string) => {
+    if (!project?.serverHost?.trim()) {
+      setContainerLogs('Repository AST mode does not expose remote container logs. Attach an SSH server host to inspect live Docker logs.');
+      return;
+    }
     setLoadingLogs(true);
     setContainerLogs('');
     try {
-      const res = await executeCommandOnServer(`sudo docker logs --tail 35 ${containerName} 2>&1 || sudo docker ps`);
+      const res = await executeCommandOnServer(`sudo docker logs --tail 35 ${containerName} 2>&1 || sudo docker ps`, project?.id);
       setContainerLogs(res.output || 'Container logs fetched cleanly (0 errors detected).');
     } catch (e: any) {
-      setContainerLogs(`[SSH CONTAINER LOGS] Fetching live stream for ${containerName} on ${project?.serverHost || '34.224.80.31'}:\n\n2026-07-30T08:57:10Z [INFO] Service ${containerName} active on port.\n2026-07-30T08:57:11Z [OK] Health check HTTP/200 OK.\n2026-07-30T08:57:12Z [INFO] 0 critical unhandled exceptions.`);
+      setContainerLogs(e.message || 'Unable to fetch live remote logs. Verify SSH credentials in Project Settings.');
     } finally {
       setLoadingLogs(false);
     }
   };
 
   const handleRestartContainer = async (containerName: string) => {
+    if (!project?.serverHost?.trim()) {
+      setActionSuccess('Server restart actions require an SSH server project.');
+      setTimeout(() => setActionSuccess(null), 3000);
+      return;
+    }
     setActionSuccess('Restarting container...');
     try {
-      await executeCommandOnServer(`sudo docker restart ${containerName}`);
+      await executeCommandOnServer(`sudo docker restart ${containerName}`, project?.id);
       setActionSuccess(`✅ ${containerName} restarted successfully!`);
     } catch (e) {
-      setActionSuccess(`✅ Container restart signal dispatched to ${containerName}!`);
+      setActionSuccess(`Unable to restart ${containerName}. Verify SSH credentials.`);
     }
     setTimeout(() => setActionSuccess(null), 3000);
   };
