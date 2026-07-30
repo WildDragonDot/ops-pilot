@@ -202,7 +202,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-lg tracking-tight text-white">OpsPilot</span>
+              <span className="font-black text-lg tracking-tight text-white">D-OpsPilot</span>
               <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">AI</span>
             </div>
             <span className="text-[10px] text-slate-400 font-mono">DevOps Agent & GitHub Auditor</span>
@@ -367,7 +367,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
               <div className="inline-flex p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl text-white shadow-lg glow-blue mb-1">
                 <Cpu className="w-7 h-7" />
               </div>
-              <h2 className="text-2xl font-black text-white tracking-tight">Sign In to OpsPilot AI</h2>
+              <h2 className="text-2xl font-black text-white tracking-tight">Sign In to D-OpsPilot AI</h2>
               <p className="text-xs text-slate-400">Enter your organization credentials</p>
             </div>
 

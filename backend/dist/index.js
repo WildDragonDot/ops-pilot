@@ -17,12 +17,12 @@ app.use('/api', apiRouter);
 app.get('/health', (req, res) => {
     res.json({
         status: 'OK',
-        service: 'OpsPilot AI Backend',
+        service: 'D-OpsPilot AI Backend',
         openaiEnabled: hasOpenAIKey(),
         timestamp: new Date().toISOString()
     });
 });
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
+    console.log(`🚀 D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
     console.log(`🤖 OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED (GPT-4o / Codex)' : 'FALLBACK MODE'}`);
 });

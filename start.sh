@@ -19,7 +19,7 @@ trap cleanup SIGINT SIGTERM EXIT
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "=================================================="
-echo "🚀 Starting OpsPilot AI (Backend & Frontend)"
+echo "🚀 Starting D-OpsPilot AI (Backend & Frontend)"
 echo "=================================================="
 
 # Check if node_modules exist, if not run npm install

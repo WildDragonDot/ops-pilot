@@ -248,7 +248,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md glow-blue shrink-0">
               <Bot className="w-4 h-4 animate-pulse" />
             </div>
-            <span className="text-sm font-extrabold text-title">OpsPilot AI</span>
+            <span className="text-sm font-extrabold text-title">D-OpsPilot AI</span>
             <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
               GPT-4o
             </span>

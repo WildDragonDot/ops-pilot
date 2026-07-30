@@ -86,9 +86,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-base tracking-tight text-title">
-                  OpsPilot
+                  D-OpsPilot
                 </span>
-                <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30">
+                <span className="text-[10px] font-mono font-bold bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20">
                   AI
                 </span>
               </div>

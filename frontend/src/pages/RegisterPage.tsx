@@ -118,7 +118,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
             <Cpu className="w-8 h-8 animate-pulse" />
           </div>
           <h1 className="text-2xl font-extrabold text-title tracking-tight">Create Workspace</h1>
-          <p className="text-xs text-subtitle">Register OpsPilot AI Account & Organization</p>
+          <p className="text-xs text-subtitle">Register D-OpsPilot AI Account & Organization</p>
         </div>
 
         {/* Social Authentication Quick Sign Up */}
