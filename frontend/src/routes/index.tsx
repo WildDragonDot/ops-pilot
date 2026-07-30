@@ -44,7 +44,7 @@ export function AppRoutes() {
 
       const [allProjects, scanData, incData] = await Promise.all([
         fetchProjects(),
-        fetchRepositoryScan(),
+        fetchRepositoryScan(currentProjectId),
         fetchIncidents(currentProjectId)
       ]);
       setProjects(allProjects);

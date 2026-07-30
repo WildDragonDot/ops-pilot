@@ -32,9 +32,10 @@ interface AuditLogEntry {
 }
 
 export const AuditLogs: React.FC = () => {
-  const outletCtx = useOutletContext<{ selectedTargetPath?: string }>();
+  const outletCtx = useOutletContext<{ selectedTargetPath?: string; project?: any }>();
   const activeTargetPath = outletCtx?.selectedTargetPath || '/home/ubuntu/finance-lock';
   const isVacantPath = Boolean(activeTargetPath) && activeTargetPath !== '/home/ubuntu/finance-lock';
+  const project = outletCtx?.project;
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -47,7 +48,7 @@ export const AuditLogs: React.FC = () => {
   const loadRealLogs = async () => {
     try {
       setIsLoading(true);
-      const data = await fetchAuditLogs();
+      const data = await fetchAuditLogs(project?.id);
       setLogs(isVacantPath ? [] : data);
     } catch (err) {
       console.error('Failed to load audit logs:', err);
@@ -58,7 +59,8 @@ export const AuditLogs: React.FC = () => {
 
   useEffect(() => {
     loadRealLogs();
-  }, []);
+  }, [project?.id, isVacantPath]);
+
 
   const filteredLogs = logs.filter(log => {
     const matchesCategory = selectedCategory === 'ALL' || log.category === selectedCategory;

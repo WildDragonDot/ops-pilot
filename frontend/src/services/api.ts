@@ -180,17 +180,19 @@ export async function fetchProjectHealth(projectId?: string): Promise<{
   return res.json();
 }
 
-export async function fetchRepositoryScan(): Promise<Scan> {
-  const res = await fetch(`${API_BASE}/repositories`, { headers: getAuthHeaders() });
+export async function fetchRepositoryScan(projectId?: string): Promise<Scan> {
+  const url = projectId ? `${API_BASE}/repositories?projectId=${encodeURIComponent(projectId)}` : `${API_BASE}/repositories`;
+  const res = await fetch(url, { headers: getAuthHeaders(projectId) });
   if (!res.ok) throw new Error('Failed to fetch repository');
   const data = await res.json();
-  return data.repository.latestScan;
+  return data.repository?.latestScan ?? null;
 }
 
-export async function triggerRepositoryScan(): Promise<Scan> {
+export async function triggerRepositoryScan(projectId?: string): Promise<Scan> {
   const res = await fetch(`${API_BASE}/repositories/scan`, { 
     method: 'POST',
-    headers: getAuthHeaders()
+    headers: getAuthHeaders(projectId),
+    body: JSON.stringify({ projectId })
   });
   if (!res.ok) throw new Error('Failed to trigger scan');
   const data = await res.json();
@@ -222,11 +224,11 @@ export async function fetchIncident(id: string): Promise<Incident> {
   return data.incident;
 }
 
-export async function startIncident(userPrompt: string, scenarioKey: string): Promise<Incident> {
+export async function startIncident(userPrompt: string, scenarioKey: string, projectId?: string): Promise<Incident> {
   const res = await fetch(`${API_BASE}/incidents`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ userPrompt, scenarioKey }),
+    headers: getAuthHeaders(projectId),
+    body: JSON.stringify({ userPrompt, scenarioKey, projectId }),
   });
   if (!res.ok) throw new Error('Failed to start incident');
   const data = await res.json();
@@ -297,8 +299,9 @@ export async function fetchServerLogs(projectId?: string): Promise<{ logs: Array
   return res.json();
 }
 
-export async function fetchAuditLogs(): Promise<any[]> {
-  const res = await fetch(`${API_BASE}/audit-logs`, { headers: getAuthHeaders() });
+export async function fetchAuditLogs(projectId?: string): Promise<any[]> {
+  const url = projectId ? `${API_BASE}/audit-logs?projectId=${encodeURIComponent(projectId)}` : `${API_BASE}/audit-logs`;
+  const res = await fetch(url, { headers: getAuthHeaders(projectId) });
   if (!res.ok) throw new Error('Failed to fetch audit logs');
   const data = await res.json();
   return data.logs || [];

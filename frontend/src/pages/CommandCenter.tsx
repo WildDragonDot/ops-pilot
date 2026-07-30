@@ -179,7 +179,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
     try {
       setIsInvestigating(true);
-      const newInc = await startIncident(textToSend, targetScenarioKey);
+      const newInc = await startIncident(textToSend, targetScenarioKey, project?.id);
       setActiveIncidentId(newInc.id);
       setPromptText('');
       onRefreshIncidents();
