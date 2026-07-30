@@ -409,7 +409,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({ incidents, project
                       </span>
                       <span className="font-mono">Confidence: {activeIncident.confidence}%</span>
                     </div>
-                    <p className="text-xs font-semibold text-title leading-relaxed pt-1">
+                    <p className="text-xs font-semibold text-title leading-relaxed pt-1 whitespace-pre-line">
                       {activeIncident.rootCause}
                     </p>
                   </motion.div>
