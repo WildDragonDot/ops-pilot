@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Cpu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -121,7 +121,7 @@ export function AppRoutes() {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState<boolean>(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) return;
     try {
       const savedId = localStorage.getItem('opspilot_selected_project_id');
@@ -136,8 +136,7 @@ export function AppRoutes() {
       
       const found = allProjects.find(p => p.id === (project?.id || savedId)) || allProjects[0];
       if (found) {
-        setProject({ ...found });
-        // Re-fetch incidents scoped to the resolved project if it differed
+        setProject(prev => (!prev || prev.id !== found.id) ? found : prev);
         if (found.id !== currentProjectId && allProjects.length > 0) {
           const scopedInc = await fetchIncidents(found.id);
           setIncidents(scopedInc);
@@ -151,19 +150,20 @@ export function AppRoutes() {
     } catch (err) {
       logger.error('Error loading API data', err);
     }
-  };
+  }, [user, project?.id]);
 
   useEffect(() => {
     if (user) {
       loadData();
+      // Background sync every 30s (SSE stream handles live real-time updates)
       const interval = setInterval(() => {
         if (document.visibilityState === 'visible') {
           loadData();
         }
-      }, 1500);
+      }, 30000);
       return () => clearInterval(interval);
     }
-  }, [user, project?.id]);
+  }, [user, project?.id, loadData]);
 
   const handleSelectProject = (selectedP: Project) => {
     setProject(selectedP);
