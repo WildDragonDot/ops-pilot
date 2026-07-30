@@ -36,7 +36,7 @@ const PORT = Number(process.env.PORT || 5080);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // Allow specific origins from env; fall back to common dev origins.
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000')
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000,https://dopspilot.chandandev.online,http://dopspilot.chandandev.online')
   .split(',')
   .map(o => o.trim())
   .filter(Boolean);

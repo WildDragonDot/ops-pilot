@@ -59,17 +59,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         name = fbUser.displayName || email.split('@')[0] || 'Developer';
         avatarUrl = fbUser.photoURL || '';
       } catch (fbErr: any) {
-        if (fbErr.code === 'auth/invalid-api-key' || fbErr.code === 'auth/api-key-not-valid' || fbErr.code === 'auth/popup-closed-by-user' || fbErr.code?.includes('domain-not-allowed') || fbErr.code?.includes('unauthorized-domain')) {
-          logger.warn('Firebase popup notice, using dev session fallback', fbErr);
-          firebaseUid = `demo-${providerType}-${Date.now()}`;
-          email = providerType === 'google' ? 'dev.google@opspilot.ai' : 'dev.github@opspilot.ai';
-          name = providerType === 'google' ? 'Google Developer' : 'GitHub Developer';
-          avatarUrl = providerType === 'google' 
-            ? 'https://lh3.googleusercontent.com/a/default-user' 
-            : 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
-        } else {
-          throw fbErr;
+        if (fbErr.code === 'auth/popup-closed-by-user' || fbErr.code === 'auth/cancelled-popup-request') {
+          // User closed the popup — just return silently
+          setSocialLoading(null);
+          return;
         }
+        if (fbErr.code === 'auth/invalid-api-key' || fbErr.code === 'auth/api-key-not-valid' || fbErr.code?.includes('domain-not-allowed') || fbErr.code?.includes('unauthorized-domain')) {
+          throw new Error('This domain is not authorized for Google Sign-In. Please contact admin to add it in Firebase Console, or use Email & Password login below.');
+        }
+        throw fbErr;
       }
 
       if (!email) {
