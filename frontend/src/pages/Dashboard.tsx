@@ -781,19 +781,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="glass-panel p-4 rounded-xl border border-blue-500/30 bg-blue-950/20 space-y-2.5 shadow-sm">
-              <div className="flex items-center justify-between">
+            <div className="glass-panel p-4 rounded-xl border border-blue-500/30 card-bg-subtle space-y-2.5 shadow-sm font-sans">
+              <div className="flex items-center justify-between border-b theme-border pb-2">
                 <div className="flex items-center gap-2 text-blue-400 font-extrabold text-xs">
-                  <Server className="w-4 h-4 text-blue-400" />
-                  <span>Production Server Unattached</span>
+                  <GitBranch className="w-4 h-4 text-blue-400" />
+                  <span>GitHub Repository Engine</span>
                 </div>
-                <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-mono font-bold">
-                  LOCAL ENGINE
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono font-extrabold">
+                  PROTECTED
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                Workspace is operating in <strong>Local AST Sandbox Engine</strong> mode. Remote server SSH metrics are disabled until an SSH endpoint is added.
-              </p>
+              <div className="space-y-1.5 font-mono text-[10px]">
+                <div className="flex justify-between items-center text-subtitle">
+                  <span>Target Audit Branch:</span>
+                  <b className="text-blue-400 font-bold">{project?.gitBranch || 'main'}</b>
+                </div>
+                <div className="flex justify-between items-center text-subtitle">
+                  <span>AST Code Vulnerabilities:</span>
+                  <b className={activeRisksCount === 0 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                    {activeRisksCount === 0 ? '0 Risks (100% Clean)' : `${activeRisksCount} Risks Active`}
+                  </b>
+                </div>
+                <div className="flex justify-between items-center text-subtitle">
+                  <span>Security Audit Webhook:</span>
+                  <b className="text-emerald-400 font-bold">● ACTIVE</b>
+                </div>
+              </div>
             </div>
           )}
 

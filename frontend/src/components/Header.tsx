@@ -134,11 +134,13 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Section: Status Pills & Action Controls */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 ml-auto">
           
-          {/* Host Info Pill (only on large screens 2xl) */}
-          <div className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-xl card-bg-subtle border theme-border text-xs text-subtitle font-mono whitespace-nowrap shrink-0">
-            <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-            <span>Host: <b className="text-title font-bold">{project?.serverHost || 'Local Sandbox'}</b></span>
-          </div>
+          {/* Host Info Pill (only when SSH server is set) */}
+          {mode !== 'GITHUB_ONLY' && (
+            <div className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-xl card-bg-subtle border theme-border text-xs text-subtitle font-mono whitespace-nowrap shrink-0">
+              <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span>Host: <b className="text-title font-bold">{project?.serverHost || 'Local Sandbox'}</b></span>
+            </div>
+          )}
 
           {/* Clickable System Status Pill with Popover */}
           <div className="relative shrink-0">
