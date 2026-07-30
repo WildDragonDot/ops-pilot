@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { register, login, firebaseAuth, getMe } from '../controllers/auth.controller.js';
-import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, injectFailure, resetEnv } from '../controllers/project.controller.js';
+import { getProject, getProjects, createProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv } from '../controllers/project.controller.js';
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
@@ -27,6 +27,7 @@ router.post('/projects/test-connection', requireAuth, testProjectConnection);
 router.delete('/projects/:id', requireAuth, deleteProject);
 router.get('/projects/:id', requireAuth, getProject);
 router.get('/projects/:id/health', requireAuth, getProjectHealth);
+router.get('/projects/:id/server-logs', requireAuth, getServerLogs);
 router.post('/demo/inject-failure', requireAuth, injectFailure);
 router.post('/demo/reset', requireAuth, resetEnv);
 

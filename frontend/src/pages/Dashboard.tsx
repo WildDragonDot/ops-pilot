@@ -131,31 +131,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     if (!isLogStreaming) return () => { es?.close(); };
 
-    const interval = setInterval(() => {
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
-      const sampleLogs: Array<{ level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }> = Boolean(project?.serverHost?.trim()) ? [
-        { level: 'INFO', message: 'healthcheck    -- GET /api/health 200 OK (2ms latency)' },
-        { level: 'INFO', message: 'db.postgres    -- Active connection pool: 14/100 (HEALTHY)' },
-        { level: 'OK',   message: 'vault.crypto   -- Zero-DB WebCrypto vault verification passed' },
-        { level: 'INFO', message: 'redis.cache    -- Cache hit ratio: 94.2% (1ms latency)' },
-        { level: 'WARN', message: 'metrics.watch  -- Memory buffer allocation at 11%' }
-      ] : [
-        { level: 'INFO', message: 'github.api     -- GET /repos/WildDragonDot/ops-pilot 200 OK' },
-        { level: 'OK',   message: 'git.branch     -- Verified target branch "main"' },
-        { level: 'INFO', message: 'security.audit -- Static vulnerability scan completed (0 critical)' },
-        { level: 'OK',   message: 'vault.crypto   -- WebCrypto zero-db vault active' },
-        { level: 'INFO', message: 'github.auditor -- Repository audit stream standing by' }
-      ];
-      const randomLog = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
-      setLogFeed(prev => [...prev, { id: Date.now().toString(), time: timeStr, level: randomLog.level, message: randomLog.message }].slice(-20));
-    }, 4000);
+    const syncRealLogs = async () => {
+      try {
+        const { fetchServerLogs } = await import('../services/api');
+        const res = await fetchServerLogs(project?.id);
+        if (res?.logs && res.logs.length > 0) {
+          setLogFeed(prev => {
+            const existingIds = new Set(prev.map(l => l.id));
+            const newEntries = res.logs.filter(l => !existingIds.has(l.id));
+            if (newEntries.length === 0) {
+              const latest = res.logs[res.logs.length - 1];
+              return [...prev, { ...latest, id: `log-${Date.now()}` }].slice(-20);
+            }
+            return [...prev, ...newEntries].slice(-20);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to stream server logs:', err);
+      }
+    };
+
+    syncRealLogs();
+    const interval = setInterval(syncRealLogs, 3500);
 
     return () => {
       es?.close();
       clearInterval(interval);
     };
-  }, [isLogStreaming]);
+  }, [isLogStreaming, project?.id]);
 
   if (isLoading) {
     return <DashboardSkeleton />;

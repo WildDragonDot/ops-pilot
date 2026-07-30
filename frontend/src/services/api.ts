@@ -230,6 +230,13 @@ export async function executeCommandOnServer(command: string): Promise<{ success
   return res.json();
 }
 
+export async function fetchServerLogs(projectId?: string): Promise<{ logs: Array<{ id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string }>; host?: string; realRemote: boolean }> {
+  const id = projectId || 'demo-project';
+  const res = await fetch(`${API_BASE}/projects/${id}/server-logs`, { headers: getAuthHeaders(id) });
+  if (!res.ok) throw new Error('Failed to fetch server logs');
+  return res.json();
+}
+
 export async function fetchAuditLogs(): Promise<any[]> {
   const res = await fetch(`${API_BASE}/audit-logs`, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch audit logs');
