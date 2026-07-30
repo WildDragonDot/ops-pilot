@@ -18,18 +18,19 @@ model Organization {
 }
 
 model User {
-  id             String       @id @default(cuid())
-  email          String       @unique
+  id             String         @id @default(cuid())
+  email          String         @unique
   password       String?
   name           String
-  role           String       @default("DEVELOPER") // ADMIN, DEVELOPER, APPROVER
-  firebaseUid    String?      @unique
-  provider       String?      @default("email")
+  role           String         @default("DEVELOPER") // ADMIN, DEVELOPER, APPROVER
+  firebaseUid    String?        @unique
+  provider       String?        @default("email")
   avatarUrl      String?
   organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  notifications  Notification[]
 }
 
 model Project {
@@ -145,4 +146,33 @@ model RepositoryFinding {
   status         String         @default("OPEN")
   createdAt      DateTime       @default(now())
   scan           RepositoryScan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+}
+
+// ─── Phase 8: Enterprise Features ─────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  orgId     String
+  type      String   // success | warning | danger | info
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String?
+  userEmail String?
+  userName  String?
+  action    String
+  category  String   // AUTH | INCIDENT | APPROVAL | SCAN | CODE_PATCH | SYSTEM
+  target    String
+  ipAddress String?
+  status    String   // SUCCESS | WARNING | FAILED
+  details   String?
+  createdAt DateTime @default(now())
 }

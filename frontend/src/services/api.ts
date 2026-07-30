@@ -308,12 +308,159 @@ export async function fetchServerLogs(projectId?: string): Promise<{ logs: Array
   return res.json();
 }
 
-export async function fetchAuditLogs(projectId?: string): Promise<any[]> {
-  const url = projectId ? `${API_BASE}/audit-logs?projectId=${encodeURIComponent(projectId)}` : `${API_BASE}/audit-logs`;
-  const res = await fetch(url, { headers: getAuthHeaders(projectId) });
+export async function fetchAuditLogs(params?: {
+  projectId?: string;
+  page?: number;
+  limit?: number;
+  category?: string;
+  status?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ logs: any[]; total: number; page: number; totalPages: number; limit: number }> {
+  const qp = new URLSearchParams();
+  if (params?.projectId) qp.set('projectId', params.projectId);
+  if (params?.page) qp.set('page', String(params.page));
+  if (params?.limit) qp.set('limit', String(params.limit));
+  if (params?.category && params.category !== 'ALL') qp.set('category', params.category);
+  if (params?.status && params.status !== 'ALL') qp.set('status', params.status);
+  if (params?.search) qp.set('search', params.search);
+  if (params?.startDate) qp.set('startDate', params.startDate);
+  if (params?.endDate) qp.set('endDate', params.endDate);
+  const url = `${API_BASE}/audit-logs?${qp.toString()}`;
+  const res = await fetch(url, { headers: getAuthHeaders() });
   if (!res.ok) throw new Error('Failed to fetch audit logs');
+  return res.json();
+}
+
+// ─── Notification API ──────────────────────────────────────────────────────────
+
+export async function fetchNotifications(params?: { page?: number; limit?: number; unread?: boolean }) {
+  const qp = new URLSearchParams();
+  if (params?.page) qp.set('page', String(params.page));
+  if (params?.limit) qp.set('limit', String(params.limit));
+  if (params?.unread) qp.set('unread', 'true');
+  const res = await fetch(`${API_BASE}/notifications?${qp.toString()}`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch notifications');
+  return res.json();
+}
+
+export async function persistNotification(payload: { type: string; title: string; message: string }) {
+  const res = await fetch(`${API_BASE}/notifications`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function markNotificationRead(id: string) {
+  const res = await fetch(`${API_BASE}/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: getAuthHeaders()
+  });
+  return res.ok;
+}
+
+export async function markAllNotificationsRead() {
+  const res = await fetch(`${API_BASE}/notifications/read-all`, {
+    method: 'PATCH',
+    headers: getAuthHeaders()
+  });
+  return res.ok;
+}
+
+export async function deleteNotificationApi(id: string) {
+  const res = await fetch(`${API_BASE}/notifications/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  return res.ok;
+}
+
+export async function clearAllNotificationsApi() {
+  const res = await fetch(`${API_BASE}/notifications`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  return res.ok;
+}
+
+// ─── User Management API ───────────────────────────────────────────────────────
+
+export async function fetchOrgUsers(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/users`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch users');
   const data = await res.json();
-  return data.logs || [];
+  return data.users || [];
+}
+
+export async function updateUserRoleApi(userId: string, role: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ role })
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error || 'Failed to update user role');
+  }
+  return res.json();
+}
+
+export async function removeOrgUser(userId: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error || 'Failed to remove user');
+  }
+  return res.json();
+}
+
+export async function inviteUserApi(email: string, role: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/users/invite`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ email, role })
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error || 'Failed to send invite');
+  }
+  return res.json();
+}
+
+// ─── Org API ───────────────────────────────────────────────────────────────────
+
+export async function fetchOrg(): Promise<any> {
+  const res = await fetch(`${API_BASE}/org`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch organization');
+  const data = await res.json();
+  return data.organization;
+}
+
+export async function updateOrgApi(name: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/org`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ name })
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error || 'Failed to update organization');
+  }
+  return res.json();
+}
+
+export async function fetchOrgStats(): Promise<any> {
+  const res = await fetch(`${API_BASE}/org/stats`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch org stats');
+  const data = await res.json();
+  return data.stats;
 }
 
 export async function fetchDeploymentGap(projectId?: string): Promise<{

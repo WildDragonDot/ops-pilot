@@ -2,6 +2,13 @@ import { Request, Response } from 'express';
 import { registerUser, loginUser, authenticateFirebaseUser } from '../services/auth.service.js';
 import { prisma } from '../services/db.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { writeAuditLog } from '../services/audit-log.service.js';
+
+function getIp(req: Request): string {
+  const fwd = req.headers['x-forwarded-for'];
+  const first = Array.isArray(fwd) ? fwd[0] : fwd;
+  return (first?.split(',')[0]?.trim() || String(req.ip || '') || 'unknown').replace('::ffff:', '');
+}
 
 export async function register(req: Request, res: Response) {
   try {
@@ -17,6 +24,21 @@ export async function register(req: Request, res: Response) {
     }
 
     const result = await registerUser(email.trim().toLowerCase(), password, name.trim(), organizationName?.trim());
+
+    // Audit: new account registered
+    await writeAuditLog({
+      orgId: result.user.organizationId,
+      userId: result.user.id,
+      userEmail: result.user.email,
+      userName: result.user.name,
+      action: 'USER_REGISTERED',
+      category: 'AUTH',
+      target: result.user.email,
+      ipAddress: getIp(req),
+      status: 'SUCCESS',
+      details: `New account created via email/password. Organization: ${result.user.organizationName || organizationName || 'default'}`
+    });
+
     res.status(201).json({
       success: true,
       message: 'Account created successfully.',
@@ -35,12 +57,38 @@ export async function login(req: Request, res: Response) {
     }
 
     const result = await loginUser(email.trim().toLowerCase(), password);
+
+    // Audit: successful login
+    await writeAuditLog({
+      orgId: result.user.organizationId,
+      userId: result.user.id,
+      userEmail: result.user.email,
+      userName: result.user.name,
+      action: 'USER_LOGIN',
+      category: 'AUTH',
+      target: 'D-OpsPilot Workspace',
+      ipAddress: getIp(req),
+      status: 'SUCCESS',
+      details: `Authenticated via email/password. Role: ${result.user.role}`
+    });
+
     res.json({
       success: true,
       message: 'Logged in successfully.',
       ...result
     });
   } catch (err: any) {
+    // Audit: failed login attempt (no orgId since user may not exist)
+    await writeAuditLog({
+      orgId: 'unknown',
+      userEmail: req.body?.email || 'unknown',
+      action: 'USER_LOGIN_FAILED',
+      category: 'AUTH',
+      target: req.body?.email || 'unknown',
+      ipAddress: getIp(req),
+      status: 'FAILED',
+      details: `Login failed: ${err.message}`
+    });
     res.status(401).json({ error: err.message || 'Authentication failed.' });
   }
 }
@@ -64,9 +112,25 @@ export async function firebaseAuth(req: Request, res: Response) {
       avatarUrl
     );
 
+    const providerLabel = provider === 'github.com' ? 'GitHub' : provider === 'google.com' ? 'Google' : 'Firebase';
+
+    // Audit: social sign-in
+    await writeAuditLog({
+      orgId: result.user.organizationId,
+      userId: result.user.id,
+      userEmail: result.user.email,
+      userName: result.user.name,
+      action: 'USER_LOGIN_SOCIAL',
+      category: 'AUTH',
+      target: 'D-OpsPilot Workspace',
+      ipAddress: getIp(req),
+      status: 'SUCCESS',
+      details: `Signed in via ${providerLabel}. Role: ${result.user.role}`
+    });
+
     res.json({
       success: true,
-      message: `Signed in with ${provider === 'github.com' ? 'GitHub' : provider === 'google.com' ? 'Google' : 'Firebase'} successfully.`,
+      message: `Signed in with ${providerLabel} successfully.`,
       ...result
     });
   } catch (err: any) {
@@ -105,4 +169,3 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
     res.status(500).json({ error: err.message || 'Failed to fetch user profile.' });
   }
 }
-

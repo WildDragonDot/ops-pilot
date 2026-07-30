@@ -5,13 +5,54 @@ import {
   getIncidentById, 
   incidentEmitter 
 } from '../services/incident-agent.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { writeAuditLog } from '../services/audit-log.service.js';
 
-export async function createIncident(req: Request, res: Response) {
+function getIp(req: Request): string {
+  const fwd = req.headers['x-forwarded-for'];
+  const first = Array.isArray(fwd) ? fwd[0] : fwd;
+  return (first?.split(',')[0]?.trim() || String(req.ip || '') || 'unknown').replace('::ffff:', '');
+}
+
+export async function createIncident(req: AuthenticatedRequest, res: Response) {
   const { userPrompt, scenarioKey, projectId } = req.body;
+  const user = req.user;
   try {
     const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId);
+
+    // Write audit log — incident investigation triggered
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'TRIGGERED_INCIDENT_INVESTIGATION',
+        category: 'INCIDENT',
+        target: `Incident #${incident.id}`,
+        ipAddress: getIp(req),
+        status: 'SUCCESS',
+        details: `Prompt: "${userPrompt?.slice(0, 200)}" — Scenario: ${scenarioKey || 'auto-detect'} — Project: ${projectId || 'global'}`
+      });
+    }
+
     res.json({ incident });
   } catch (err: any) {
+    // Log failed incident creation attempt
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'TRIGGERED_INCIDENT_INVESTIGATION',
+        category: 'INCIDENT',
+        target: `Incident [FAILED]`,
+        ipAddress: getIp(req),
+        status: 'FAILED',
+        details: `Error: ${err.message} — Prompt: "${userPrompt?.slice(0, 100)}"`
+      });
+    }
     res.status(400).json({ error: err.message || 'Unable to create incident.' });
   }
 }

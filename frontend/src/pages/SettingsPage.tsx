@@ -150,16 +150,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [orgName, setOrgName] = useState<string>(() => localStorage.getItem('opspilot_org_name') || user?.organizationName || 'Acme Operations Corp');
   const [isVerifyingVault, setIsVerifyingVault] = useState<boolean>(false);
 
-  // Team Roster & Invite Modal State
-  const [teamMembers, setTeamMembers] = useState([
-    { name: 'Chandan Vishwakarma', email: 'chandan@opspilot.ai', role: 'ADMIN', status: 'ACTIVE' },
-    { name: 'DevOps Lead Engineer', email: 'sre@opspilot.ai', role: 'OPERATOR', status: 'ACTIVE' },
-    { name: 'Security Auditor', email: 'security@opspilot.ai', role: 'AUDITOR', status: 'ACTIVE' },
-  ]);
+  // Team Roster & Invite Modal State — loaded from API
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [isLoadingTeam, setIsLoadingTeam] = useState<boolean>(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState<boolean>(false);
-  const [inviteName, setInviteName] = useState<string>('');
   const [inviteEmail, setInviteEmail] = useState<string>('');
-  const [inviteRole, setInviteRole] = useState<string>('OPERATOR');
+  const [inviteRole, setInviteRole] = useState<string>('DEVELOPER');
+  const [inviteLink, setInviteLink] = useState<string>('');
+  const [isInviting, setIsInviting] = useState<boolean>(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -168,6 +166,61 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
       .catch((err) => logger.error('Failed to load settings projects', err))
       .finally(() => setIsLoading(false));
   }, []);
+
+  const loadTeamMembers = async () => {
+    try {
+      setIsLoadingTeam(true);
+      const { fetchOrgUsers } = await import('../services/api');
+      const users = await fetchOrgUsers();
+      setTeamMembers(users);
+    } catch (err) {
+      logger.error('Failed to load team members', err);
+    } finally {
+      setIsLoadingTeam(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'team') loadTeamMembers();
+  }, [activeTab]);
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const { updateUserRoleApi } = await import('../services/api');
+      await updateUserRoleApi(userId, newRole);
+      setTeamMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole } : m));
+      addNotification({ type: 'success', title: 'Role Updated', message: `User role changed to ${newRole}.` });
+    } catch (err: any) {
+      addNotification({ type: 'danger', title: 'Update Failed', message: err.message });
+    }
+  };
+
+  const handleRemoveUser = async (userId: string, name: string) => {
+    if (!confirm(`Remove ${name} from your organization?`)) return;
+    try {
+      const { removeOrgUser } = await import('../services/api');
+      await removeOrgUser(userId);
+      setTeamMembers(prev => prev.filter(m => m.id !== userId));
+      addNotification({ type: 'info', title: 'User Removed', message: `${name} has been removed from the org.` });
+    } catch (err: any) {
+      addNotification({ type: 'danger', title: 'Removal Failed', message: err.message });
+    }
+  };
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) return;
+    try {
+      setIsInviting(true);
+      const { inviteUserApi } = await import('../services/api');
+      const result = await inviteUserApi(inviteEmail, inviteRole);
+      setInviteLink(result.inviteUrl || '');
+      addNotification({ type: 'success', title: 'Invite Generated', message: `Invite link created for ${inviteEmail}.` });
+    } catch (err: any) {
+      addNotification({ type: 'danger', title: 'Invite Failed', message: err.message });
+    } finally {
+      setIsInviting(false);
+    }
+  };
 
   const handleDeleteProject = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to remove project "${name}"?`)) {
@@ -472,21 +525,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     e.target.value = '';
   };
 
-  const handleAddTeamMember = () => {
-    if (!inviteName.trim() || !inviteEmail.trim()) {
-      addNotification({ type: 'warning', title: 'Missing Information', message: 'Please enter both name and email.' });
-      return;
-    }
-    setTeamMembers(prev => [...prev, { name: inviteName, email: inviteEmail, role: inviteRole, status: 'ACTIVE' }]);
-    setInviteName('');
-    setInviteEmail('');
-    setIsInviteModalOpen(false);
-    addNotification({
-      type: 'success',
-      title: 'Member Invited',
-      message: `Added "${inviteName}" as ${inviteRole} to the organization.`
-    });
-  };
+
 
   const handleTestVaultEncryption = async () => {
     setIsVerifyingVault(true);
@@ -1307,40 +1346,72 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       <Users className="w-3.5 h-3.5 text-indigo-500" />
                       <span>Team Access Roster ({teamMembers.length})</span>
                     </h3>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setIsInviteModalOpen(true)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer shadow-sm"
-                    >
-                      <UserPlus className="w-3 h-3" />
-                      <span>Invite Member</span>
-                    </motion.button>
+                    {user?.role === 'ADMIN' && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => { setIsInviteModalOpen(true); setInviteLink(''); setInviteEmail(''); }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer shadow-sm"
+                      >
+                        <UserPlus className="w-3 h-3" />
+                        <span>Invite Member</span>
+                      </motion.button>
+                    )}
                   </div>
 
-                  <div className="space-y-1.5">
-                    {teamMembers.map((member, mIdx) => (
-                      <div key={mIdx} className="flex items-center justify-between p-2.5 rounded-lg card-bg-subtle border theme-border text-[11px]">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-[11px] shrink-0">
-                            {member.name.charAt(0)}
+                  {isLoadingTeam ? (
+                    <div className="flex items-center justify-center py-6 text-[11px] text-subtitle font-mono gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+                      Loading team members...
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {teamMembers.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between p-2.5 rounded-lg card-bg-subtle border theme-border text-[11px]">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold flex items-center justify-center text-[11px] shrink-0">
+                              {member.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-bold text-title flex items-center gap-1.5">
+                                {member.name}
+                                {member.id === user?.id && (
+                                  <span className="px-1 py-0.5 rounded text-[8px] bg-blue-500/20 text-blue-500 font-mono">YOU</span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-subtitle font-mono">{member.email}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-bold text-title">{member.name}</div>
-                            <div className="text-[10px] text-subtitle font-mono">{member.email}</div>
+                          <div className="flex items-center gap-2">
+                            {user?.role === 'ADMIN' && member.id !== user?.id ? (
+                              <select
+                                value={member.role}
+                                onChange={e => handleUpdateUserRole(member.id, e.target.value)}
+                                className="px-2 py-0.5 rounded-lg border theme-border card-bg-subtle text-[10px] font-mono font-bold text-title focus:outline-none cursor-pointer"
+                              >
+                                <option value="DEVELOPER">DEVELOPER</option>
+                                <option value="APPROVER">APPROVER</option>
+                                <option value="ADMIN">ADMIN</option>
+                              </select>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[9px] font-mono font-bold">
+                                {member.role}
+                              </span>
+                            )}
+                            {user?.role === 'ADMIN' && member.id !== user?.id && (
+                              <button
+                                onClick={() => handleRemoveUser(member.id, member.name)}
+                                className="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                                title="Remove user"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[9px] font-mono font-bold">
-                            {member.role}
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono text-emerald-500 font-bold">
-                            {member.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -1965,7 +2036,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                   <span>Invite New Team Member</span>
                 </h3>
                 <button
-                  onClick={() => setIsInviteModalOpen(false)}
+                  onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }}
                   className="text-subtitle hover:text-title p-1 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
@@ -1974,23 +2045,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
               <div className="space-y-3 text-xs">
                 <div className="space-y-1">
-                  <label className="text-subtitle font-bold block">Member Full Name</label>
-                  <input
-                    type="text"
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                    placeholder="e.g. Alex Rivera"
-                    className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-1">
                   <label className="text-subtitle font-bold block">Email Address</label>
                   <input
                     type="email"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="alex@opspilot.ai"
+                    placeholder="alex@company.com"
                     className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -2002,26 +2062,43 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     onChange={(e) => setInviteRole(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border theme-border card-bg-subtle text-title font-mono focus:outline-none focus:border-blue-500"
                   >
-                    <option value="OPERATOR">OPERATOR (Full Patch Execution)</option>
-                    <option value="AUDITOR">AUDITOR (Read-Only Logs)</option>
-                    <option value="ADMIN">ADMIN (Superuser Access)</option>
+                    <option value="DEVELOPER">DEVELOPER — Read + Execute commands</option>
+                    <option value="APPROVER">APPROVER — Can approve/reject fixes</option>
+                    <option value="ADMIN">ADMIN — Full organization access</option>
                   </select>
                 </div>
+
+                {inviteLink && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+                    <div className="text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">✓ Invite link generated!</div>
+                    <div className="font-mono text-[10px] text-subtitle break-all bg-slate-100 dark:bg-slate-900 p-2 rounded-lg">{inviteLink}</div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(inviteLink); }}
+                      className="text-[10px] text-blue-500 hover:underline cursor-pointer"
+                    >
+                      Copy to clipboard
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
-                  onClick={() => setIsInviteModalOpen(false)}
+                  onClick={() => { setIsInviteModalOpen(false); setInviteLink(''); }}
                   className="px-3.5 py-1.5 rounded-xl card-bg-subtle border theme-border text-title text-xs font-bold cursor-pointer"
                 >
-                  Cancel
+                  {inviteLink ? 'Close' : 'Cancel'}
                 </button>
-                <button
-                  onClick={handleAddTeamMember}
-                  className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer"
-                >
-                  Send Invitation
-                </button>
+                {!inviteLink && (
+                  <button
+                    onClick={handleInviteUser}
+                    disabled={isInviting || !inviteEmail}
+                    className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    {isInviting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                    {isInviting ? 'Generating...' : 'Generate Invite Link'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>

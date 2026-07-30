@@ -7,8 +7,16 @@ import { testSSHConnection, discoverServerTechStack } from '../services/ssh.serv
 import { fetchLiveGitHubAudit } from '../services/github-audit.service.js';
 import { broadcastEvent } from './stream.controller.js';
 import { logger } from '../services/logger.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { writeAuditLog } from '../services/audit-log.service.js';
 
 const execAsync = promisify(exec);
+
+function getIp(req: Request): string {
+  const fwd = req.headers['x-forwarded-for'];
+  const first = Array.isArray(fwd) ? fwd[0] : fwd;
+  return (first?.split(',')[0]?.trim() || String(req.ip || '') || 'unknown').replace('::ffff:', '');
+}
 
 const getHeaderString = (val: string | string[] | undefined): string | undefined => {
   if (!val) return undefined;
@@ -64,8 +72,9 @@ export async function getProject(req: Request, res: Response) {
   });
 }
 
-export async function createProject(req: Request, res: Response) {
+export async function createProject(req: AuthenticatedRequest, res: Response) {
   const { name, gitUrl, serverHost, serverPort, serverUser, environmentType } = req.body;
+  const user = req.user;
 
   if (!name) {
     return res.status(400).json({ error: 'Project name is required' });
@@ -87,6 +96,22 @@ export async function createProject(req: Request, res: Response) {
   });
 
   const state = getProjectState();
+
+  // Audit: project created
+  if (user) {
+    await writeAuditLog({
+      orgId: user.organizationId,
+      userId: user.userId,
+      userEmail: user.email,
+      userName: user.email,
+      action: 'PROJECT_CREATED',
+      category: 'SYSTEM',
+      target: `Project: ${name}`,
+      ipAddress: getIp(req),
+      status: 'SUCCESS',
+      details: `New project created — Type: ${environmentType || 'Docker Compose'} — Git: ${gitUrl || 'none'} — Server: ${serverHost || 'local sandbox'}`
+    });
+  }
 
   res.status(201).json({
     project: {
@@ -133,10 +158,29 @@ export async function testProjectConnection(req: Request, res: Response) {
   });
 }
 
-export async function deleteProject(req: Request, res: Response) {
+export async function deleteProject(req: AuthenticatedRequest, res: Response) {
   const id = String(req.params.id);
+  const user = req.user;
   try {
+    const existing = await prisma.project.findUnique({ where: { id } });
     await prisma.project.delete({ where: { id } });
+
+    // Audit: project deleted
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'PROJECT_DELETED',
+        category: 'SYSTEM',
+        target: `Project: ${existing?.name || id}`,
+        ipAddress: getIp(req),
+        status: 'SUCCESS',
+        details: `Project "${existing?.name || id}" permanently deleted by ${user.email} (role: ${user.role})`
+      });
+    }
+
     res.json({ success: true, message: 'Project deleted' });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -232,8 +276,9 @@ export async function getProjectHealth(req: Request, res: Response) {
   });
 }
 
-export async function injectFailure(req: Request, res: Response) {
+export async function injectFailure(req: AuthenticatedRequest, res: Response) {
   const { scenarioKey, projectId } = req.body;
+  const user = req.user;
   const project = projectId ? await prisma.project.findUnique({ where: { id: String(projectId) } }) : null;
   if (!project?.serverHost?.trim()) {
     return res.status(400).json({ error: 'Failure injection requires a selected project with an SSH server host.' });
@@ -242,11 +287,29 @@ export async function injectFailure(req: Request, res: Response) {
   const state = injectFailureScenario(key);
   const incident = await createAndRunIncident('', key, project.id);
   broadcastEvent({ type: 'danger', title: 'Failure Injected', message: `Scenario '${key}' triggered container degradation` });
+
+  // Audit: failure injection
+  if (user) {
+    await writeAuditLog({
+      orgId: user.organizationId,
+      userId: user.userId,
+      userEmail: user.email,
+      userName: user.email,
+      action: 'FAILURE_INJECTION_TRIGGERED',
+      category: 'FAILURE_INJECTION',
+      target: `Project: ${project.name} — Scenario: ${key}`,
+      ipAddress: getIp(req),
+      status: 'WARNING',
+      details: `Chaos scenario "${key}" injected by ${user.email} (role: ${user.role}) on project "${project.name}"`
+    });
+  }
+
   res.json({ success: true, services: state.environmentStatus, incident });
 }
 
-export async function resetEnv(req: Request, res: Response) {
+export async function resetEnv(req: AuthenticatedRequest, res: Response) {
   const { projectId } = req.body || {};
+  const user = req.user;
   if (projectId) {
     const project = await prisma.project.findUnique({ where: { id: String(projectId) } });
     if (!project?.serverHost?.trim()) {
@@ -255,17 +318,50 @@ export async function resetEnv(req: Request, res: Response) {
   }
   const state = resetEnvironmentState();
   broadcastEvent({ type: 'success', title: 'Environment Restored', message: 'All container services reset to HEALTHY status' });
+
+  // Audit: environment reset
+  if (user) {
+    await writeAuditLog({
+      orgId: user.organizationId,
+      userId: user.userId,
+      userEmail: user.email,
+      userName: user.email,
+      action: 'ENVIRONMENT_RESET',
+      category: 'INCIDENT',
+      target: projectId ? `Project #${projectId}` : 'Global Environment',
+      ipAddress: getIp(req),
+      status: 'SUCCESS',
+      details: `Environment reset to HEALTHY state by ${user.email} (role: ${user.role})`
+    });
+  }
+
   res.json({ success: true, services: state.environmentStatus });
 }
 
-export async function executeServerCommand(req: Request, res: Response) {
+export async function executeServerCommand(req: AuthenticatedRequest, res: Response) {
   const { command, projectId } = req.body;
+  const user = req.user;
   if (!command || typeof command !== 'string') {
     return res.status(400).json({ error: 'Command string is required' });
   }
 
   const trimmed = command.trim();
   if (trimmed.startsWith('rm -rf /') || trimmed.includes('mkfs') || trimmed.includes('dd if=')) {
+    // Audit: blocked dangerous command
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'COMMAND_BLOCKED',
+        category: 'SYSTEM',
+        target: `Blocked: ${trimmed.slice(0, 80)}`,
+        ipAddress: getIp(req),
+        status: 'FAILED',
+        details: `Destructive command blocked by safety policy: "${trimmed.slice(0, 200)}"`
+      });
+    }
     return res.status(403).json({ error: 'Command blocked by D-OpsPilot AI Safety Policy' });
   }
 
@@ -301,14 +397,47 @@ export async function executeServerCommand(req: Request, res: Response) {
   try {
     const { executeRemoteCommand } = await import('../services/ssh.service.js');
     const output = await executeRemoteCommand(creds, trimmed);
+    const success = !output.includes('Command failed') && !output.includes('Permission denied');
+
+    // Audit: server command executed
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'EXECUTED_SERVER_COMMAND',
+        category: 'INCIDENT',
+        target: `${serverUser}@${serverHost}`,
+        ipAddress: getIp(req),
+        status: success ? 'SUCCESS' : 'WARNING',
+        details: `CMD: ${trimmed.slice(0, 200)} | Output: ${output?.slice(0, 150) || '(empty)'}`
+      });
+    }
+
     res.json({
-      success: !output.includes('Command failed') && !output.includes('Permission denied'),
+      success,
       command: trimmed,
       output: output || '(Command executed successfully)',
       exitCode: 0,
       cwd: `${serverUser}@${serverHost}:~`
     });
   } catch (err: any) {
+    // Audit: command execution error
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'EXECUTED_SERVER_COMMAND',
+        category: 'INCIDENT',
+        target: `${serverUser}@${serverHost}`,
+        ipAddress: getIp(req),
+        status: 'FAILED',
+        details: `CMD: ${trimmed.slice(0, 150)} | Error: ${err.message}`
+      });
+    }
     res.json({
       success: false,
       command: trimmed,

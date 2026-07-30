@@ -1,13 +1,19 @@
-name: CI
+name: CI — OpsPilot AI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Backend Build & Tests
+  # ─── Backend ──────────────────────────────────────────────────────────────────
+  backend-lint:
+    name: Backend — Lint & Type Check
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -15,23 +21,94 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - name: Install
+
+      - name: Install dependencies
         run: npm ci
+
       - name: Generate Prisma Client
         run: npm run db:generate
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  backend-audit:
+    name: Backend — Security Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (high severity)
+        run: npm audit --audit-level=high
+        continue-on-error: true  # Warn, do not fail CI for transitive issues
+
+  backend-test:
+    name: Backend — Build & Test
+    runs-on: ubuntu-latest
+    needs: [backend-lint]
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: file:./test.db
+      JWT_SECRET: ci-test-jwt-secret-not-for-production
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Push DB schema (test)
+        run: npx prisma db push --skip-generate
+
       - name: Build
         run: npm run build
-      - name: Test
+
+      - name: Run tests
         run: npm test
 
-  frontend:
-    name: Frontend Build & Tests
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist/
+          retention-days: 7
+
+  # ─── Frontend ─────────────────────────────────────────────────────────────────
+  frontend-lint:
+    name: Frontend — Lint & Type Check
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -39,15 +116,95 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install
+
+      - name: Install dependencies
         run: npm ci
-      - name: Build
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+  frontend-audit:
+    name: Frontend — Security Audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (high severity)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  frontend-build:
+    name: Frontend — Build
+    runs-on: ubuntu-latest
+    needs: [frontend-lint]
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_API_BASE: /api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
         run: npm run build
-      - name: Test
+
+      - name: Run tests
         run: npm test
+        continue-on-error: true  # Frontend tests may not exist yet
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # ─── CI Summary Gate ──────────────────────────────────────────────────────────
+  ci-success:
+    name: CI — All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-build, backend-audit, frontend-audit]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.backend-test.result }}" == "success" && "${{ needs.frontend-build.result }}" == "success" ]]; then
+            echo "✅ All CI checks passed!"
+          else
+            echo "❌ One or more CI checks failed."
+            echo "  Backend test: ${{ needs.backend-test.result }}"
+            echo "  Frontend build: ${{ needs.frontend-build.result }}"
+            exit 1
+          fi

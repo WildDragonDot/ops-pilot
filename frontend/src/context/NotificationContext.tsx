@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CheckCircle2, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { CheckCircle2, AlertTriangle, XCircle, Info, X, Bell } from 'lucide-react';
+import { fetchNotifications, persistNotification, markNotificationRead, markAllNotificationsRead, deleteNotificationApi, clearAllNotificationsApi } from '../services/api';
+import { useAuth } from './AuthContext';
 
 export interface ToastNotification {
   id: string;
@@ -7,45 +9,124 @@ export interface ToastNotification {
   title: string;
   message: string;
   timestamp?: string;
+  read?: boolean;
+  persisted?: boolean; // true if stored in DB
 }
 
 interface NotificationContextType {
   notifications: ToastNotification[];
+  unreadCount: number;
   addNotification: (toast: Omit<ToastNotification, 'id'>) => void;
   removeNotification: (id: string) => void;
+  markRead: (id: string) => void;
+  markAllRead: () => void;
   clearAll: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token } = useAuth();
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const loadedRef = useRef(false);
 
-  const addNotification = (toast: Omit<ToastNotification, 'id'>) => {
+  // Load persisted notifications from DB on mount / login
+  useEffect(() => {
+    if (!token || loadedRef.current) return;
+    loadedRef.current = true;
+
+    fetchNotifications({ limit: 20 })
+      .then(data => {
+        if (data?.notifications?.length > 0) {
+          const persisted: ToastNotification[] = data.notifications.map((n: any) => ({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            timestamp: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            read: n.read,
+            persisted: true
+          }));
+          setNotifications(persisted);
+          setUnreadCount(data.unreadCount || 0);
+        }
+      })
+      .catch(() => {
+        // Silently fail — app works without persistence
+      });
+  }, [token]);
+
+  const addNotification = useCallback((toast: Omit<ToastNotification, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newToast: ToastNotification = {
       ...toast,
       id,
+      read: false,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setNotifications(prev => [newToast, ...prev.slice(0, 4)]);
+    setNotifications(prev => [newToast, ...prev.slice(0, 19)]);
+    setUnreadCount(c => c + 1);
 
-    // Auto dismiss after 5 seconds
+    // Persist to DB if authenticated (fire-and-forget)
+    if (token) {
+      persistNotification({ type: toast.type, title: toast.title, message: toast.message })
+        .then(result => {
+          if (result?.notification) {
+            // Replace temp ID with real DB id
+            setNotifications(prev =>
+              prev.map(n => n.id === id ? { ...n, id: result.notification.id, persisted: true } : n)
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Auto-dismiss in-memory toast after 5 seconds
     setTimeout(() => {
-      removeNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id && !(n.persisted && n.id === id)));
     }, 5000);
-  };
+  }, [token]);
 
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => {
+      const n = prev.find(n => n.id === id);
+      // If persisted, delete from DB too
+      if (n?.persisted && token) {
+        deleteNotificationApi(id).catch(() => {});
+      }
+      return prev.filter(n => n.id !== id);
+    });
+  }, [token]);
 
-  const clearAll = () => {
+  const markRead = useCallback((id: string) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    );
+    setUnreadCount(c => Math.max(0, c - 1));
+    if (token) {
+      markNotificationRead(id).catch(() => {});
+    }
+  }, [token]);
+
+  const markAllRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+    if (token) {
+      markAllNotificationsRead().catch(() => {});
+    }
+  }, [token]);
+
+  const clearAll = useCallback(() => {
     setNotifications([]);
-  };
+    setUnreadCount(0);
+    if (token) {
+      clearAllNotificationsApi().catch(() => {});
+    }
+  }, [token]);
 
-  // Listen to live SSE events from backend if available
+  // Listen to live SSE events from backend
   useEffect(() => {
     let eventSource: EventSource | null = null;
     try {
@@ -61,7 +142,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             });
           }
         } catch (e) {
-          // Parse fail
+          // Parse fail — ignore
         }
       };
 
@@ -71,21 +152,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
       };
     } catch (err) {
-      // SSE unsupported fallback
+      // SSE unsupported
     }
 
     return () => {
       if (eventSource) eventSource.close();
     };
-  }, []);
+  }, [addNotification]);
 
   return (
-    <NotificationContext.Provider value={{ notifications, addNotification, removeNotification, clearAll }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, removeNotification, markRead, markAllRead, clearAll }}>
       {children}
-      
+
       {/* Floating Toast Notification Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none font-sans">
-        {notifications.map(n => (
+        {notifications.filter(n => !n.read).slice(0, 5).map(n => (
           <div
             key={n.id}
             className={`pointer-events-auto p-3.5 rounded-xl border shadow-xl flex items-start gap-3 transition-all duration-300 transform translate-y-0 backdrop-blur-md ${
@@ -105,7 +186,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             <div className="flex-1 min-w-0 space-y-0.5">
               <div className="flex items-center justify-between gap-2">
                 <h4 className="text-xs font-bold truncate leading-snug">{n.title}</h4>
-                {n.timestamp && <span className="text-[9px] font-mono text-slate-400 shrink-0">{n.timestamp}</span>}
+                <div className="flex items-center gap-1 shrink-0">
+                  {n.persisted && <Bell className="w-2.5 h-2.5 text-slate-400" aria-label="Saved" />}
+                  {n.timestamp && <span className="text-[9px] font-mono text-slate-400">{n.timestamp}</span>}
+                </div>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal line-clamp-2">
                 {n.message}
