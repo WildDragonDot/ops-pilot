@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { prisma } from './db.service.js';
 import { runOpenAIIncidentReasoning } from './openai.service.js';
 import { broadcastEvent } from '../controllers/stream.controller.js';
+import { logger } from './logger.service.js';
 
 export const incidentEmitter = new EventEmitter();
 
@@ -560,11 +561,11 @@ export async function approveIncidentFix(approvalId: string) {
             "const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error('CRITICAL: JWT_SECRET environment variable is required'); })();"
           );
           fs.writeFileSync(authPath, content, 'utf8');
-          console.log('[REAL FIX EXECUTED] Updated auth.service.ts on disk to purge hardcoded fallback.');
+          logger.info('Updated auth.service.ts on disk to purge hardcoded fallback.');
         }
       }
     } catch (patchErr) {
-      console.error('Real file patch execution failed:', patchErr);
+      logger.error('Real file patch execution failed', patchErr);
     }
   }
 

@@ -3,6 +3,7 @@ import { Cpu, Lock, Mail, User as UserIcon, Building, ArrowRight, Eye, EyeOff } 
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, githubProvider } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../services/logger';
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -39,7 +40,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
         avatarUrl = fbUser.photoURL || '';
       } catch (fbErr: any) {
         if (fbErr.code === 'auth/invalid-api-key' || fbErr.code === 'auth/api-key-not-valid' || fbErr.code === 'auth/popup-closed-by-user' || fbErr.code?.includes('domain-not-allowed') || fbErr.code?.includes('unauthorized-domain')) {
-          console.warn('Firebase popup notice, using dev session fallback:', fbErr);
+          logger.warn('Firebase popup notice, using dev session fallback', fbErr);
           firebaseUid = `demo-${providerType}-${Date.now()}`;
           email = providerType === 'google' ? 'dev.google@opspilot.ai' : 'dev.github@opspilot.ai';
           name = providerType === 'google' ? 'Google Developer' : 'GitHub Developer';

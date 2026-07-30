@@ -6,6 +6,7 @@ import { getProjectState, injectFailureScenario, resetEnvironmentState, createAn
 import { testSSHConnection, discoverServerTechStack } from '../services/ssh.service.js';
 import { fetchLiveGitHubAudit } from '../services/github-audit.service.js';
 import { broadcastEvent } from './stream.controller.js';
+import { logger } from '../services/logger.service.js';
 
 const execAsync = promisify(exec);
 
@@ -193,7 +194,7 @@ async function fetchHtopSystemMetrics(serverHost?: string, creds?: any) {
       }
     }
   } catch (err) {
-    console.error('Htop metric collection error:', err);
+    logger.warn('Htop metric collection error', err);
   }
 
   return {
@@ -356,7 +357,7 @@ export async function getServerLogs(req: Request, res: Response) {
         return res.json({ logs: formatted, host: serverHost, realRemote: true });
       }
     } catch (e) {
-      console.error('Remote log stream error:', e);
+      logger.warn('Remote log stream error', e);
     }
   }
 

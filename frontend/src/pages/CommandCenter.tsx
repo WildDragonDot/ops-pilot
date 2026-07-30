@@ -32,6 +32,7 @@ import { startIncident, approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
 import { TerminalConsole } from '../components/TerminalConsole';
 import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
+import { logger } from '../services/logger';
 
 import { useOutletContext } from 'react-router-dom';
 
@@ -104,7 +105,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        logger.warn('Speech recognition error', event.error);
         if (event.error !== 'no-speech') {
           setVoiceStatus(`Voice Error: ${event.error}`);
         }
@@ -118,7 +119,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
       recognition.start();
     } catch (err) {
-      console.error(err);
+      logger.error('Incident start failed', err);
       setIsListening(false);
     }
   };
@@ -184,7 +185,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       setPromptText('');
       onRefreshIncidents();
     } catch (err) {
-      console.error(err);
+      logger.error('Approval failed', err);
     } finally {
       setIsInvestigating(false);
     }
@@ -204,7 +205,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       await approveFix(approvalId);
       onRefreshIncidents();
     } catch (err) {
-      console.error(err);
+      logger.error('Rejection failed', err);
     }
   };
 
@@ -213,7 +214,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       await rejectFix(approvalId);
       onRefreshIncidents();
     } catch (err) {
-      console.error(err);
+      logger.error('Prompt copy failed', err);
     }
   };
 

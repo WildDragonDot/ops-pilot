@@ -37,6 +37,7 @@ import { useAuth } from '../context/AuthContext';
 import { fetchProjects, removeProject, testConnection } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { Project } from '../types';
+import { logger } from '../services/logger';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -164,7 +165,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     setIsLoading(true);
     fetchProjects()
       .then(setProjectsList)
-      .catch(console.error)
+      .catch((err) => logger.error('Failed to load settings projects', err))
       .finally(() => setIsLoading(false));
   }, []);
 

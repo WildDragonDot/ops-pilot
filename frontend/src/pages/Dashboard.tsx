@@ -44,6 +44,7 @@ import { TopologyGraph } from '../components/TopologyGraph';
 import { DashboardSkeleton } from '../components/SkeletonLoader';
 import { ServerTerminalModal } from '../components/ServerTerminalModal';
 import { fetchDeploymentGap, triggerAIDeployment } from '../services/api';
+import { logger } from '../services/logger';
 
 interface DashboardProps {
   project: Project | null;
@@ -256,7 +257,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           });
         }
       } catch (err) {
-        console.error('Failed to stream server logs:', err);
+        logger.error('Failed to stream server logs', err);
       }
     };
 
@@ -390,7 +391,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       };
       setLogFeed(prev => [newErrItem, ...prev].slice(0, 20));
     } catch (err) {
-      console.error(err);
+      logger.error('Failure scenario injection failed', err);
     } finally {
       setLoadingScenario(null);
     }

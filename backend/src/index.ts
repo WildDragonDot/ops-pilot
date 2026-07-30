@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { router as apiRouter } from './routes/api.routes.js';
 import { hasOpenAIKey } from './config/openai.js';
 import { initDatabase } from './services/db.service.js';
+import { logger } from './services/logger.service.js';
 
 dotenv.config();
 
@@ -31,12 +32,12 @@ async function startServer() {
   });
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
-    console.log(`OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED' : 'FALLBACK MODE'}`);
+    logger.info(`D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
+    logger.info(`OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED' : 'FALLBACK MODE'}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('Failed to start D-OpsPilot backend:', err);
+  logger.error('Failed to start D-OpsPilot backend', err);
   process.exit(1);
 });

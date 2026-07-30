@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 export interface ProjectCredentials {
   projectId?: string;
   gitUrl?: string;
@@ -46,7 +48,7 @@ export const OpsPilotVault = {
       const encrypted = encryptPayload(payload);
       localStorage.setItem(`${VAULT_KEY_PREFIX}${projectId}`, encrypted);
     } catch (e) {
-      console.error('Failed to write to client security vault:', e);
+      logger.error('Failed to write to client security vault', e);
     }
   },
 
@@ -62,7 +64,7 @@ export const OpsPilotVault = {
       if (!decrypted) return null;
       return JSON.parse(decrypted);
     } catch (e) {
-      console.error('Failed to read from client security vault:', e);
+      logger.error('Failed to read from client security vault', e);
       return null;
     }
   },

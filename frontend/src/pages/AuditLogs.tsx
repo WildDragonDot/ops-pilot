@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { fetchAuditLogs } from '../services/api';
 import { useOutletContext } from 'react-router-dom';
+import { logger } from '../services/logger';
 
 interface AuditLogEntry {
   id: string;
@@ -51,7 +52,7 @@ export const AuditLogs: React.FC = () => {
       const data = await fetchAuditLogs(project?.id);
       setLogs(isVacantPath ? [] : data);
     } catch (err) {
-      console.error('Failed to load audit logs:', err);
+      logger.error('Failed to load audit logs', err);
     } finally {
       setIsLoading(false);
     }

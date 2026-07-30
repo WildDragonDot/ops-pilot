@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { logger } from './logger.service.js';
 
 export const prisma = new PrismaClient();
 
@@ -7,7 +8,7 @@ export async function initDatabase() {
   try {
     const orgCount = await prisma.organization.count();
     if (orgCount === 0) {
-      console.log('🌱 Initializing Prisma SQLite database with default Organization & Project...');
+      logger.info('Initializing Prisma SQLite database with default Organization & Project');
       
       const org = await prisma.organization.create({
         data: {
@@ -27,9 +28,9 @@ export async function initDatabase() {
         }
       });
 
-      console.log('✅ Prisma SQLite Database ready.');
+      logger.info('Prisma SQLite Database ready');
     }
   } catch (err) {
-    console.error('⚠️ DB Initialization notice:', err);
+    logger.warn('DB initialization notice', err);
   }
 }

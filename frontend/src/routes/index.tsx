@@ -12,6 +12,7 @@ import {
   injectFailure, 
   resetEnvironment 
 } from '../services/api';
+import { logger } from '../services/logger';
 
 const Dashboard = lazy(() => import('../pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const ProjectSelectionPage = lazy(() => import('../pages/ProjectSelectionPage').then(m => ({ default: m.ProjectSelectionPage })));
@@ -73,7 +74,7 @@ export function AppRoutes() {
       }
       setScan(scanData);
     } catch (err) {
-      console.error('Error loading API data:', err);
+      logger.error('Error loading API data', err);
     }
   };
 
@@ -141,7 +142,7 @@ export function AppRoutes() {
         setIsScanning(false);
       }, 3000);
     } catch (err) {
-      console.error(err);
+      logger.error('Repository scan failed', err);
       setIsScanning(false);
     }
   };
@@ -151,7 +152,7 @@ export function AppRoutes() {
       await injectFailure(scenarioKey, project?.id);
       await loadData();
     } catch (err) {
-      console.error(err);
+      logger.error('Failure injection failed', err);
     }
   };
 
@@ -160,7 +161,7 @@ export function AppRoutes() {
       await resetEnvironment(project?.id);
       await loadData();
     } catch (err) {
-      console.error(err);
+      logger.error('Environment reset failed', err);
     }
   };
 

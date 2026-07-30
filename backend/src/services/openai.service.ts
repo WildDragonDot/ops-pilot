@@ -1,4 +1,5 @@
 import { openai, hasOpenAIKey, openaiModel } from '../config/openai.js';
+import { logger } from './logger.service.js';
 
 export interface CodeFileContext {
   path: string;
@@ -7,7 +8,7 @@ export interface CodeFileContext {
 
 export async function auditCodebaseWithOpenAI(files: CodeFileContext[]): Promise<any> {
   if (!hasOpenAIKey() || !openai) {
-    console.log('ℹ️ OpenAI API key missing or default. Using high-precision local AI static scanner.');
+    logger.info('OpenAI API key missing or default. Using local static scanner.');
     return null; // Fallback to local scanner
   }
 
@@ -28,15 +29,15 @@ ${files.map(f => `--- FILE: ${f.path} ---\n${f.content.substring(0, 1500)}`).joi
       return JSON.parse(content);
     }
   } catch (error: any) {
-    console.error('⚠️ OpenAI API call notice:', error?.message || error);
-    console.log('🔄 Utilizing high-precision local AI agent fallback.');
+    logger.warn('OpenAI API call notice', error?.message || error);
+    logger.info('Using local AI agent fallback.');
   }
   return null;
 }
 
 export async function runOpenAIIncidentReasoning(prompt: string, context: any): Promise<any> {
   if (!hasOpenAIKey() || !openai) {
-    console.log('ℹ️ OpenAI API key missing. Using deterministic Agent Reasoning Orchestrator.');
+    logger.info('OpenAI API key missing. Using deterministic agent reasoning.');
     return null;
   }
 
@@ -95,7 +96,7 @@ export async function runOpenAIIncidentReasoning(prompt: string, context: any): 
       return { toolCalls: choice.tool_calls };
     }
   } catch (error: any) {
-    console.error('⚠️ OpenAI Tool Calling notice:', error?.message || error);
+    logger.warn('OpenAI tool calling notice', error?.message || error);
   }
   return null;
 }
@@ -140,7 +141,7 @@ Return a JSON object with:
         return JSON.parse(content);
       }
     } catch (e) {
-      console.error('OpenAI Command Copilot notice:', e);
+      logger.warn('OpenAI command copilot notice', e);
     }
   }
 
@@ -262,7 +263,7 @@ Example JSON: {"projects": ["/home/ubuntu/finance-lock", "/var/www"]}`;
       }
     }
   } catch (err) {
-    console.error('OpenAI Directory Filter Notice:', err);
+    logger.warn('OpenAI directory filter notice', err);
   }
 
   return cleaned.length > 0 ? cleaned : ['/home/ubuntu/finance-lock', '/var/www'];
@@ -329,7 +330,7 @@ Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
       };
     }
   } catch (err) {
-    console.error('OpenAI Log Summarizer Notice:', err);
+    logger.warn('OpenAI log summarizer notice', err);
   }
 
   return {
