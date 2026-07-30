@@ -223,11 +223,19 @@ export const AuditLogs: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                paginatedLogs.map(log => (
-                  <tr key={log.id} className="hover:bg-blue-500/5 transition">
-                    <td className="p-4 font-mono text-subtitle text-[11px] whitespace-nowrap">
-                      {log.timestamp}
-                    </td>
+                paginatedLogs.map(log => {
+                  const parts = log.timestamp.split(' ');
+                  const datePart = parts[0] || log.timestamp;
+                  const timePart = parts.slice(1).join(' ');
+
+                  return (
+                    <tr key={log.id} className="hover:bg-blue-500/5 transition">
+                      <td className="p-4 font-mono whitespace-nowrap">
+                        <div className="font-bold text-title text-[11px]">{datePart}</div>
+                        {timePart && (
+                          <div className="text-[10px] text-subtitle opacity-75 mt-0.5">{timePart}</div>
+                        )}
+                      </td>
                     <td className="p-4">
                       <div className="font-bold text-title">{log.user}</div>
                       <div className="text-[10px] font-mono text-subtitle">{log.userEmail}</div>
@@ -257,8 +265,8 @@ export const AuditLogs: React.FC = () => {
                       </span>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              }))}
             </tbody>
           </table>
         </div>
