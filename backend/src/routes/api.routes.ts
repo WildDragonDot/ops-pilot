@@ -11,74 +11,75 @@ import { listUsers, updateUserRole, removeUser, inviteUser } from '../controller
 import { getOrg, updateOrg, getOrgStats } from '../controllers/org.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { requireAdmin, requireApprover } from '../middleware/rbac.middleware.js';
+import { asyncHandler } from '../middleware/errorHandler.middleware.js';
 
 export const router = Router();
 
 // ─── Public Authentication Routes ────────────────────────────────────────────
-router.post('/auth/register', register);
-router.post('/auth/login', login);
-router.post('/auth/firebase', firebaseAuth);
+router.post('/auth/register', asyncHandler(register));
+router.post('/auth/login', asyncHandler(login));
+router.post('/auth/firebase', asyncHandler(firebaseAuth));
 
 // ─── Protected Authentication Profile ────────────────────────────────────────
-router.get('/auth/me', requireAuth, getMe);
+router.get('/auth/me', requireAuth, asyncHandler(getMe));
 
 // ─── AI Command, Log Intelligence & Deployment Routes ────────────────────────
-router.post('/ai/suggest-command', requireAuth, suggestAICommand);
-router.post('/ai/analyze-logs', requireAuth, analyzeLogsWithAIController);
-router.get('/projects/:id/deploy-gap', requireAuth, checkDeploymentGap);
-router.post('/projects/ai-deploy', requireAuth, executeAIDeployment);
+router.post('/ai/suggest-command', requireAuth, asyncHandler(suggestAICommand));
+router.post('/ai/analyze-logs', requireAuth, asyncHandler(analyzeLogsWithAIController));
+router.get('/projects/:id/deploy-gap', requireAuth, asyncHandler(checkDeploymentGap));
+router.post('/projects/ai-deploy', requireAuth, asyncHandler(executeAIDeployment));
 
 // ─── Protected Project & Environment Routes ───────────────────────────────────
-router.get('/projects', requireAuth, getProjects);
-router.post('/projects', requireAuth, createProject);
-router.post('/projects/exec', requireAuth, executeServerCommand);
-router.post('/projects/test-connection', requireAuth, testProjectConnection);
-router.post('/projects/scan-directories', requireAuth, scanServerDirectories);
-router.delete('/projects/:id', requireAuth, requireAdmin, deleteProject);        // ADMIN only
-router.get('/projects/:id', requireAuth, getProject);
-router.get('/projects/:id/health', requireAuth, getProjectHealth);
-router.get('/projects/:id/server-logs', requireAuth, getServerLogs);
-router.post('/demo/inject-failure', requireAuth, requireAdmin, injectFailure);   // ADMIN only
-router.post('/demo/reset', requireAuth, requireAdmin, resetEnv);                  // ADMIN only
+router.get('/projects', requireAuth, asyncHandler(getProjects));
+router.post('/projects', requireAuth, asyncHandler(createProject));
+router.post('/projects/exec', requireAuth, asyncHandler(executeServerCommand));
+router.post('/projects/test-connection', requireAuth, asyncHandler(testProjectConnection));
+router.post('/projects/scan-directories', requireAuth, asyncHandler(scanServerDirectories));
+router.delete('/projects/:id', requireAuth, requireAdmin, asyncHandler(deleteProject));       // ADMIN only
+router.get('/projects/:id', requireAuth, asyncHandler(getProject));
+router.get('/projects/:id/health', requireAuth, asyncHandler(getProjectHealth));
+router.get('/projects/:id/server-logs', requireAuth, asyncHandler(getServerLogs));
+router.post('/demo/inject-failure', requireAuth, requireAdmin, asyncHandler(injectFailure));  // ADMIN only
+router.post('/demo/reset', requireAuth, requireAdmin, asyncHandler(resetEnv));                // ADMIN only
 
 // ─── Protected Repository Auditor Routes ─────────────────────────────────────
-router.get('/repositories', requireAuth, getRepository);
-router.post('/repositories/scan', requireAuth, triggerScan);
-router.get('/repositories/scans/:id', requireAuth, getScanById);
-router.post('/repositories/findings/:findingId/patch', requireAuth, requireApprover, applyPatch); // APPROVER+
+router.get('/repositories', requireAuth, asyncHandler(getRepository));
+router.post('/repositories/scan', requireAuth, asyncHandler(triggerScan));
+router.get('/repositories/scans/:id', requireAuth, asyncHandler(getScanById));
+router.post('/repositories/findings/:findingId/patch', requireAuth, requireApprover, asyncHandler(applyPatch)); // APPROVER+
 
 // ─── Protected Incident Commander Routes ─────────────────────────────────────
-router.post('/incidents', requireAuth, createIncident);
-router.get('/incidents', requireAuth, getIncidents);
-router.get('/incidents/:id', requireAuth, getIncident);
-router.get('/incidents/:id/stream', requireAuth, streamIncident);
-router.get('/incidents/:id/report', requireAuth, getReport);
+router.post('/incidents', requireAuth, asyncHandler(createIncident));
+router.get('/incidents', requireAuth, asyncHandler(getIncidents));
+router.get('/incidents/:id', requireAuth, asyncHandler(getIncident));
+router.get('/incidents/:id/stream', requireAuth, streamIncident); // SSE — intentionally NOT wrapped
+router.get('/incidents/:id/report', requireAuth, asyncHandler(getReport));
 
 // ─── Protected Approval Queue Routes (RBAC gated) ────────────────────────────
-router.post('/approvals/:id/approve', requireAuth, requireApprover, approveFix); // APPROVER+
-router.post('/approvals/:id/reject', requireAuth, requireApprover, rejectFix);   // APPROVER+
+router.post('/approvals/:id/approve', requireAuth, requireApprover, asyncHandler(approveFix)); // APPROVER+
+router.post('/approvals/:id/reject', requireAuth, requireApprover, asyncHandler(rejectFix));   // APPROVER+
 
 // ─── Audit Logs (paginated, filtered) ────────────────────────────────────────
-router.get('/audit-logs', requireAuth, getAuditLogs);
+router.get('/audit-logs', requireAuth, asyncHandler(getAuditLogs));
 
 // ─── Notification Routes ─────────────────────────────────────────────────────
-router.get('/notifications', requireAuth, getNotifications);
-router.post('/notifications', requireAuth, createNotification);
-router.patch('/notifications/read-all', requireAuth, markAllNotificationsRead);
-router.patch('/notifications/:id/read', requireAuth, markNotificationRead);
-router.delete('/notifications', requireAuth, clearAllNotifications);
-router.delete('/notifications/:id', requireAuth, deleteNotification);
+router.get('/notifications', requireAuth, asyncHandler(getNotifications));
+router.post('/notifications', requireAuth, asyncHandler(createNotification));
+router.patch('/notifications/read-all', requireAuth, asyncHandler(markAllNotificationsRead));
+router.patch('/notifications/:id/read', requireAuth, asyncHandler(markNotificationRead));
+router.delete('/notifications', requireAuth, asyncHandler(clearAllNotifications));
+router.delete('/notifications/:id', requireAuth, asyncHandler(deleteNotification));
 
 // ─── User Management Routes (ADMIN only) ─────────────────────────────────────
-router.get('/users', requireAuth, requireAdmin, listUsers);
-router.patch('/users/:id/role', requireAuth, requireAdmin, updateUserRole);
-router.delete('/users/:id', requireAuth, requireAdmin, removeUser);
-router.post('/users/invite', requireAuth, requireAdmin, inviteUser);
+router.get('/users', requireAuth, requireAdmin, asyncHandler(listUsers));
+router.patch('/users/:id/role', requireAuth, requireAdmin, asyncHandler(updateUserRole));
+router.delete('/users/:id', requireAuth, requireAdmin, asyncHandler(removeUser));
+router.post('/users/invite', requireAuth, requireAdmin, asyncHandler(inviteUser));
 
 // ─── Organization Routes ──────────────────────────────────────────────────────
-router.get('/org', requireAuth, getOrg);
-router.patch('/org', requireAuth, requireAdmin, updateOrg);
-router.get('/org/stats', requireAuth, getOrgStats);
+router.get('/org', requireAuth, asyncHandler(getOrg));
+router.patch('/org', requireAuth, requireAdmin, asyncHandler(updateOrg));
+router.get('/org/stats', requireAuth, asyncHandler(getOrgStats));
 
 // ─── Real-Time Event Stream Route ─────────────────────────────────────────────
-router.get('/stream/events', eventStreamHandler);
+router.get('/stream/events', eventStreamHandler); // SSE — not wrapped (long-lived connection)

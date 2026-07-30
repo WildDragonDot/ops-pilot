@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "./start.sh",
+    "stop": "./stop.sh",
     "dev:all": "./start.sh",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",

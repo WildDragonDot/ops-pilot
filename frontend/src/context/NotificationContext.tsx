@@ -126,36 +126,57 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, [token]);
 
-  // Listen to live SSE events from backend
+  // Listen to live SSE events from backend with exponential backoff reconnect
   useEffect(() => {
     let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource('/api/stream/events');
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.title && data.message) {
-            addNotification({
-              type: data.type || 'info',
-              title: data.title,
-              message: data.message
-            });
-          }
-        } catch (e) {
-          // Parse fail — ignore
-        }
-      };
+    let retryCount = 0;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    const MAX_RETRIES = 5;
+    const BASE_DELAY_MS = 2000;
 
-      eventSource.onerror = () => {
-        if (eventSource && eventSource.readyState === EventSource.CLOSED) {
-          eventSource.close();
-        }
-      };
-    } catch (err) {
-      // SSE unsupported
+    function connect() {
+      if (retryCount >= MAX_RETRIES) return; // Give up after 5 attempts
+      try {
+        eventSource = new EventSource('/api/stream/events');
+
+        eventSource.onopen = () => {
+          retryCount = 0; // Reset retry count on successful connection
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.title && data.message) {
+              addNotification({
+                type: data.type || 'info',
+                title: data.title,
+                message: data.message
+              });
+            }
+          } catch {
+            // Malformed SSE message — ignore silently
+          }
+        };
+
+        eventSource.onerror = () => {
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          // Exponential backoff reconnect
+          const delay = Math.min(BASE_DELAY_MS * Math.pow(2, retryCount), 30_000);
+          retryCount++;
+          retryTimeout = setTimeout(connect, delay);
+        };
+      } catch {
+        // SSE not supported or network unavailable — do not retry
+      }
     }
 
+    connect();
+
     return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
       if (eventSource) eventSource.close();
     };
   }, [addNotification]);
