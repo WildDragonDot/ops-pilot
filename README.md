@@ -162,4 +162,4 @@ All execution attempts targeting these patterns are intercepted by the **Securit
 
 ## 📄 License & Attribution
 
-Developed with ❤️ by **Chandan Vishwakarma (WildDragon)** for **Google DeepMind Advanced Agentic Coding & SRE Automation Hackathon**. Licensed under MIT.
+Developed with ❤️ by **Chandan Vishwakarma (WildDragon)**. Licensed under MIT.
