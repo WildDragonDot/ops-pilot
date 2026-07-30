@@ -242,7 +242,7 @@ export function resetEnv(req: Request, res: Response) {
 }
 
 export async function executeServerCommand(req: Request, res: Response) {
-  const { command } = req.body;
+  const { command, projectId } = req.body;
   if (!command || typeof command !== 'string') {
     return res.status(400).json({ error: 'Command string is required' });
   }
@@ -252,23 +252,46 @@ export async function executeServerCommand(req: Request, res: Response) {
     return res.status(403).json({ error: 'Command blocked by OpsPilot AI Safety Policy' });
   }
 
+  let serverHost = '34.224.80.31';
+  let serverUser = 'ubuntu';
+
+  if (projectId) {
+    try {
+      const proj = await prisma.project.findUnique({ where: { id: String(projectId) } });
+      if (proj?.serverHost) {
+        serverHost = proj.serverHost;
+        serverUser = proj.serverUser || 'ubuntu';
+      }
+    } catch (e) {}
+  }
+
+  const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']);
+  const headerSshPass = getHeaderString(req.headers['x-server-pass']);
+  const creds = {
+    host: serverHost,
+    port: 22,
+    user: serverUser,
+    key: headerSshKey,
+    password: headerSshPass
+  };
+
   try {
-    const { stdout, stderr } = await execAsync(command, { cwd: process.cwd(), timeout: 15000 });
-    const output = (stdout + (stderr ? `\n[STDERR]\n${stderr}` : '')).trim();
+    const { executeRemoteCommand } = await import('../services/ssh.service.js');
+    const output = await executeRemoteCommand(creds, trimmed);
     res.json({
-      success: true,
-      command,
+      success: !output.includes('Command failed') && !output.includes('Permission denied'),
+      command: trimmed,
       output: output || '(Command executed successfully)',
       exitCode: 0,
-      cwd: process.cwd()
+      cwd: `${serverUser}@${serverHost}:~`
     });
   } catch (err: any) {
     res.json({
       success: false,
-      command,
-      output: (err.stdout || '') + (err.stderr ? `\n[STDERR]\n${err.stderr}` : '') || err.message,
-      exitCode: err.code || 1,
-      cwd: process.cwd()
+      command: trimmed,
+      output: err.message || 'Execution error',
+      exitCode: 1,
+      cwd: `${serverUser}@${serverHost}:~`
     });
   }
 }

@@ -29,14 +29,32 @@ export async function testSSHConnection(creds) {
         return { success: false, message: err.message || `Failed to connect to ${creds.host}:${port}` };
     }
 }
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+function getSSHKeyFlag(creds) {
+    const home = os.homedir();
+    const defaultKeys = [
+        path.join(home, '.ssh', 'id_rsa_no_pass'),
+        path.join(home, '.ssh', 'id_rsa'),
+        path.join(home, '.ssh', 'id_ed25519')
+    ];
+    for (const k of defaultKeys) {
+        if (fs.existsSync(k)) {
+            return `-i "${k}"`;
+        }
+    }
+    return '';
+}
 export async function executeRemoteCommand(creds, cmd) {
     if (!creds.host || creds.host === 'localhost' || creds.host === '127.0.0.1') {
         const { stdout } = await execAsync(cmd);
         return stdout;
     }
-    const user = creds.user || 'root';
+    const user = (creds.user && creds.user !== 'root') ? creds.user : (creds.host === '34.224.80.31' ? 'ubuntu' : (creds.user || 'root'));
     const port = creds.port || 22;
-    const sshCmd = `ssh -o StrictHostKeyChecking=no -p ${port} ${user}@${creds.host} "${cmd.replace(/"/g, '\\"')}"`;
+    const keyFlag = getSSHKeyFlag(creds);
+    const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "${cmd.replace(/"/g, '\\"')}"`;
     try {
         const { stdout } = await execAsync(sshCmd);
         return stdout;
