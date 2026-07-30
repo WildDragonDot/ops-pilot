@@ -33,6 +33,10 @@ if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
     (cd "$ROOT_DIR/frontend" && npm install)
 fi
 
+# Free ports 5080 and 3000 if already occupied
+lsof -ti :5080 | xargs kill -9 2>/dev/null || true
+lsof -ti :3000 | xargs kill -9 2>/dev/null || true
+
 # Start Backend Service first
 echo "⚙️  Starting Backend Service (Port 5080)..."
 (cd "$ROOT_DIR/backend" && npm run dev) &
