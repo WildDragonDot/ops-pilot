@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className={`sticky top-0 h-screen sidebar-bg backdrop-blur-2xl border-r flex flex-col justify-between transition-all duration-300 z-50 relative ${
+    <aside className={`sticky top-0 h-screen sidebar-bg backdrop-blur-2xl border-r flex flex-col justify-between transition-all duration-300 z-50 relative shrink-0 ${
       collapsed ? 'w-20' : 'w-64'
     }`}>
       
@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         onClick={() => setCollapsed(!collapsed)}
         aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
-        className="absolute -right-3 top-6 w-6 h-6 rounded-full card-bg-subtle border theme-border shadow-md text-title hover:bg-blue-600 hover:text-white hover:scale-110 flex items-center justify-center transition z-50 cursor-pointer"
+        className="absolute -right-3 top-6 w-6 h-6 rounded-full card-bg-subtle border theme-border shadow-md text-title hover:bg-blue-600 hover:text-white hover:scale-105 flex items-center justify-center transition z-50 cursor-pointer"
       >
         {collapsed ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" /> : <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />}
       </button>
@@ -79,8 +79,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Brand Logo */}
         <div className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-3'}`}>
-          <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg glow-blue shrink-0 flex items-center justify-center">
-            <Cpu className="w-5 h-5 animate-pulse" />
+          <div className="p-2.5 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-lg text-white shadow-lg glow-blue shrink-0 flex items-center justify-center">
+            <Cpu className="w-5 h-5" />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="font-extrabold text-base tracking-tight text-title">
                   D-OpsPilot
                 </span>
-                <span className="text-[10px] font-mono font-bold bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20">
+                <span className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/20">
                   AI
                 </span>
               </div>
@@ -125,11 +125,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={({ isActive }) =>
                   `flex items-center transition-all ${
                     collapsed 
-                      ? 'justify-center w-11 h-11 mx-auto my-1 rounded-xl' 
-                      : 'justify-between px-3 py-2.5 rounded-xl'
-                  } text-xs font-semibold ${
+                      ? 'justify-center w-11 h-11 mx-auto my-1 rounded-lg' 
+                      : 'justify-between px-3 py-2.5 rounded-lg'
+                    } text-xs font-semibold ${
                     isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25'
                       : 'text-subtitle hover:text-title hover:bg-slate-500/10'
                   }`
                 }
@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <>
                     <div className={`flex items-center ${collapsed ? 'justify-center relative' : 'gap-3 min-w-0'}`}>
                       <Icon className="w-4 h-4 shrink-0" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      {!collapsed && <span className="truncate leading-none">{item.label}</span>}
                       
                       {/* Collapsed Notification Dot Badge */}
                       {collapsed && item.badge && !item.badge.includes('/') && (
@@ -175,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {user && (
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
             <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md mx-auto" title={user.name}>
+              <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md shadow-emerald-600/25 mx-auto" title={user.name}>
                 {user.name.charAt(0)}
               </div>
               {!collapsed && (
@@ -191,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={logout}
                 title="Logout"
                 aria-label="Log out of session"
-                className="p-2 text-subtitle hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition"
+                className="p-2 text-subtitle hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition"
               >
                 <LogOut className="w-4 h-4" />
               </button>

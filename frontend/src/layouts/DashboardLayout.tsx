@@ -73,7 +73,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   }
 
   return (
-    <div className="h-screen flex font-sans antialiased overflow-hidden">
+    <div className="h-screen flex font-sans antialiased overflow-hidden bg-transparent">
       
       {/* Left Collapsible Navigation Sidebar */}
       {(() => {
@@ -128,12 +128,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Page Content — scrollable area */}
         <main className="flex-1 overflow-y-auto w-full flex flex-col">
-          <div className="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-8">
+          <div className="flex-1 max-w-[1440px] w-full mx-auto p-4 sm:p-6 lg:p-8">
             <Outlet context={{ selectedTargetPath, onSelectTargetPath: setSelectedTargetPath, project }} />
           </div>
           
           {/* Footer inside scroll area */}
-          <footer className="border-t theme-border card-bg-subtle py-4 px-8 text-xs text-subtitle flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
+          <footer className="border-t theme-border bg-transparent py-4 px-4 sm:px-8 text-xs text-subtitle flex flex-col sm:flex-row items-center justify-between gap-2 shrink-0">
             <span>D-OpsPilot AI — Enterprise Production Commander & GitHub Auditor</span>
             <span className="font-mono font-semibold">Project: {project.name}</span>
           </footer>

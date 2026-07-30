@@ -3,16 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --bg-app: #f8fafc;
+  --bg-app: #f4f7fb;
   --bg-card: #ffffff;
-  --bg-card-subtle: #f1f5f9;
-  --border-color: #cbd5e1;
-  --text-title: #0f172a;
-  --text-subtitle: #475569;
+  --bg-card-subtle: #eef3f8;
+  --border-color: rgba(15, 23, 42, 0.12);
+  --text-title: #101828;
+  --text-subtitle: #4b5f79;
   --text-primary: #0f172a;
   --text-muted: #64748b;
   --text-placeholder: #94a3b8;
   --bg-input: #ffffff;
+  --accent-primary: #2563eb;
+  --accent-secondary: #0f766e;
+  --accent-warm: #d97706;
+  --surface-ring: rgba(37, 99, 235, 0.18);
   
   --status-healthy-bg: #d1fae5;
   --status-healthy-text: #065f46;
@@ -51,16 +55,20 @@
 }
 
 html.dark {
-  --bg-app: #030712;
-  --bg-card: #0b0f19;
-  --bg-card-subtle: #0f1322;
-  --border-color: rgba(255, 255, 255, 0.12);
+  --bg-app: #070a12;
+  --bg-card: #0d111c;
+  --bg-card-subtle: #121827;
+  --border-color: rgba(226, 232, 240, 0.12);
   --text-title: #f8fafc;
-  --text-subtitle: #94a3b8;
+  --text-subtitle: #a7b4c8;
   --text-primary: #f1f5f9;
   --text-muted: #64748b;
   --text-placeholder: #475569;
   --bg-input: #070a13;
+  --accent-primary: #60a5fa;
+  --accent-secondary: #2dd4bf;
+  --accent-warm: #fbbf24;
+  --surface-ring: rgba(96, 165, 250, 0.22);
 
   --status-healthy-bg: rgba(16, 185, 129, 0.12);
   --status-healthy-text: #34d399;
@@ -100,7 +108,7 @@ html.dark {
 
 @layer utilities {
   .glow-blue {
-    box-shadow: 0 4px 20px -2px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 10px 26px -14px rgba(37, 99, 235, 0.75);
   }
   
   .glow-emerald {
@@ -139,12 +147,12 @@ html.dark {
   }
 
   .glass-panel-hover {
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
   }
   .glass-panel-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 32px -6px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
-    border-color: rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 44px -28px rgba(15, 23, 42, 0.35), 0 8px 18px -16px rgba(15, 23, 42, 0.2);
+    border-color: var(--surface-ring);
   }
   html.dark .glass-panel-hover:hover {
     box-shadow: 0 16px 32px -6px rgba(0, 0, 0, 0.7), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
@@ -178,27 +186,58 @@ html.dark {
    GLOBAL STYLES
    ============================================ */
 body {
-  background-color: var(--bg-app);
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 32%),
+    radial-gradient(circle at 96% 6%, rgba(15, 118, 110, 0.08), transparent 26%),
+    var(--bg-app);
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+* {
+  letter-spacing: 0;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 /* Glass panels - layered depth drop-shadows */
 .glass-panel {
-  background-color: var(--bg-card);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.92)),
+    var(--bg-card);
   border: 1px solid var(--border-color);
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+  border-radius: 8px;
+  box-shadow: 0 20px 50px -38px rgba(15, 23, 42, 0.42), 0 1px 0 rgba(255, 255, 255, 0.72) inset;
   color: var(--text-primary);
 }
 
 html.dark .glass-panel {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
+  background:
+    linear-gradient(180deg, rgba(17, 24, 39, 0.82), rgba(8, 12, 22, 0.96)),
+    var(--bg-card);
+  box-shadow: 0 24px 56px -34px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .shadow-card {
-  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 16px 42px -32px rgba(15, 23, 42, 0.42);
 }
 
 html.dark .shadow-card {
@@ -206,12 +245,13 @@ html.dark .shadow-card {
 }
 
 .shadow-card-hover {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .shadow-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 32px -4px rgba(37, 99, 235, 0.15), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 24px 54px -34px rgba(15, 23, 42, 0.5);
+  border-color: var(--surface-ring);
 }
 
 html.dark .shadow-card-hover:hover {
@@ -219,19 +259,24 @@ html.dark .shadow-card-hover:hover {
 }
 
 .sidebar-bg {
-  background-color: var(--bg-card);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98)),
+    var(--bg-card);
   border-color: var(--border-color);
-  box-shadow: 4px 0 20px -5px rgba(15, 23, 42, 0.05);
+  box-shadow: 14px 0 38px -34px rgba(15, 23, 42, 0.5);
 }
 
 html.dark .sidebar-bg {
-  box-shadow: 4px 0 20px -5px rgba(0, 0, 0, 0.4);
+  background:
+    linear-gradient(180deg, rgba(13, 17, 28, 0.98), rgba(8, 12, 22, 0.99)),
+    var(--bg-card);
+  box-shadow: 14px 0 40px -32px rgba(0, 0, 0, 0.92);
 }
 
 .header-bg {
-  background-color: var(--bg-card);
+  background-color: color-mix(in srgb, var(--bg-card) 88%, transparent);
   border-color: var(--border-color);
-  box-shadow: 0 4px 20px -5px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 14px 34px -32px rgba(15, 23, 42, 0.55);
 }
 
 html.dark .header-bg {

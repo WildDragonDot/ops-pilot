@@ -168,16 +168,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
       {/* HTML5 Cyber Particle Constellation Background */}
       <CyberBackground />
 
-      {/* Background Animated Glow Spheres */}
+      {/* Background signal wash */}
       <motion.div 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
+        animate={{ opacity: [0.12, 0.22, 0.12] }}
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[140px] pointer-events-none" 
+        className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-600/20 via-cyan-500/8 to-transparent pointer-events-none" 
       />
       <motion.div 
-        animate={{ scale: [1, 1.25, 1], opacity: [0.12, 0.22, 0.12] }}
+        animate={{ opacity: [0.08, 0.18, 0.08] }}
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[140px] pointer-events-none" 
+        className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-teal-500/16 via-blue-900/10 to-transparent pointer-events-none" 
       />
 
       {/* Cyber Grid Pattern Background */}
@@ -197,8 +197,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         className="flex items-center justify-between max-w-7xl w-full mx-auto relative z-10"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg glow-blue shrink-0">
-            <Cpu className="w-5 h-5 animate-pulse" />
+          <div className="p-2.5 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-lg text-white shadow-lg glow-blue shrink-0">
+            <Cpu className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">

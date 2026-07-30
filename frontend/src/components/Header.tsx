@@ -125,29 +125,29 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="h-16 header-bg backdrop-blur-xl border-b px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 gap-4">
+      <header className="h-16 header-bg backdrop-blur-xl border-b px-3 sm:px-5 lg:px-6 flex items-center justify-between sticky top-0 z-40 gap-3">
         
         {/* Left Section: Search Bar & Command Palette Trigger */}
         <div className="flex items-center gap-3 flex-1 max-w-xl min-w-0">
           {/* Search Bar - Smoothly balanced width for modern header layout */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
-            className="hidden sm:flex items-center gap-2.5 bg-slate-100 dark:bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs w-full hover:border-blue-500/70 transition cursor-pointer whitespace-nowrap shadow-xs group"
+            className="hidden sm:flex items-center gap-2.5 bg-white/75 dark:bg-slate-950/75 px-3.5 py-2 rounded-lg border theme-border text-xs w-full hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shadow-xs group"
           >
             <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
             <span className="flex-1 text-slate-600 dark:text-slate-400 font-mono text-xs truncate">
-              Search commands, incidents & servers (⌘K)...
+              Search commands, incidents and servers...
             </span>
-            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700 font-mono shrink-0 font-bold bg-white dark:bg-slate-950">⌘K</kbd>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400 border theme-border font-mono shrink-0 font-bold bg-white dark:bg-slate-950">⌘K</kbd>
           </div>
         </div>
 
         {/* Right Section: Target Path Selector, Status Pills & Action Controls */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 ml-auto">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
           
           {/* Target Path Dropdown Selector in Header (Shown ONLY when remote SSH host is active) */}
           {Boolean(project?.serverHost?.trim()) && (
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl card-bg-subtle border theme-border font-mono text-xs text-subtitle whitespace-nowrap shrink-0 shadow-xs">
+            <div className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg card-bg-subtle border theme-border font-mono text-xs text-subtitle whitespace-nowrap shrink-0 shadow-xs">
               <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
               <span className="font-semibold">Target:</span>
               {isEditingCustomPath ? (
@@ -157,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
                     value={customPathInput}
                     onChange={(e) => setCustomPathInput(e.target.value)}
                     placeholder="/home/ubuntu/my-app"
-                    className="px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-blue-500 text-blue-600 dark:text-blue-400 text-xs focus:outline-none w-40 font-extrabold"
+                    className="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-blue-500 text-blue-600 dark:text-blue-400 text-xs w-40 font-extrabold"
                   />
                   <button
                     onClick={() => {
@@ -170,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({
                         setIsEditingCustomPath(false);
                       }
                     }}
-                    className="px-2 py-0.5 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
+                    className="px-2 py-1 rounded bg-blue-600 text-white font-bold text-[10px] cursor-pointer"
                   >
                     Set
                   </button>
@@ -209,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Host Info Pill (only when SSH server is set) */}
           {mode !== 'GITHUB_ONLY' && (
-            <div className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-xl card-bg-subtle border theme-border text-xs text-subtitle font-mono whitespace-nowrap shrink-0">
+            <div className="hidden 2xl:flex items-center gap-2 px-3 py-2 rounded-lg card-bg-subtle border theme-border text-xs text-subtitle font-mono whitespace-nowrap shrink-0">
               <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
               <span>Host: <b className="text-title font-bold">{project?.serverHost || 'Local Sandbox'}</b></span>
             </div>
@@ -219,19 +219,19 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative shrink-0">
             <button
               onClick={() => setShowStatusPopover(!showStatusPopover)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono border shadow-xs cursor-pointer transition hover:scale-105 whitespace-nowrap shrink-0 ${statusColor}`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono border shadow-xs cursor-pointer transition hover:scale-[1.02] whitespace-nowrap shrink-0 max-w-[44vw] sm:max-w-none ${statusColor}`}
             >
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-700 dark:bg-emerald-400"></span>
               </span>
-              <span className="font-mono font-extrabold uppercase tracking-wider text-[11px] leading-none">{status}</span>
+              <span className="font-mono font-extrabold uppercase text-[11px] leading-none truncate">{status}</span>
             </button>
 
             {/* Health Breakdown Popover */}
             {showStatusPopover && (
               <div 
-                className="absolute right-0 mt-2 w-64 glass-panel border theme-border rounded-2xl p-4 shadow-2xl z-50 animate-fadeIn"
+                className="absolute right-0 mt-2 w-64 glass-panel border theme-border rounded-lg p-4 shadow-2xl z-50 animate-fadeIn"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between pb-3 border-b theme-border mb-3">
@@ -252,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
                     const NIcon = n.icon;
                     const isOk = n.state === 'RUNNING' || n.state === 'HEALTHY';
                     return (
-                      <div key={idx} className="flex items-center justify-between text-xs p-2 rounded-xl card-bg-subtle border theme-border">
+                      <div key={idx} className="flex items-center justify-between text-xs p-2 rounded-lg card-bg-subtle border theme-border">
                         <div className="flex items-center gap-2">
                           <NIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                           <div>
