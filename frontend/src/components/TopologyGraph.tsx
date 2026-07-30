@@ -58,245 +58,133 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
   };
 
   const getTopologyConfig = () => {
-    if (!project?.serverHost?.trim()) {
+    if (project?.serverHost?.trim() && (environmentStatus as any).dynamicNodes !== undefined) {
+      const dynamicNodes = (environmentStatus as any).dynamicNodes;
+      
+      if (dynamicNodes.length === 0) {
+        return {
+          stackLabel: 'Bare-metal / Empty Server',
+          title: 'Remote System Architecture',
+          statusText: 'NO SERVICES DISCOVERED',
+          pipeline: ['SERVER_CONNECTED', 'IDLE'],
+          nodes: [
+            {
+              id: 'empty_host',
+              label: 'Host Server Attached',
+              port: 22,
+              protocol: 'SSH',
+              latency: 'N/A',
+              status: 'RUNNING',
+              icon: Server,
+              accent: 'text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/20'
+            }
+          ]
+        };
+      }
+
       return {
-        stackLabel: 'Local Sandbox Engine',
-        title: 'Local Workspace Topology',
-        statusText: 'SANDBOX ACTIVE',
-        pipeline: ['LOCAL_CODE', 'AST_SCANNER', 'CLIENT_VAULT', 'OPSPILOT_AGENT'],
+        stackLabel: 'Remote Discovered Architecture',
+        title: 'Live Container Topology',
+        statusText: 'LIVE SYNC',
+        pipeline: dynamicNodes.map((n: any) => n.id.toUpperCase()),
+        nodes: dynamicNodes.map((node: any, idx: number) => {
+          const isDb = node.label.includes('postgres') || node.label.includes('mongo') || node.label.includes('db');
+          const isCache = node.label.includes('redis') || node.label.includes('memcached');
+          const isProxy = node.label.includes('nginx') || node.label.includes('proxy');
+          let icon = Box;
+          let accent = 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20';
+          
+          if (isDb) {
+            icon = Database;
+            accent = 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20';
+          } else if (isCache) {
+            icon = Activity;
+            accent = 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20';
+          } else if (isProxy) {
+            icon = Server;
+            accent = 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20';
+          } else {
+            icon = Cpu;
+            accent = 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+          }
+
+          return {
+            id: node.id,
+            label: node.label,
+            port: 'Auto',
+            protocol: 'DOCKER',
+            latency: '<1ms',
+            status: node.status,
+            icon,
+            accent
+          };
+        })
+      };
+    }
+
+    if (project?.serverHost?.trim()) {
+      return {
+        stackLabel: 'Host Connected - Fetching Architecture...',
+        title: 'Remote System Architecture',
+        statusText: 'SCANNING',
+        pipeline: ['CONNECTING'],
         nodes: [
           {
-            id: 'code',
-            label: 'Local Codebase',
-            port: 5080,
-            protocol: 'FILESYSTEM',
-            latency: '0ms',
+            id: 'scanning',
+            label: 'Analyzing Server...',
+            port: 22,
+            protocol: 'SSH',
+            latency: '...',
             status: 'RUNNING',
-            icon: Code,
-            accent: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
-          },
-          {
-            id: 'ast',
-            label: 'AST Static Scanner',
-            port: 5080,
-            protocol: 'AST/SWC',
-            latency: '1ms',
-            status: 'RUNNING',
-            icon: Cpu,
-            accent: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20'
-          },
-          {
-            id: 'vault',
-            label: 'Client Vault',
-            port: 5080,
-            protocol: 'WEBCRYPTO',
-            latency: '0ms',
-            status: 'RUNNING',
-            icon: Database,
-            accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-          },
-          {
-            id: 'agent',
-            label: 'D-OpsPilot AI Agent',
-            port: 5080,
-            protocol: 'LOCAL ENGINE',
-            latency: '1ms',
-            status: 'RUNNING',
-            icon: Activity,
-            accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+            icon: RefreshCw,
+            accent: 'text-slate-500 dark:text-slate-400 bg-slate-500/10 border-slate-500/20'
           }
         ]
       };
     }
 
-    if (envType.includes('Python') || envType.includes('FastAPI')) {
-      return {
-        stackLabel: 'Python / FastAPI Stack',
-        pipeline: ['NGINX:80', 'FASTAPI:8000', 'POSTGRES:5432', 'CELERY:6379'],
-        nodes: [
-          {
-            id: 'nginx',
-            label: 'NGINX Reverse Proxy',
-            port: 80,
-            protocol: 'HTTP',
-            latency: '2ms',
-            status: environmentStatus.nginx === 'HEALTHY' ? 'RUNNING' : 'DOWN',
-            icon: Server,
-            accent: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
-          },
-          {
-            id: 'api',
-            label: 'FastAPI / Uvicorn API',
-            port: 8000,
-            protocol: 'ASGI/Python',
-            latency: '12ms',
-            status: environmentStatus.api === 'RUNNING' ? 'RUNNING' : 'CRASHED',
-            icon: Cpu,
-            accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-          },
-          {
-            id: 'postgres',
-            label: 'PostgreSQL Database',
-            port: 5432,
-            protocol: 'TCP/SQL',
-            latency: '4ms',
-            status: environmentStatus.postgres === 'RUNNING' ? 'RUNNING' : 'STOPPED',
-            icon: Database,
-            accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-          },
-          {
-            id: 'redis',
-            label: 'Celery / Redis Worker',
-            port: 6379,
-            protocol: 'Redis Queue',
-            latency: '1ms',
-            status: environmentStatus.redis === 'RUNNING' ? 'RUNNING' : 'STOPPED',
-            icon: Activity,
-            accent: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
-          }
-        ]
-      };
-    }
-
-    if (envType.includes('Kubernetes')) {
-      return {
-        stackLabel: 'Kubernetes Microservices',
-        pipeline: ['INGRESS:443', 'K8S_POD:8080', 'CLOUD_DB:5432', 'REDIS:6379'],
-        nodes: [
-          {
-            id: 'nginx',
-            label: 'Ingress NGINX Controller',
-            port: 443,
-            protocol: 'HTTPS/K8s',
-            latency: '3ms',
-            status: environmentStatus.nginx === 'HEALTHY' ? 'RUNNING' : 'DOWN',
-            icon: Globe,
-            accent: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
-          },
-          {
-            id: 'api',
-            label: 'K8s API Pod Replicas',
-            port: 8080,
-            protocol: 'Microservice',
-            latency: '15ms',
-            status: environmentStatus.api === 'RUNNING' ? 'RUNNING' : 'CRASHED',
-            icon: Box,
-            accent: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20'
-          },
-          {
-            id: 'postgres',
-            label: 'Managed Cloud PostgreSQL',
-            port: 5432,
-            protocol: 'Cloud SQL',
-            latency: '5ms',
-            status: environmentStatus.postgres === 'RUNNING' ? 'RUNNING' : 'STOPPED',
-            icon: Database,
-            accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-          },
-          {
-            id: 'redis',
-            label: 'Redis Sentinel Cluster',
-            port: 6379,
-            protocol: 'StatefulSet',
-            latency: '1ms',
-            status: environmentStatus.redis === 'RUNNING' ? 'RUNNING' : 'STOPPED',
-            icon: Activity,
-            accent: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
-          }
-        ]
-      };
-    }
-
-    if (envType.includes('Node')) {
-      return {
-        stackLabel: 'Node.js Express / Nest Stack',
-        pipeline: ['NGINX:8080', 'NODE_API:3000', 'POSTGRES:5432', 'REDIS:6379'],
-        nodes: [
-          {
-            id: 'nginx',
-            label: 'Nginx Load Balancer',
-            port: 8080,
-            protocol: 'HTTP',
-            latency: '2ms',
-            status: environmentStatus.nginx === 'HEALTHY' ? 'RUNNING' : 'DOWN',
-            icon: Server,
-            accent: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
-          },
-          {
-            id: 'api',
-            label: 'Node.js Express API',
-            port: 3000,
-            protocol: 'REST/JSON',
-            latency: '14ms',
-            status: environmentStatus.api === 'RUNNING' ? 'RUNNING' : 'CRASHED',
-            icon: Code,
-            accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-          },
-          {
-            id: 'postgres',
-            label: 'PostgreSQL Database',
-            port: 5432,
-            protocol: 'TCP/SQL',
-            latency: '4ms',
-            status: environmentStatus.postgres === 'RUNNING' ? 'RUNNING' : 'STOPPED',
-            icon: Database,
-            accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-          },
-          {
-            id: 'redis',
-            label: 'Redis Session Store',
-            port: 6379,
-            protocol: 'IN-MEMORY',
-            latency: '1ms',
-            status: environmentStatus.redis === 'RUNNING' ? 'RUNNING' : 'STOPPED',
-            icon: Activity,
-            accent: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
-          }
-        ]
-      };
-    }
-
-    // Real Discovered Production Server Stack
     return {
-      stackLabel: `AWS EC2 Production Stack (${project?.serverHost})`,
-      pipeline: ['NANOMDM:8080', 'NANODEP:8082', 'POSTGRES:5434', 'SCEP:8081', 'REDIS:6379'],
+      stackLabel: 'Local Sandbox Engine',
+      title: 'Local Workspace Topology',
+      statusText: 'SANDBOX ACTIVE',
+      pipeline: ['LOCAL_CODE', 'AST_SCANNER', 'CLIENT_VAULT', 'OPSPILOT_AGENT'],
       nodes: [
         {
-          id: 'nanomdm',
-          label: 'finance-lock-nanomdm',
-          port: 8080,
-          protocol: 'HTTP/Go',
-          latency: '2ms',
+          id: 'code',
+          label: 'Local Codebase',
+          port: 5080,
+          protocol: 'FILESYSTEM',
+          latency: '0ms',
           status: 'RUNNING',
-          icon: Server,
-          accent: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20'
-        },
-        {
-          id: 'nanodep',
-          label: 'finance-lock-nanodep',
-          port: 8082,
-          protocol: 'HTTP/Go',
-          latency: '3ms',
-          status: 'RUNNING',
-          icon: Globe,
+          icon: Code,
           accent: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
         },
         {
-          id: 'postgres',
-          label: 'finance-lock-postgres',
-          port: 5434,
-          protocol: 'TCP/Timescale',
-          latency: '4ms',
-          status: environmentStatus.postgres === 'RUNNING' ? 'RUNNING' : 'RUNNING',
+          id: 'ast',
+          label: 'AST Static Scanner',
+          port: 5080,
+          protocol: 'AST/SWC',
+          latency: '1ms',
+          status: 'RUNNING',
+          icon: Cpu,
+          accent: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20'
+        },
+        {
+          id: 'vault',
+          label: 'Client Vault',
+          port: 5080,
+          protocol: 'WEBCRYPTO',
+          latency: '0ms',
+          status: 'RUNNING',
           icon: Database,
           accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
         },
         {
-          id: 'scep',
-          label: 'finance-lock-scep',
-          port: 8081,
-          protocol: 'HTTP/PKI',
-          latency: '2ms',
+          id: 'agent',
+          label: 'D-OpsPilot AI Agent',
+          port: 5080,
+          protocol: 'LOCAL ENGINE',
+          latency: '1ms',
           status: 'RUNNING',
           icon: Activity,
           accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
@@ -349,7 +237,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
 
       {/* 2x2 UNIFIED GLASSMORPHIC NODES GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {config.nodes.map((node) => {
+        {config.nodes.map((node: any) => {
           const Icon = node.icon;
           const isRunning = node.status === 'RUNNING';
 
@@ -423,7 +311,7 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
         </div>
 
         <div className="flex items-center justify-between gap-1 text-[10px] font-mono py-0.5">
-          {config.pipeline.map((step, idx) => (
+          {config.pipeline.map((step: string, idx: number) => (
             <React.Fragment key={idx}>
               <span className="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-semibold shadow-xs text-center shrink-0">
                 {step}

@@ -81,7 +81,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
   const [editSshPassword, setEditSshPassword] = useState<string>('');
   const [editSshKey, setEditSshKey] = useState<string>('');
   const [isTestingEdit, setIsTestingEdit] = useState<boolean>(false);
-  const [testResult, setTestResult] = useState<{ tested: boolean; success: boolean; gitMsg?: string; sshMsg?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ tested: boolean; success: boolean; gitMsg?: string; sshMsg?: string; gitSuccess?: boolean; sshSuccess?: boolean } | null>(null);
 
   // AI Model & API Parameters
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('opspilot_openai_key') || 'sk-proj-78a9f2bc31948e9102ab0541');
@@ -284,7 +284,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
         tested: true,
         success: res.success,
         gitMsg,
-        sshMsg
+        sshMsg,
+        gitSuccess: res.github?.connected,
+        sshSuccess: res.ssh?.connected
       });
 
       addNotification({
@@ -1746,8 +1748,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                               {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
                               <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
                             </div>
-                            {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
-                            {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
+                            {testResult.gitMsg && (
+                              <div className={`text-[10px] opacity-90 ${testResult.gitSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {testResult.gitSuccess ? '✓' : '✗'} GitHub: {testResult.gitMsg}
+                              </div>
+                            )}
+                            {testResult.sshMsg && (
+                              <div className={`text-[10px] opacity-90 ${testResult.sshSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {testResult.sshSuccess ? '✓' : '✗'} Server: {testResult.sshMsg}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1976,8 +1986,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                               {testResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />}
                               <span>{testResult.success ? 'CONNECTION VERIFIED — SAFE TO SAVE' : 'VERIFICATION FAILED'}</span>
                             </div>
-                            {testResult.gitMsg && <div className="text-[10px] opacity-90">✓ GitHub: {testResult.gitMsg}</div>}
-                            {testResult.sshMsg && <div className="text-[10px] opacity-90">✓ Server: {testResult.sshMsg}</div>}
+                            {testResult.gitMsg && (
+                              <div className={`text-[10px] opacity-90 ${testResult.gitSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {testResult.gitSuccess ? '✓' : '✗'} GitHub: {testResult.gitMsg}
+                              </div>
+                            )}
+                            {testResult.sshMsg && (
+                              <div className={`text-[10px] opacity-90 ${testResult.sshSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {testResult.sshSuccess ? '✓' : '✗'} Server: {testResult.sshMsg}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

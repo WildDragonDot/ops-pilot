@@ -266,11 +266,39 @@ export async function getProjectHealth(req: Request, res: Response) {
   };
 
   const metrics = await fetchHtopSystemMetrics(project?.serverHost?.trim(), creds);
-  const state = getProjectState();
+  
+  let status = 'DOWN';
+  let services: any = {};
+  
+  if (project?.serverHost?.trim()) {
+    const discovery = await discoverServerTechStack(creds);
+    if (discovery.containers && discovery.containers.length > 0) {
+      status = 'HEALTHY';
+      services = {
+        overall: 'HEALTHY',
+        dynamicNodes: discovery.containers.map(c => {
+          const match = c.match(/^([\w-]+)\s*\((.*?)\)$/);
+          return {
+            id: match ? match[1] : c.replace(/\s+/g, '_').toLowerCase(),
+            label: match ? match[1] : c,
+            status: c.includes('Up') ? 'RUNNING' : 'STOPPED',
+            raw: c
+          };
+        })
+      };
+    } else {
+      status = 'EMPTY';
+      services = { overall: 'EMPTY', dynamicNodes: [] };
+    }
+  } else {
+    const state = getProjectState();
+    status = state.environmentStatus.overall;
+    services = state.environmentStatus;
+  }
 
   res.json({
-    status: state.environmentStatus.overall,
-    services: state.environmentStatus,
+    status,
+    services,
     metrics,
     timestamp: new Date().toISOString()
   });

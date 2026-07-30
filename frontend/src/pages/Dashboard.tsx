@@ -452,7 +452,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const apiNodeDetails = getDynamicApiNode();
 
-  const nodeDataMap: Record<string, ServiceNodeDetail> = {
+  let nodeDataMap: Record<string, ServiceNodeDetail> = {
     nginx: {
       name: 'Nginx Reverse Proxy',
       type: 'HTTP Proxy',
@@ -514,6 +514,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
       ]
     }
   };
+
+  if (env.dynamicNodes && Array.isArray(env.dynamicNodes)) {
+    if (env.dynamicNodes.length === 0) {
+      nodeDataMap = {
+        empty_host: {
+          name: 'Host Server Attached',
+          type: 'Empty Server',
+          port: '22',
+          status: 'RUNNING',
+          latency: 'N/A',
+          cpu: 'Idle',
+          memory: 'Idle',
+          uptime: 'Live',
+          logs: [
+            '[INFO] SSH Connection successful',
+            '[WARN] No Docker containers found on host',
+            '[ACTION] Awaiting deployment...'
+          ]
+        }
+      };
+    } else {
+      env.dynamicNodes.forEach((node: any) => {
+        nodeDataMap[node.id] = {
+          name: node.label,
+          type: 'Discovered Service',
+          port: 'Dynamic',
+          status: node.status,
+          latency: '<1ms',
+          cpu: 'Active',
+          memory: 'Active',
+          uptime: 'Live',
+          logs: [
+            `[INFO] Attached to container ${node.label}`,
+            `[STATUS] Container state: ${node.raw}`
+          ]
+        };
+      });
+    }
+  }
 
   const downloadLogFile = () => {
     const text = logFeed.map(l => `[${l.time}] [${l.level}] ${l.message}`).join('\n');

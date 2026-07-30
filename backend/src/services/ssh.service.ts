@@ -234,17 +234,19 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
       };
     }
 
-    const containerList = containersRaw ? containersRaw.split('\n').filter(s => Boolean(s.trim())) : ['No active Docker containers detected on host'];
+    const containerList = containersRaw && !containersRaw.includes('no_docker') && !containersRaw.includes('command not found')
+      ? containersRaw.split('\n').filter(s => Boolean(s.trim())) 
+      : [];
 
     return {
       os: osRaw || (isLocal ? 'Local Development Environment' : `Linux Server (${creds.host})`),
       kernel: osRaw.includes('Darwin') ? 'macOS Kernel' : 'Linux Kernel',
-      techStack: containerList.some(c => c.includes('Up')) ? 'Docker Containerized Architecture' : 'Bare-metal System Services',
+      techStack: containerList.length > 0 ? 'Docker Containerized Architecture' : 'Bare-metal / Empty Server',
       containers: containerList,
       pm2Processes: [],
-      memory: memRaw ? memRaw.substring(0, 120) : 'Metrics Active',
-      disk: diskRaw ? diskRaw.substring(0, 120) : 'Metrics Active',
-      uptime: uptimeRaw || 'Active',
+      memory: memRaw ? memRaw.substring(0, 120) : 'Metrics Unavailable',
+      disk: diskRaw ? diskRaw.substring(0, 120) : 'Metrics Unavailable',
+      uptime: uptimeRaw || 'Unknown',
       recentLogs: [
         `[SYSTEM] SSH Session authenticated for ${creds.user || 'root'}@${creds.host || 'localhost'}`,
         `[DOCKER] Discovered ${containerList.length} container process(es) on host`

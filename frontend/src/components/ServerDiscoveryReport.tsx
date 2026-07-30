@@ -40,20 +40,10 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
   const validContainers = (discovery.containers || []).filter(
     c => !c.includes('Command failed') && !c.includes('Permission denied') && Boolean(c.trim())
   );
-  const displayContainers = validContainers.length > 0 ? validContainers : [
-    'app_service (sample)',
-    'database_service (sample)',
-    'cache_service (sample)',
-    'proxy_service (sample)'
-  ];
 
   const validPm2 = (discovery.pm2Processes || []).filter(
     p => !p.includes('Command failed') && !p.includes('Permission denied') && Boolean(p.trim())
   );
-  const displayPm2 = validPm2.length > 0 ? validPm2 : [
-    'api_server (online, Node.js 20.11.0, PID 4912)',
-    'worker_queue (online, Node.js 20.11.0, PID 4918)'
-  ];
 
   return (
     <motion.div
@@ -89,10 +79,7 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
           </div>
           <div>
             <span className="text-xs font-extrabold text-title block font-mono truncate">
-              Docker Stack
-            </span>
-            <span className="text-[9px] text-subtitle font-mono block truncate opacity-80 mt-0.5">
-              Node • Postgres • Redis
+              {discovery.techStack || 'Bare-metal / Empty'}
             </span>
           </div>
         </div>
@@ -105,12 +92,12 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
           </div>
           <div>
             <span className="text-xs font-extrabold text-emerald-400 block font-mono truncate">
-              4.0 GB RAM
+              {discovery.memory || 'Metrics Unavailable'}
             </span>
             <div className="w-full bg-slate-800 h-1.5 rounded-full my-1 overflow-hidden">
-              <div className="bg-emerald-500 h-full rounded-full w-[35%]" />
+              <div className="bg-emerald-500 h-full rounded-full w-[0%]" />
             </div>
-            <span className="text-[9px] text-subtitle font-mono block truncate">1.4 GB Used (35%)</span>
+            <span className="text-[9px] text-subtitle font-mono block truncate">Live Memory Reading</span>
           </div>
         </div>
 
@@ -122,12 +109,12 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
           </div>
           <div>
             <span className="text-xs font-extrabold text-cyan-400 block font-mono truncate">
-              40.0 GB Storage
+              {discovery.disk || 'Metrics Unavailable'}
             </span>
             <div className="w-full bg-slate-800 h-1.5 rounded-full my-1 overflow-hidden">
-              <div className="bg-cyan-500 h-full rounded-full w-[30%]" />
+              <div className="bg-cyan-500 h-full rounded-full w-[0%]" />
             </div>
-            <span className="text-[9px] text-subtitle font-mono block truncate">12 GB Used (30%)</span>
+            <span className="text-[9px] text-subtitle font-mono block truncate">Live Disk Reading</span>
           </div>
         </div>
 
@@ -139,10 +126,10 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
           </div>
           <div>
             <span className="text-xs font-extrabold text-purple-300 block font-mono truncate">
-              14 Days Uptime
+              {discovery.uptime || 'Unknown'}
             </span>
             <span className="text-[9px] font-mono text-emerald-400 font-bold block mt-1 flex items-center gap-1 truncate">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" /> 99.9% Verified
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" /> Host Uptime
             </span>
           </div>
         </div>
@@ -158,12 +145,16 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
               <span>Active Docker Services</span>
             </span>
             <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-extrabold shrink-0">
-              {displayContainers.length} Nodes Running
+              {validContainers.length} Nodes Running
             </span>
           </div>
 
           <div className="space-y-1.5 font-mono text-xs">
-            {displayContainers.map((c, i) => (
+            {validContainers.length === 0 ? (
+              <div className="p-2 rounded-lg card-bg-subtle border border-slate-700/50 text-slate-500 text-[10px] text-center">
+                No active containers discovered.
+              </div>
+            ) : validContainers.map((c, i) => (
               <div key={i} className="p-2 rounded-lg card-bg-subtle border theme-border flex items-center justify-between text-title transition hover:border-indigo-500/40 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
@@ -185,12 +176,16 @@ export const ServerDiscoveryReport: React.FC<ServerDiscoveryReportProps> = ({
               <span>Application Processes (PM2)</span>
             </span>
             <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-extrabold shrink-0">
-              {displayPm2.length} Workers Active
+              {validPm2.length} Workers Active
             </span>
           </div>
 
           <div className="space-y-1.5 font-mono text-xs">
-            {displayPm2.map((p, i) => (
+            {validPm2.length === 0 ? (
+              <div className="p-2 rounded-lg card-bg-subtle border border-slate-700/50 text-slate-500 text-[10px] text-center">
+                No active PM2 workers discovered.
+              </div>
+            ) : validPm2.map((p, i) => (
               <div key={i} className="p-2 rounded-lg card-bg-subtle border theme-border flex items-center justify-between text-title transition hover:border-amber-500/40 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />

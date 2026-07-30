@@ -527,30 +527,30 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
 
                   {/* Inline Step-by-Step PAT Guide (100% Unclipped Guarantee) */}
                   {showPatHelp && (
-                    <div className="my-2.5 p-3.5 rounded-2xl bg-blue-950/40 border border-blue-500/40 text-slate-100 space-y-2 shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-1">
-                      <div className="flex items-center justify-between text-blue-400 font-black text-xs border-b border-blue-500/30 pb-1.5">
+                    <div className="my-2.5 p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-500/40 text-slate-800 dark:text-slate-100 space-y-2 shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-1">
+                      <div className="flex items-center justify-between text-blue-700 dark:text-blue-400 font-black text-xs border-b border-blue-200 dark:border-blue-500/30 pb-1.5">
                         <span className="flex items-center gap-1.5">
-                          <Info className="w-4 h-4 text-blue-400 shrink-0" />
+                          <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                           <span>How to get GitHub Access Token (PAT):</span>
                         </span>
                         <button 
                           type="button" 
                           onClick={() => setShowPatHelp(false)} 
-                          className="text-slate-400 hover:text-white px-1.5 py-0.5 font-bold text-xs"
+                          className="text-slate-400 hover:text-slate-600 dark:hover:text-white px-1.5 py-0.5 font-bold text-xs cursor-pointer"
                         >
                           ✕
                         </button>
                       </div>
 
-                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-200 font-mono leading-relaxed pl-0.5">
-                        <li>Open GitHub Settings: <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold hover:text-blue-300">github.com/settings/tokens</a></li>
-                        <li>Click <strong className="text-white font-bold">Generate new token (classic)</strong>.</li>
-                        <li>Give a Note (e.g. <code className="text-blue-400 font-bold">OpsPilot AI</code>) and check <strong className="text-emerald-400 font-bold">repo</strong> scope.</li>
-                        <li>Click <strong className="text-white font-bold">Generate token</strong>, copy your <code className="text-amber-400 font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/40">ghp_...</code> key & paste below.</li>
+                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-700 dark:text-slate-200 font-mono leading-relaxed pl-0.5">
+                        <li>Open GitHub Settings: <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 underline font-bold hover:text-blue-500 dark:hover:text-blue-300">github.com/settings/tokens</a></li>
+                        <li>Click <strong className="text-slate-900 dark:text-white font-bold">Generate new token (classic)</strong>.</li>
+                        <li>Give a Note (e.g. <code className="text-blue-600 dark:text-blue-400 font-bold">OpsPilot AI</code>) and check <strong className="text-emerald-600 dark:text-emerald-400 font-bold">repo</strong> scope.</li>
+                        <li>Click <strong className="text-slate-900 dark:text-white font-bold">Generate token</strong>, copy your <code className="text-amber-700 dark:text-amber-400 font-bold bg-amber-500/10 dark:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30 dark:border-amber-500/40">ghp_...</code> key & paste below.</li>
                       </ol>
 
-                      <div className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 border-t border-slate-800/80 pt-2 mt-1">
-                        <Shield className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 border-t border-blue-200 dark:border-slate-800/80 pt-2 mt-1">
+                        <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span>Encrypted 100% in client vault. Never saved to DB.</span>
                       </div>
                     </div>
