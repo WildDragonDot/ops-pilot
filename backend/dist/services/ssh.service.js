@@ -54,13 +54,26 @@ export async function executeRemoteCommand(creds, cmd) {
     const user = (creds.user && creds.user !== 'root') ? creds.user : (creds.host === '34.224.80.31' ? 'ubuntu' : (creds.user || 'root'));
     const port = creds.port || 22;
     const keyFlag = getSSHKeyFlag(creds);
-    const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "${cmd.replace(/"/g, '\\"')}"`;
+    let safeCmd = cmd.trim();
+    if (safeCmd === 'htop' || safeCmd.includes('htop')) {
+        safeCmd = 'htop -b -n 1 || top -b -n 1';
+    }
+    else if (safeCmd === 'top') {
+        safeCmd = 'top -b -n 1';
+    }
+    const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
     try {
-        const { stdout } = await execAsync(sshCmd);
-        return stdout;
+        const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'xterm-256color' } });
+        const output = (stdout + (stderr ? `\n${stderr}` : '')).trim();
+        return output;
     }
     catch (err) {
-        return err.stdout || err.message;
+        const rawErr = (err.stdout || '') + (err.stderr ? `\n${err.stderr}` : '') || err.message;
+        if (rawErr.includes('Command failed:')) {
+            const parts = rawErr.split('\n');
+            return parts.slice(1).join('\n').trim() || rawErr;
+        }
+        return rawErr;
     }
 }
 export async function discoverServerTechStack(creds) {

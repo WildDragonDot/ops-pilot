@@ -1251,7 +1251,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         isOpen={showTerminalModal}
         onClose={() => setShowTerminalModal(false)}
         serverHost={project?.serverHost || '34.224.80.31'}
-        serverUser={project?.serverUser || 'ubuntu'}
+        serverUser={project?.serverUser && project?.serverUser !== 'root' ? project.serverUser : 'ubuntu'}
       />
 
     </motion.div>
