@@ -61,6 +61,9 @@ export async function executeRemoteCommand(creds, cmd) {
     else if (safeCmd === 'top') {
         safeCmd = 'top -b -n 1';
     }
+    else if (safeCmd.startsWith('docker ') || safeCmd === 'docker') {
+        safeCmd = `sudo ${safeCmd}`;
+    }
     const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
     try {
         const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'xterm-256color' } });
@@ -80,7 +83,7 @@ export async function discoverServerTechStack(creds) {
     const isLocal = !creds.host || creds.host === 'localhost' || creds.host === '127.0.0.1';
     try {
         const osCmd = isLocal ? 'uname -a' : 'cat /etc/os-release || uname -a';
-        const dockerCmd = isLocal ? 'docker ps --format "{{.Names}} ({{.Status}})" || echo "no_docker"' : 'docker ps --format "{{.Names}} ({{.Status}})"';
+        const dockerCmd = isLocal ? 'sudo docker ps --format "{{.Names}} ({{.Status}})" || docker ps --format "{{.Names}} ({{.Status}})" || echo "no_docker"' : 'sudo docker ps --format "{{.Names}} ({{.Status}})" || docker ps --format "{{.Names}} ({{.Status}})"';
         const memCmd = isLocal ? 'free -m' : 'free -m';
         const dfCmd = isLocal ? 'df -h . || df -h' : 'df -h /';
         const uptimeCmd = 'uptime';

@@ -78,6 +78,8 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
     safeCmd = 'top -b -n 1';
   } else if (safeCmd === 'top') {
     safeCmd = 'top -b -n 1';
+  } else if (safeCmd.startsWith('docker ') || safeCmd === 'docker') {
+    safeCmd = `sudo ${safeCmd}`;
   }
 
   const sshCmd = `ssh -o StrictHostKeyChecking=no ${keyFlag} -p ${port} ${user}@${creds.host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
@@ -114,7 +116,7 @@ export async function discoverServerTechStack(creds: SSHCredentials): Promise<Se
 
   try {
     const osCmd = isLocal ? 'uname -a' : 'cat /etc/os-release || uname -a';
-    const dockerCmd = isLocal ? 'docker ps --format "{{.Names}} ({{.Status}})" || echo "no_docker"' : 'docker ps --format "{{.Names}} ({{.Status}})"';
+    const dockerCmd = isLocal ? 'sudo docker ps --format "{{.Names}} ({{.Status}})" || docker ps --format "{{.Names}} ({{.Status}})" || echo "no_docker"' : 'sudo docker ps --format "{{.Names}} ({{.Status}})" || docker ps --format "{{.Names}} ({{.Status}})"';
     const memCmd = isLocal ? 'free -m' : 'free -m';
     const dfCmd = isLocal ? 'df -h . || df -h' : 'df -h /';
     const uptimeCmd = 'uptime';
