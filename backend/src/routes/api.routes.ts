@@ -37,7 +37,7 @@ router.post('/projects/exec', requireAuth, asyncHandler(executeServerCommand));
 router.post('/projects/test-connection', requireAuth, asyncHandler(testProjectConnection));
 router.post('/projects/scan-directories', requireAuth, asyncHandler(scanServerDirectories));
 router.post('/projects/inspect-folder', requireAuth, asyncHandler(inspectTargetFolder));
-router.delete('/projects/:id', requireAuth, requireAdmin, asyncHandler(deleteProject));       // ADMIN only
+router.delete('/projects/:id', requireAuth, asyncHandler(deleteProject));
 router.get('/projects/:id', requireAuth, asyncHandler(getProject));
 router.get('/projects/:id/health', requireAuth, asyncHandler(getProjectHealth));
 router.get('/projects/:id/server-logs', requireAuth, asyncHandler(getServerLogs));

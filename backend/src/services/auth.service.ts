@@ -34,7 +34,7 @@ export async function registerUser(email: string, password: string, name: string
       email,
       name,
       password: hashedPassword,
-      role: 'DEVELOPER',
+      role: 'ADMIN',
       organizationId: org.id
     }
   });
@@ -133,7 +133,7 @@ export async function authenticateFirebaseUser(
         firebaseUid,
         provider,
         avatarUrl,
-        role: 'DEVELOPER',
+        role: 'ADMIN',
         organizationId: org.id
       },
       include: { organization: true }
