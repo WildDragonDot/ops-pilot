@@ -31,6 +31,7 @@ import { Incident, Project } from '../types';
 import { startIncident, approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
 import { TerminalConsole } from '../components/TerminalConsole';
+import { OpenAIKeyModal } from '../components/OpenAIKeyModal';
 import { getProjectOperatingMode, getModeBadgeInfo } from '../utils/projectMode';
 import { logger } from '../services/logger';
 
@@ -56,6 +57,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const [selectedScenarioKey, setSelectedScenarioKey] = useState<string>('DATABASE_STOPPED');
   const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
   const [showTerminalModal, setShowTerminalModal] = useState<boolean>(false);
+  const [showOpenAIKeyModal, setShowOpenAIKeyModal] = useState<boolean>(false);
   const [isInvestigating, setIsInvestigating] = useState<boolean>(false);
   const [pendingPromptText, setPendingPromptText] = useState<string>('');
   const [loadingStepText, setLoadingStepText] = useState<string>('Parsing prompt intent & auditing repository AST graph...');
@@ -287,8 +289,11 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       setActiveIncidentId(newInc.id);
       setSubmittedPrompt(newInc.userPrompt);
       onRefreshIncidents();
-    } catch (err) {
-      logger.error('Approval failed', err);
+    } catch (err: any) {
+      logger.error('Incident launch failed', err);
+      if (err?.status === 429 || err?.message?.includes('OPENAI_KEYS_EXHAUSTED') || err?.message?.includes('quota')) {
+        setShowOpenAIKeyModal(true);
+      }
     } finally {
       setIsInvestigating(false);
       setPendingPromptText('');
@@ -792,6 +797,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           />
         </div>
       )}
+      {/* Custom OpenAI Key Exhausted Modal */}
+      <OpenAIKeyModal
+        isOpen={showOpenAIKeyModal}
+        onClose={() => setShowOpenAIKeyModal(false)}
+        onSuccess={() => handleLaunchInvestigation()}
+      />
 
     </motion.div>
   );

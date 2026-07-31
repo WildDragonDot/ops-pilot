@@ -1,4 +1,5 @@
-import { openai, hasOpenAIKey, openaiModel } from '../config/openai.js';
+import OpenAI from 'openai';
+import { getOpenAIClient, hasOpenAIKey, markKeyExhausted, systemOpenAIKeys, openaiModel } from '../config/openai.js';
 import { logger } from './logger.service.js';
 
 export interface CodeFileContext {
@@ -6,10 +7,56 @@ export interface CodeFileContext {
   content: string;
 }
 
-export async function auditCodebaseWithOpenAI(files: CodeFileContext[]): Promise<any> {
-  if (!hasOpenAIKey() || !openai) {
+/**
+ * Executes an OpenAI completion with automatic multi-key failover rotation.
+ * If Key 1 fails (429 RateLimit/Quota), switches to Key 2, then Key 3.
+ * If all system keys fail and no user key was provided, throws OPENAI_KEYS_EXHAUSTED.
+ */
+export async function withOpenAIFailover<T>(
+  operation: (client: OpenAI) => Promise<T>,
+  userCustomKey?: string
+): Promise<T | null> {
+  const maxAttempts = systemOpenAIKeys.length + (userCustomKey ? 1 : 0) + 1;
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    const active = getOpenAIClient(userCustomKey);
+    if (!active) {
+      logger.warn('⚠️ All system OpenAI API keys have exceeded quota limits.');
+      throw new Error('OPENAI_KEYS_EXHAUSTED');
+    }
+
+    try {
+      return await operation(active.client);
+    } catch (err: any) {
+      const isQuotaOrRateLimit = err?.status === 429 ||
+        err?.code === 'insufficient_quota' ||
+        err?.code === 'rate_limit_exceeded' ||
+        /quota|rate limit|429/i.test(err?.message || '');
+
+      if (isQuotaOrRateLimit && !userCustomKey) {
+        markKeyExhausted(active.apiKey);
+        logger.info(`🔄 Automatically rotating to next OpenAI API Key (Attempt ${attempts}/${maxAttempts})...`);
+        continue;
+      }
+
+      if (isQuotaOrRateLimit || err?.message === 'OPENAI_KEYS_EXHAUSTED') {
+        throw new Error('OPENAI_KEYS_EXHAUSTED');
+      }
+
+      logger.warn('OpenAI API call execution error:', err?.message || err);
+      return null;
+    }
+  }
+
+  throw new Error('OPENAI_KEYS_EXHAUSTED');
+}
+
+export async function auditCodebaseWithOpenAI(files: CodeFileContext[], userCustomKey?: string): Promise<any> {
+  if (!hasOpenAIKey(userCustomKey)) {
     logger.info('OpenAI API key missing or default. Using local static scanner.');
-    return null; // Fallback to local scanner
+    return null;
   }
 
   try {
@@ -18,25 +65,24 @@ export async function auditCodebaseWithOpenAI(files: CodeFileContext[]): Promise
 Files to audit:
 ${files.map(f => `--- FILE: ${f.path} ---\n${f.content.substring(0, 1500)}`).join('\n\n')}`;
 
-    const completion = await openai.chat.completions.create({
-      model: openaiModel,
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' }
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (content) {
-      return JSON.parse(content);
-    }
+    return await withOpenAIFailover(async (client) => {
+      const completion = await client.chat.completions.create({
+        model: openaiModel,
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' }
+      });
+      const content = completion.choices[0]?.message?.content;
+      return content ? JSON.parse(content) : null;
+    }, userCustomKey);
   } catch (error: any) {
+    if (error?.message === 'OPENAI_KEYS_EXHAUSTED') throw error;
     logger.warn('OpenAI API call notice', error?.message || error);
-    logger.info('Using local AI agent fallback.');
   }
   return null;
 }
 
-export async function runOpenAIIncidentReasoning(prompt: string, context: any): Promise<any> {
-  if (!hasOpenAIKey() || !openai) {
+export async function runOpenAIIncidentReasoning(prompt: string, context: any, userCustomKey?: string): Promise<any> {
+  if (!hasOpenAIKey(userCustomKey)) {
     logger.info('OpenAI API key missing. Using deterministic agent reasoning.');
     return null;
   }
@@ -79,274 +125,71 @@ export async function runOpenAIIncidentReasoning(prompt: string, context: any): 
       }
     ];
 
-    const response = await openai.chat.completions.create({
-      model: openaiModel,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are D-OpsPilot AI Incident Commander. Investigate production failures using tool calls, synthesize root causes, and propose safe recovery patches.'
-        },
-        { role: 'user', content: prompt }
-      ],
-      tools
-    });
-
-    const choice = response.choices[0]?.message;
-    if (choice?.tool_calls && choice.tool_calls.length > 0) {
-      return { toolCalls: choice.tool_calls };
-    }
+    return await withOpenAIFailover(async (client) => {
+      const response = await client.chat.completions.create({
+        model: openaiModel,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are D-OpsPilot AI Incident Commander. Investigate production failures using tool calls, synthesize root causes, and propose safe recovery patches.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        tools
+      });
+      const choice = response.choices[0]?.message;
+      return (choice?.tool_calls && choice.tool_calls.length > 0) ? { toolCalls: choice.tool_calls } : null;
+    }, userCustomKey);
   } catch (error: any) {
+    if (error?.message === 'OPENAI_KEYS_EXHAUSTED') throw error;
     logger.warn('OpenAI tool calling notice', error?.message || error);
   }
   return null;
 }
 
-export async function generateAICommandFromPrompt(query: string, serverContext?: any): Promise<{
+export async function generateAICommandFromPrompt(query: string, serverContext?: any, userCustomKey?: string): Promise<{
   command: string;
   explanation: string;
   detectedIntent: string;
   confidence: number;
 }> {
   const q = query.toLowerCase().trim();
-  const host = serverContext?.host || 'configured server';
-  const user = serverContext?.user || 'ubuntu';
 
-  if (hasOpenAIKey() && openai) {
+  if (hasOpenAIKey(userCustomKey)) {
     try {
-      const prompt = `You are D-OpsPilot AI Command Copilot. The user is logged into remote server ${user}@${host}.
-The active containers running on this server are:
-- finance-lock-redis (Redis 7)
-- finance-lock-nanodep (MicroMDM NanoDEP on port 8082)
-- finance-lock-nanomdm (MicroMDM NanoMDM on port 8080)
-- finance-lock-postgres (PostgreSQL/TimescaleDB on port 5434)
-- finance-lock-scep (Finance Lock SCEP on port 8081)
-- Nginx reverse proxy
+      const systemPrompt = `You are D-OpsPilot AI Terminal Copilot. Convert natural language DevOps requests into safe Linux shell commands. Context: ${JSON.stringify(serverContext || {})}. Return JSON: { "command": string, "explanation": string, "detectedIntent": string, "confidence": number }.`;
+      const res = await withOpenAIFailover(async (client) => {
+        const completion = await client.chat.completions.create({
+          model: openaiModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: query }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const content = completion.choices[0]?.message?.content;
+        return content ? JSON.parse(content) : null;
+      }, userCustomKey);
 
-User prompt/intent: "${query}"
-
-Return a JSON object with:
-- command: exact bash command to run on ${user}@${host} (use sudo if docker or system logs are needed)
-- explanation: brief 1-line explanation of what this command inspects or fixes
-- detectedIntent: 2-3 word summary of user request
-- confidence: number between 0.9 and 1.0`;
-
-      const completion = await openai.chat.completions.create({
-        model: openaiModel,
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      });
-
-      const content = completion.choices[0]?.message?.content;
-      if (content) {
-        return JSON.parse(content);
-      }
-    } catch (e) {
+      if (res && res.command) return res;
+    } catch (e: any) {
+      if (e?.message === 'OPENAI_KEYS_EXHAUSTED') throw e;
       logger.warn('OpenAI command copilot notice', e);
     }
   }
 
-  let command = 'sudo docker ps';
-  let explanation = 'Lists all 5 active Finance-Lock Docker containers running on host';
-  let detectedIntent = 'Docker Container Discovery';
-
-  if (q.includes('docker') && (q.includes('error') || q.includes('err') || q.includes('fail') || q.includes('exception'))) {
-    command = `for c in $(sudo docker ps --format '{{.Names}}'); do echo "=== CONTAINER: $c ==="; sudo docker logs --tail 25 $c 2>&1 | grep -i -E "error|warn|fail|exception" || echo "No recent errors"; done`;
-    explanation = 'Scans and filters error, warning & exception logs across all 5 active Docker containers on host';
-    detectedIntent = 'Docker Container Error Log Audit';
-  } else if (q.includes('nanomdm') || (q.includes('mdm') && q.includes('container'))) {
-    command = 'sudo docker logs --tail 50 finance-lock-nanomdm';
-    explanation = 'Tails recent 50 console logs for NanoMDM core container';
-    detectedIntent = 'NanoMDM Container Log Stream';
-  } else if (q.includes('nanodep') || (q.includes('dep') && q.includes('container'))) {
-    command = 'sudo docker logs --tail 50 finance-lock-nanodep';
-    explanation = 'Tails recent 50 console logs for NanoDEP container';
-    detectedIntent = 'NanoDEP Container Log Stream';
-  } else if (q.includes('scep') && q.includes('log')) {
-    command = 'sudo docker logs --tail 50 finance-lock-scep';
-    explanation = 'Tails recent 50 console logs for SCEP certificate container';
-    detectedIntent = 'SCEP Container Log Stream';
-  } else if (q.includes('docker') && q.includes('log')) {
-    command = 'for c in $(sudo docker ps --format "{{.Names}}"); do echo "=== LOGS: $c ==="; sudo docker logs --tail 15 $c; done';
-    explanation = 'Fetches latest 15 console log lines from all 5 active Docker containers';
-    detectedIntent = 'All Docker Containers Log Stream';
-  } else if (q.includes('setup') || q.includes('system') || q.includes('server') || q.includes('details') || q.includes('info') || q.includes('kya h')) {
-    command = 'uname -a && uptime && sudo docker ps';
-    explanation = 'Displays OS kernel details, server uptime & load, and all active Docker containers';
-    detectedIntent = 'Server Architecture & Setup Overview';
-  } else if (q.includes('apk') || q.includes('mdm')) {
-    command = "sudo grep 'mdm-agent.apk' /var/log/nginx/access.log | tail -n 20";
-    explanation = 'Filters Nginx access logs for MDM agent APK download requests';
-    detectedIntent = 'MDM APK Log Inspection';
-  } else if (q.includes('nginx') && q.includes('error')) {
-    command = 'sudo tail -n 30 /var/log/nginx/error.log';
-    explanation = 'Displays latest 30 entries from Nginx error log';
-    detectedIntent = 'Nginx Error Log Audit';
-  } else if (q.includes('nginx')) {
-    command = 'sudo tail -n 30 /var/log/nginx/access.log';
-    explanation = 'Tails active Nginx web traffic access logs';
-    detectedIntent = 'Nginx Traffic Inspection';
-  } else if (q.includes('postgres') || q.includes('database') || q.includes('db')) {
-    command = 'sudo docker exec finance-lock-postgres pg_isready && sudo docker logs --tail 25 finance-lock-postgres';
-    explanation = 'Executes pg_isready database check and views latest PostgreSQL logs';
-    detectedIntent = 'PostgreSQL Health & Log Audit';
-  } else if (q.includes('redis') || q.includes('cache')) {
-    command = 'sudo docker exec finance-lock-redis redis-cli ping && sudo docker logs --tail 25 finance-lock-redis';
-    explanation = 'Pings Redis cache container and checks recent cache logs';
-    detectedIntent = 'Redis Cache Health & Logs';
-  } else if (q.includes('ram') || q.includes('memory') || q.includes('htop') || q.includes('cpu')) {
-    command = 'free -m && top -b -n 1 | head -n 15';
-    explanation = 'Displays RAM memory allocation and top 15 CPU consuming processes';
-    detectedIntent = 'RAM & CPU Resource Gauge';
-  } else if (q.includes('disk') || q.includes('storage') || q.includes('space')) {
-    command = 'df -h /';
-    explanation = 'Inspects root filesystem disk space availability';
-    detectedIntent = 'Disk Storage Audit';
-  } else if (q.includes('port') || q.includes('network') || q.includes('netstat')) {
-    command = 'sudo netstat -tulpn || sudo ss -tulpn';
-    explanation = 'Lists all active open TCP/UDP listening ports and service PIDs';
-    detectedIntent = 'Network Port Audit';
-  } else if (q.includes('error') || q.includes('fail') || q.includes('issue')) {
-    command = 'sudo tail -n 30 /var/log/nginx/error.log && for c in $(sudo docker ps --format "{{.Names}}"); do echo "=== $c ==="; sudo docker logs --tail 15 $c 2>&1 | grep -i "error" || true; done';
-    explanation = 'Audits Nginx web proxy error logs and scans all container error logs';
-    detectedIntent = 'Global System & Docker Error Audit';
-  } else if (q.includes('restart') && q.includes('scep')) {
-    command = 'sudo docker restart finance-lock-scep';
-    explanation = 'Restarts SCEP certificate server container';
-    detectedIntent = 'Restart SCEP Container';
-  } else if (q.includes('restart') && q.includes('nanomdm')) {
-    command = 'sudo docker restart finance-lock-nanomdm';
-    explanation = 'Restarts NanoMDM server container';
-    detectedIntent = 'Restart NanoMDM Container';
+  // Fallback pattern matcher
+  if (q.includes('docker') || q.includes('container')) {
+    return { command: 'sudo docker ps -a', explanation: 'List all active and stopped Docker containers', detectedIntent: 'INSPECT_CONTAINERS', confidence: 95 };
   }
-
-  return {
-    command,
-    explanation,
-    detectedIntent,
-    confidence: 0.98
-  };
-}
-
-export async function filterProjectsWithAI(rawDirectories: string[], serverHost?: string): Promise<string[]> {
-  // Hard smart filter out dot-folders, caches, npm logs, etc.
-  const cleaned = rawDirectories.filter(d => {
-    const parts = d.split('/').filter(Boolean);
-    const last = parts[parts.length - 1] || '';
-    if (last.startsWith('.')) return false;
-    if (['node_modules', 'tmp', 'cache', 'checkpoint-nodejs', 'prisma-nodejs', 'prisma', 'logs', '_cacache', '_logs', 'share', 'debug', 'local'].includes(last)) return false;
-    if (d.includes('/.npm') || d.includes('/.cache') || d.includes('/.local') || d.includes('/.ssh')) return false;
-    return true;
-  });
-
-  if (!hasOpenAIKey() || !openai) {
-    return cleaned.length > 0 ? cleaned : ['/root', '/var/www'];
-  }
-
-  try {
-    const prompt = `You are OpsPilot AI Server Architect. Analyze these raw directories discovered on Linux server (${serverHost || 'configured server'}):
-${JSON.stringify(rawDirectories)}
-
-Return ONLY a JSON object with key "projects" containing a list of actual application/project root directories. Exclude hidden dot-files (.npm, .cache, .ssh), npm logs, node_modules, temp files, and system cache folders.
-Example JSON: {"projects": ["/var/www/app", "/root/service"]}`;
-
-    const completion = await openai.chat.completions.create({
-      model: openaiModel,
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' }
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (content) {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed.projects) && parsed.projects.length > 0) {
-        return parsed.projects;
-      }
-    }
-  } catch (err: any) {
-    if (!err?.message?.includes('429') && err?.status !== 429) {
-      logger.warn('OpenAI directory filter notice:', err?.message || err);
-    }
-  }
-
-  return cleaned.length > 0 ? cleaned : ['/root', '/var/www'];
-}
-
-export async function summarizeLogsWithAI(rawLogs: string): Promise<{
-  summary: string;
-  errors: string[];
-  recommendation: string;
-  cleanLogs: string;
-}> {
-  if (!rawLogs || !rawLogs.trim()) {
-    return {
-      summary: 'No log output captured from host.',
-      errors: [],
-      recommendation: 'Check container logs or service status.',
-      cleanLogs: 'No logs available.'
-    };
-  }
-
-  const lines = rawLogs.split('\n');
-  const filteredLines = lines.filter(line => {
-    const l = line.toLowerCase();
-    if (l.includes('debug') || l.includes('trace') || l.includes('info: heartbeat') || l.includes('ping ok')) return false;
-    return true;
-  });
-
-  if (!hasOpenAIKey() || !openai) {
-    const errorLines = lines.filter(l => /error|fail|warn|exception|crash|refused/i.test(l));
-    return {
-      summary: errorLines.length > 0 ? `Detected ${errorLines.length} warning/error entries in log output.` : 'All logs healthy. Zero critical errors detected.',
-      errors: errorLines.slice(0, 5),
-      recommendation: errorLines.length > 0 ? 'Inspect failing container processes with sudo docker logs.' : 'System operates normally.',
-      cleanLogs: filteredLines.slice(-30).join('\n')
-    };
-  }
-
-  try {
-    const prompt = `You are OpsPilot AI Log Sanitizer. Analyze these raw server logs:
-${rawLogs.substring(0, 4000)}
-
-Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
-{
-  "summary": "1-sentence executive summary of log health",
-  "errors": ["list of critical error snippets found"],
-  "recommendation": "actionable fix recommendation for DevOps engineer",
-  "cleanLogs": "filtered log string showing only relevant events"
-}`;
-
-    const completion = await openai.chat.completions.create({
-      model: openaiModel,
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' }
-    });
-
-    const content = completion.choices[0]?.message?.content;
-    if (content) {
-      const parsed = JSON.parse(content);
-      return {
-        summary: parsed.summary || 'Log analysis complete.',
-        errors: parsed.errors || [],
-        recommendation: parsed.recommendation || 'No action required.',
-        cleanLogs: parsed.cleanLogs || filteredLines.slice(-30).join('\n')
-      };
-    }
-  } catch (err) {
-    logger.warn('OpenAI log summarizer notice', err);
-  }
-
-  return {
-    summary: 'Log analysis complete.',
-    errors: [],
-    recommendation: 'Monitor service health.',
-    cleanLogs: filteredLines.slice(-30).join('\n')
-  };
+  return { command: 'uptime', explanation: 'Show system uptime and load average', detectedIntent: 'SYSTEM_STATUS', confidence: 80 };
 }
 
 export async function generateAIIncidentAnalysis(
   userPrompt: string, 
   projectContext: any,
-  liveGitContext?: any
+  liveGitContext?: any,
+  userCustomKey?: string
 ): Promise<{
   title?: string;
   rootCause: string;
@@ -357,23 +200,22 @@ export async function generateAIIncidentAnalysis(
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   diff?: string;
 } | null> {
-  if (!hasOpenAIKey() || !openai) {
-    logger.info('OpenAI API key missing or unconfigured. Using deterministic fallback.');
-    return null;
+  if (!hasOpenAIKey(userCustomKey)) {
+    logger.info('OpenAI API keys missing or all system keys exhausted.');
+    throw new Error('OPENAI_KEYS_EXHAUSTED');
   }
 
-  try {
-    const gitInfoStr = liveGitContext?.connected && liveGitContext?.repository
-      ? `Live GitHub API Data:
+  const gitInfoStr = liveGitContext?.connected && liveGitContext?.repository
+    ? `Live GitHub API Data:
   - Repository: ${liveGitContext.repository.fullName}
   - Default Branch: ${liveGitContext.repository.defaultBranch}
   - Current Target Branch: ${liveGitContext.targetBranch || 'main'}
   - Total Branches: ${liveGitContext.branchesCount || 1}
   - Open Issues: ${liveGitContext.repository.openIssues || 0}
   - Recent Commits: ${JSON.stringify(liveGitContext.recentCommits || [])}`
-      : 'Live GitHub API Data: Repository not connected via API';
+    : 'Live GitHub API Data: Repository not connected via API';
 
-    const prompt = `You are D-OpsPilot AI Incident Commander & Senior DevOps Engineer. Analyze the user's prompt for the project and generate a realistic, high-quality incident diagnosis, root cause, recovery plan, shell commands, and code patch diff.
+  const prompt = `You are D-OpsPilot AI Incident Commander & Senior DevOps Engineer. Analyze the user's prompt for the project and generate a realistic, high-quality incident diagnosis, root cause, recovery plan, shell commands, and code patch diff.
 
 Project Details:
 - Name: ${projectContext?.name || 'Repository Workspace'}
@@ -400,8 +242,9 @@ Return a JSON object with EXACTLY these fields:
   "diff": "unified git diff string or empty string"
 }`;
 
+  return withOpenAIFailover(async (client) => {
     logger.info(`🤖 Invoking OpenAI GPT-4o model for prompt: "${userPrompt}"`);
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: openaiModel,
       messages: [
         { role: 'system', content: 'You are D-OpsPilot AI DevOps Commander. Return valid JSON.' },
@@ -424,9 +267,97 @@ Return a JSON object with EXACTLY these fields:
         diff: parsed.diff || ''
       };
     }
-  } catch (err: any) {
-    logger.warn('OpenAI Incident Analysis call notice:', err?.message || err);
+    return null;
+  }, userCustomKey);
+}
+
+export async function summarizeLogsWithAI(rawLogs: string, userCustomKey?: string): Promise<{
+  summary: string;
+  errors: string[];
+  recommendation: string;
+  cleanLogs: string;
+}> {
+  const lines = rawLogs.split('\n');
+  const filteredLines = lines.filter(line => {
+    const l = line.toLowerCase();
+    if (l.includes('debug') || l.includes('trace') || l.includes('info: heartbeat') || l.includes('ping ok')) return false;
+    return true;
+  });
+
+  if (hasOpenAIKey(userCustomKey)) {
+    try {
+      const prompt = `You are OpsPilot AI Log Sanitizer. Analyze these raw server logs:
+${rawLogs.substring(0, 4000)}
+
+Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
+{
+  "summary": "1-sentence executive summary of log health",
+  "errors": ["list of critical error snippets found"],
+  "recommendation": "actionable fix recommendation for DevOps engineer",
+  "cleanLogs": "filtered log string showing only relevant events"
+}`;
+
+      const res = await withOpenAIFailover(async (client) => {
+        const completion = await client.chat.completions.create({
+          model: openaiModel,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
+        });
+        const content = completion.choices[0]?.message?.content;
+        return content ? JSON.parse(content) : null;
+      }, userCustomKey);
+
+      if (res && res.summary) {
+        return {
+          summary: res.summary || 'Log analysis complete.',
+          errors: Array.isArray(res.errors) ? res.errors : [],
+          recommendation: res.recommendation || 'No action required.',
+          cleanLogs: res.cleanLogs || filteredLines.slice(-30).join('\n')
+        };
+      }
+    } catch (err: any) {
+      if (err?.message === 'OPENAI_KEYS_EXHAUSTED') throw err;
+      logger.warn('OpenAI log summarizer notice', err);
+    }
   }
 
-  return null;
+  const errorLines = lines.filter(l => /error|fail|warn|exception|crash|refused/i.test(l));
+  return {
+    summary: errorLines.length > 0 ? `Detected ${errorLines.length} warning/error entries in log output.` : 'All logs healthy. Zero critical errors detected.',
+    errors: errorLines.slice(0, 5),
+    recommendation: errorLines.length > 0 ? 'Inspect failing container processes with sudo docker logs.' : 'System operates normally.',
+    cleanLogs: filteredLines.slice(-30).join('\n')
+  };
+}
+
+export async function filterProjectsWithAI(dirs: string[], userCustomKey?: string): Promise<string[]> {
+  if (dirs.length <= 1) return dirs;
+
+  if (hasOpenAIKey(userCustomKey)) {
+    try {
+      const prompt = `Select root web application or API service project directories from these paths: ${JSON.stringify(dirs)}. Return JSON object: { "projectDirectories": ["dir1", "dir2"] }`;
+
+      const res = await withOpenAIFailover(async (client) => {
+        const completion = await client.chat.completions.create({
+          model: openaiModel,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
+        });
+        const content = completion.choices[0]?.message?.content;
+        return content ? JSON.parse(content) : null;
+      }, userCustomKey);
+
+      if (res && Array.isArray(res.projectDirectories)) {
+        return res.projectDirectories.filter((d: any): d is string => typeof d === 'string');
+      }
+    } catch (err: any) {
+      if (err?.message === 'OPENAI_KEYS_EXHAUSTED') throw err;
+      logger.warn('OpenAI directory filter notice:', err?.message || err);
+    }
+  }
+
+  return dirs.filter(d => {
+    const l = d.toLowerCase();
+    return !l.includes('node_modules') && !l.includes('.git') && !l.includes('cache') && !l.includes('temp');
+  });
 }

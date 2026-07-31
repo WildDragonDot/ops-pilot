@@ -123,6 +123,9 @@ function getAuthHeaders(projectId?: string): Record<string, string> {
         const enc = safeHeaderEncode(creds.githubToken);
         if (enc) headers['x-github-token'] = enc;
       }
+      if (creds.openaiApiKey) {
+        headers['x-openai-api-key'] = creds.openaiApiKey;
+      }
     }
   }
 

@@ -18,8 +18,10 @@ export async function createIncident(req: AuthenticatedRequest, res: Response) {
   const { userPrompt, scenarioKey, projectId } = req.body;
   const user = req.user;
   const githubToken = typeof req.headers['x-github-token'] === 'string' ? req.headers['x-github-token'] : undefined;
+  const userOpenAIKey = typeof req.headers['x-openai-api-key'] === 'string' ? req.headers['x-openai-api-key'] : undefined;
+
   try {
-    const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId, githubToken);
+    const incident = await createAndRunIncident(userPrompt, scenarioKey, projectId, githubToken, userOpenAIKey);
 
     // Write audit log — incident investigation triggered
     if (user) {
@@ -39,6 +41,12 @@ export async function createIncident(req: AuthenticatedRequest, res: Response) {
 
     res.json({ incident });
   } catch (err: any) {
+    if (err?.message === 'OPENAI_KEYS_EXHAUSTED') {
+      return res.status(429).json({
+        error: 'OPENAI_KEYS_EXHAUSTED',
+        message: 'All system OpenAI API keys have exceeded quota limits. Please enter your personal OpenAI API key to continue.'
+      });
+    }
     // Log failed incident creation attempt
     if (user) {
       await writeAuditLog({

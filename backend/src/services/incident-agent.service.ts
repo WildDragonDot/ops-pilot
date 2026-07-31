@@ -245,7 +245,8 @@ export async function createAndRunIncident(
   userPrompt: string, 
   scenarioKey: string = 'DATABASE_STOPPED', 
   projectId?: string,
-  githubToken?: string
+  githubToken?: string,
+  userOpenAIKey?: string
 ) {
   const scenario = activeScenarios[scenarioKey] || activeScenarios['DATABASE_STOPPED'];
   const incidentId = `inc-${Date.now()}`;
@@ -311,8 +312,8 @@ export async function createAndRunIncident(
     }
   }
 
-  // Attempt live OpenAI GPT-4o model reasoning FIRST
-  const aiAnalysis = await generateAIIncidentAnalysis(userPrompt, project, liveGitContext);
+  // Attempt live OpenAI GPT-4o model reasoning FIRST with failover key rotation
+  const aiAnalysis = await generateAIIncidentAnalysis(userPrompt, project, liveGitContext, userOpenAIKey);
   if (aiAnalysis && aiAnalysis.rootCause) {
     effectiveRootCause = aiAnalysis.rootCause;
     approvalTitle = aiAnalysis.approvalTitle;

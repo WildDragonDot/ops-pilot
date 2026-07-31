@@ -4,6 +4,7 @@ export interface ProjectCredentials {
   projectId?: string;
   gitUrl?: string;
   githubToken?: string;
+  openaiApiKey?: string;
   serverHost?: string;
   serverPort?: number;
   serverUser?: string;
@@ -77,3 +78,12 @@ export const OpsPilotVault = {
     localStorage.removeItem(`${VAULT_KEY_PREFIX}${projectId}`);
   }
 };
+
+export function saveUserCredentials(creds: Partial<ProjectCredentials>, projectId: string = 'global') {
+  const existing = OpsPilotVault.getCredentials(projectId) || {};
+  OpsPilotVault.setCredentials(projectId, { ...existing, ...creds });
+}
+
+export function getUserCredentials(projectId: string = 'global'): ProjectCredentials | null {
+  return OpsPilotVault.getCredentials(projectId);
+}
