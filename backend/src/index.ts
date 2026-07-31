@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { router as apiRouter } from './routes/api.routes.js';
 import { hasOpenAIKey } from './config/openai.js';
+import { hasGeminiKey } from './config/gemini.js';
 import { initDatabase } from './services/db.service.js';
 import { logger } from './services/logger.service.js';
 import { notFound, globalErrorHandler } from './middleware/errorHandler.middleware.js';
@@ -53,7 +54,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type', 'Authorization',
-    'x-server-ssh-key', 'x-server-pass', 'x-github-token'
+    'x-server-ssh-key', 'x-server-pass', 'x-github-token', 'x-openai-api-key', 'x-gemini-api-key'
   ]
 }));
 
@@ -74,6 +75,7 @@ async function startServer() {
       status: 'OK',
       service: 'D-OpsPilot AI Backend',
       openaiEnabled: hasOpenAIKey(),
+      geminiEnabled: hasGeminiKey(),
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });
@@ -88,6 +90,7 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     logger.info(`✅  D-OpsPilot AI Backend running on http://0.0.0.0:${PORT}`);
     logger.info(`🔑  OpenAI API Integration: ${hasOpenAIKey() ? 'ENABLED' : 'FALLBACK MODE'}`);
+    logger.info(`✨  Google Gemini API Integration: ${hasGeminiKey() ? 'ENABLED' : 'FALLBACK MODE'}`);
     logger.info(`🌐  CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
     // ─── 3-Day Storage Auto-Cleanup Policy (Runs on startup & every 12h) ─────────

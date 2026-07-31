@@ -8,7 +8,7 @@ export async function initDatabase() {
   try {
     const orgCount = await prisma.organization.count();
     if (orgCount === 0) {
-      logger.info('Initializing Prisma SQLite database with default Organization & Project');
+      logger.info('Initializing PostgreSQL database with default Organization & User');
       
       const org = await prisma.organization.create({
         data: {
@@ -28,7 +28,7 @@ export async function initDatabase() {
         }
       });
 
-      logger.info('Prisma SQLite Database ready');
+      logger.info('PostgreSQL Database ready');
     }
   } catch (err) {
     logger.warn('DB initialization notice', err);

@@ -5,6 +5,7 @@ export interface ProjectCredentials {
   gitUrl?: string;
   githubToken?: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
   serverHost?: string;
   serverPort?: number;
   serverUser?: string;

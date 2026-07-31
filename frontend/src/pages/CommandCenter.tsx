@@ -28,7 +28,7 @@ import {
   VolumeX
 } from 'lucide-react';
 import { Incident, Project } from '../types';
-import { startIncident, approveFix, rejectFix } from '../services/api';
+import { startIncident, fetchIncident, approveFix, rejectFix } from '../services/api';
 import { DiffViewer } from '../components/DiffViewer';
 import { TerminalConsole } from '../components/TerminalConsole';
 import { OpenAIKeyModal } from '../components/OpenAIKeyModal';
@@ -67,7 +67,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     if (!isInvestigating) return;
     const steps = [
       '🔍 Parsing prompt intent & auditing repository AST graph...',
-      '🤖 Invoking OpenAI GPT-4o reasoning model for root cause diagnosis...',
+      '🤖 Invoking OpsPilot AI reasoning model for root cause diagnosis...',
       '🛡️ Verifying AST code fix safety & generating automated git patch...'
     ];
     let idx = 0;
@@ -84,19 +84,30 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const renderFormattedPoints = (text: string) => {
     if (!text) return null;
 
-    const rawPoints = text.split(/(?=\b[1-9]\.\s)/g).map(p => p.trim()).filter(Boolean);
+    let targetText = text;
+
+    if (typeof text === 'string' && text.trim().startsWith('{') && text.trim().endsWith('}')) {
+      try {
+        const parsed = JSON.parse(text.trim());
+        if (parsed.rootCause && typeof parsed.rootCause === 'string') {
+          targetText = parsed.rootCause;
+        }
+      } catch (e) {}
+    }
+
+    const rawPoints = targetText.split(/(?=\b[1-9]\.\s|\n[1-9]\.\s)/g).map(p => p.trim()).filter(Boolean);
 
     if (rawPoints.length > 1) {
       return (
         <div className="space-y-2.5 pt-2">
           {rawPoints.map((pt, idx) => {
-            const cleanText = pt.replace(/^[1-9]\.\s*/, '');
+            const cleanText = pt.replace(/^[1-9]\.\s*/, '').trim();
             return (
               <div key={idx} className="flex items-start gap-2.5 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-mono">
                 <span className="w-5 h-5 rounded-lg bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-mono text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                   {idx + 1}
                 </span>
-                <div className="flex-1 text-title font-medium leading-relaxed">
+                <div className="flex-1 text-title font-medium leading-relaxed whitespace-pre-wrap">
                   {cleanText}
                 </div>
               </div>
@@ -108,7 +119,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
     return (
       <p className="text-xs font-semibold text-title leading-relaxed pt-1.5 whitespace-pre-line font-mono">
-        {text}
+        {targetText}
       </p>
     );
   };
@@ -247,6 +258,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
 
   const activeIncident = (createdIncident && createdIncident.id === activeIncidentId ? createdIncident : null)
     || incidents.find(i => i.id === activeIncidentId) 
+    || createdIncident 
     || incidents[0];
 
   // Dynamic real calculation from SQLite DB timestamps and event items
@@ -288,14 +300,35 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       setCreatedIncident(newInc);
       setActiveIncidentId(newInc.id);
       setSubmittedPrompt(newInc.userPrompt);
-      onRefreshIncidents();
+
+      let pollTries = 0;
+      const pollInterval = setInterval(async () => {
+        pollTries++;
+        try {
+          const fresh = await fetchIncident(newInc.id);
+          if (fresh) {
+            setCreatedIncident(fresh);
+            if (fresh.status === 'AWAITING_APPROVAL' || fresh.status === 'RESOLVED' || pollTries >= 8) {
+              clearInterval(pollInterval);
+              setIsInvestigating(false);
+              onRefreshIncidents();
+            }
+          }
+        } catch (e) {
+          if (pollTries >= 8) {
+            clearInterval(pollInterval);
+            setIsInvestigating(false);
+            onRefreshIncidents();
+          }
+        }
+      }, 700);
     } catch (err: any) {
       logger.error('Incident launch failed', err);
+      setIsInvestigating(false);
       if (err?.status === 429 || err?.message?.includes('OPENAI_KEYS_EXHAUSTED') || err?.message?.includes('quota')) {
         setShowOpenAIKeyModal(true);
       }
     } finally {
-      setIsInvestigating(false);
       setPendingPromptText('');
     }
   };
@@ -370,7 +403,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             <span className="text-sm font-extrabold text-title hidden sm:inline">D-OpsPilot AI</span>
             <span className="text-sm font-extrabold text-title sm:hidden">DOP AI</span>
             <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              GPT-4o
+              OPSPILOT AI
             </span>
             <div className={`hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold border ${modeBadge.color}`}>
               <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${modeBadge.dotColor}`} />
@@ -520,7 +553,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                       <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 rounded-full animate-pulse w-3/4" />
                     </div>
                     <p className="text-[11px] text-subtitle font-mono">
-                      ⚡ Invoking AST Code Auditor & OpenAI GPT-4o Model. Real-time diagnosis in progress...
+                      ⚡ Invoking AST Code Auditor & OpsPilot AI Model. Real-time diagnosis in progress...
                     </p>
                   </div>
                 </div>
@@ -566,7 +599,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                       >
                         {(activeIncident?.events && activeIncident.events.length > 0 ? activeIncident.events : [
                           { id: 'ev-1', title: '🔍 Prompt intent parsed & AST repository graph loaded' },
-                          { id: 'ev-2', title: '🤖 OpenAI GPT-4o reasoning model executed' },
+                          { id: 'ev-2', title: '🤖 OpsPilot AI reasoning model executed' },
                           { id: 'ev-3', title: '🛡️ Code fix safety & git diff patch verified' },
                           { id: 'ev-4', title: '📋 Incident diagnosis & verification completed' }
                         ]).map((evt) => (

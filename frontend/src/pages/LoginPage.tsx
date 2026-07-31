@@ -511,7 +511,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
           <span>•</span>
           <span>Zero-DB Storage</span>
           <span>•</span>
-          <span>GPT-4o Codex</span>
+          <span>OpsPilot AI Core</span>
         </div>
       </footer>
 

@@ -9,9 +9,19 @@ import { logger } from './logger.service.js';
 interface RepoScanOptions {
   projectId?: string;
   githubToken?: string;
+  userOpenAIKey?: string;
 }
 
 export async function getLatestRepoScan(options: RepoScanOptions = {}) {
+  const repo = await getOrCreateWorkspaceRepository(options.projectId);
+  const existingScan = await prisma.repositoryScan.findFirst({
+    where: { repositoryId: repo.id },
+    orderBy: { startedAt: 'desc' },
+    include: { findings: true }
+  });
+  if (existingScan) {
+    return existingScan;
+  }
   return executeRepoScan(options);
 }
 
@@ -153,7 +163,7 @@ export async function executeRepoScan(options: RepoScanOptions = {}) {
   }
 
   // Attempt OpenAI API analysis
-  const aiResult = await auditCodebaseWithOpenAI(codeContexts);
+  const aiResult = await auditCodebaseWithOpenAI(codeContexts, options.userOpenAIKey);
 
   // Check real disk file patch statuses
   const repoNameSlug = (repo.name || '').toLowerCase();

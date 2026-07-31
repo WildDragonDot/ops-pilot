@@ -941,7 +941,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                   <div>
                     <h2 className="text-xs font-bold text-title flex items-center gap-1.5">
                       <Cpu className="w-3.5 h-3.5 text-blue-500" />
-                      <span>OpenAI API & System Personas</span>
+                      <span>AI Model & System Personas</span>
                     </h2>
                     <p className="text-[11px] text-subtitle">Configure system prompt parameters, model choice, token limits, and API keys.</p>
                   </div>
@@ -965,9 +965,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                         onChange={(e) => setSelectedModel(e.target.value)}
                         className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-title text-[11px] font-mono focus:outline-none focus:border-blue-500"
                       >
-                        <option value="gpt-4o">gpt-4o (High-Precision SRE Reasoning)</option>
-                        <option value="gpt-4o-mini">gpt-4o-mini (Fast Log Inspection)</option>
-                        <option value="o1-mini">o1-mini (Deep Static Code Audit)</option>
+                        <option value="gpt-4o">OpsPilot AI Core Engine (High-Precision SRE Reasoning)</option>
+                        <option value="gpt-4o-mini">OpsPilot AI Fast (Fast Log Inspection)</option>
+                        <option value="o1-mini">OpsPilot AI Deep (Deep Static Code Audit)</option>
                       </select>
                     </div>
 
@@ -1004,7 +1004,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                     </div>
 
                     <div className="space-y-1 pt-1">
-                      <label className="text-[11px] font-bold text-title block">OpenAI API Key Token</label>
+                      <label className="text-[11px] font-bold text-title block">Custom AI API Key Token</label>
                       <div className="relative flex items-center">
                         <input
                           type={showApiKey ? 'text' : 'password'}

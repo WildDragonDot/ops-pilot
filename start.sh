@@ -34,6 +34,9 @@ if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
     (cd "$ROOT_DIR/frontend" && npm install)
 fi
 
+echo "⚙️  Generating Prisma Client for PostgreSQL..."
+(cd "$ROOT_DIR/backend" && npx prisma generate)
+
 # Free ports 5080 and 3000 if already occupied
 lsof -ti :5080 | xargs kill -9 2>/dev/null || true
 lsof -ti :3000 | xargs kill -9 2>/dev/null || true

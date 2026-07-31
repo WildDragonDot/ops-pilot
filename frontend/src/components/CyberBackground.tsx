@@ -66,7 +66,7 @@ export const CyberBackground: React.FC = () => {
       label: string;
     }[] = [];
 
-    const nodeLabels = ['PGSQL:5432', 'REDIS:6379', 'API:5080', 'NGINX:80', 'ZERO-DB', 'GIT:SSH', 'GPT-4o'];
+    const nodeLabels = ['PGSQL:5432', 'REDIS:6379', 'API:5080', 'NGINX:80', 'ZERO-DB', 'GIT:SSH', 'AI-ENGINE'];
     for (let i = 0; i < nodesCount; i++) {
       serverNodes.push({
         x: Math.random() * width,

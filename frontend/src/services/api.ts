@@ -108,25 +108,28 @@ function getAuthHeaders(projectId?: string): Record<string, string> {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  if (projectId) {
-    const creds = OpsPilotVault.getCredentials(projectId);
-    if (creds) {
-      if (creds.sshKey) {
-        const enc = safeHeaderEncode(creds.sshKey);
-        if (enc) headers['x-server-ssh-key'] = enc;
-      }
-      if (creds.sshPassword) {
-        const enc = safeHeaderEncode(creds.sshPassword);
-        if (enc) headers['x-server-pass'] = enc;
-      }
-      if (creds.githubToken) {
-        const enc = safeHeaderEncode(creds.githubToken);
-        if (enc) headers['x-github-token'] = enc;
-      }
-      if (creds.openaiApiKey) {
-        headers['x-openai-api-key'] = creds.openaiApiKey;
-      }
-    }
+  // Merge project-specific credentials with global vault fallback
+  const globalCreds = OpsPilotVault.getCredentials('global');
+  const projectCreds = projectId ? OpsPilotVault.getCredentials(projectId) : null;
+  const creds = { ...globalCreds, ...projectCreds };
+
+  if (creds.sshKey) {
+    const enc = safeHeaderEncode(creds.sshKey);
+    if (enc) headers['x-server-ssh-key'] = enc;
+  }
+  if (creds.sshPassword) {
+    const enc = safeHeaderEncode(creds.sshPassword);
+    if (enc) headers['x-server-pass'] = enc;
+  }
+  if (creds.githubToken) {
+    const enc = safeHeaderEncode(creds.githubToken);
+    if (enc) headers['x-github-token'] = enc;
+  }
+  if (creds.openaiApiKey) {
+    headers['x-openai-api-key'] = creds.openaiApiKey;
+  }
+  if (creds.geminiApiKey) {
+    headers['x-gemini-api-key'] = creds.geminiApiKey;
   }
 
   return headers;

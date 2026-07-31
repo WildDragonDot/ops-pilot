@@ -24,7 +24,8 @@ export async function getRepository(req: AuthenticatedRequest, res: Response) {
   const projectId = req.query.projectId ? String(req.query.projectId) : undefined;
   const latestScan = await getLatestRepoScan({
     projectId,
-    githubToken: getHeaderString(req.headers['x-github-token'])
+    githubToken: getHeaderString(req.headers['x-github-token']),
+    userOpenAIKey: getHeaderString(req.headers['x-openai-api-key'])
   });
   const repository = latestScan?.repositoryId
     ? await prisma.repository.findUnique({ where: { id: latestScan.repositoryId } })
@@ -48,7 +49,8 @@ export async function triggerScan(req: AuthenticatedRequest, res: Response) {
   try {
     const scan = await executeRepoScan({
       projectId,
-      githubToken: getHeaderString(req.headers['x-github-token'])
+      githubToken: getHeaderString(req.headers['x-github-token']),
+      userOpenAIKey: getHeaderString(req.headers['x-openai-api-key'])
     });
 
     // Audit: repository scan triggered
@@ -92,7 +94,8 @@ export async function triggerScan(req: AuthenticatedRequest, res: Response) {
 export async function getScanById(req: AuthenticatedRequest, res: Response) {
   const scan = await getLatestRepoScan({
     projectId: req.query.projectId ? String(req.query.projectId) : undefined,
-    githubToken: getHeaderString(req.headers['x-github-token'])
+    githubToken: getHeaderString(req.headers['x-github-token']),
+    userOpenAIKey: getHeaderString(req.headers['x-openai-api-key'])
   });
   res.json({ scan });
 }

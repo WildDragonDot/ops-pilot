@@ -25,11 +25,7 @@ export const OpenAIKeyModal: React.FC<OpenAIKeyModalProps> = ({
     e.preventDefault();
     const cleanKey = apiKey.trim();
     if (!cleanKey) {
-      setError('Please enter a valid OpenAI API key');
-      return;
-    }
-    if (!cleanKey.startsWith('sk-')) {
-      setError('OpenAI API keys usually start with "sk-"');
+      setError('Please enter a valid AI API key');
       return;
     }
 
@@ -64,26 +60,26 @@ export const OpenAIKeyModal: React.FC<OpenAIKeyModalProps> = ({
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-title">System OpenAI Quota Exhausted</h3>
-              <p className="text-xs text-subtitle">All 3 system API keys reached usage limit</p>
+              <h3 className="text-sm font-bold text-title">OpsPilot AI Quota Limit Reached</h3>
+              <p className="text-xs text-subtitle">System AI usage limit reached for public tier</p>
             </div>
           </div>
 
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 leading-relaxed font-mono">
-            ⚠️ System OpenAI keys have exceeded quota limits. Enter your personal OpenAI API Key to resume live GPT-4o incident diagnostics.
+            ⚠️ System AI credits have reached capacity. Enter your custom AI API key to resume live incident diagnostics.
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3 pt-1">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-subtitle flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-blue-400" />
-                <span>Your OpenAI API Key (`sk-...`)</span>
+                <span>Your AI API Key</span>
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-proj-..."
+                placeholder="sk-..."
                 className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-black/40 border theme-border focus:border-blue-500 focus:outline-none text-title placeholder:text-subtitle/50"
                 autoFocus
               />

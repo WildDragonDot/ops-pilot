@@ -1,5 +1,11 @@
 import OpenAI from 'openai';
 import { getOpenAIClient, hasOpenAIKey, markKeyExhausted, systemOpenAIKeys, openaiModel } from '../config/openai.js';
+import { hasGeminiKey } from '../config/gemini.js';
+import { 
+  auditCodebaseWithGemini, 
+  generateGeminiIncidentAnalysis, 
+  generateGeminiCommandFromPrompt 
+} from './gemini.service.js';
 import { logger } from './logger.service.js';
 
 export interface CodeFileContext {
@@ -10,7 +16,6 @@ export interface CodeFileContext {
 /**
  * Executes an OpenAI completion with automatic multi-key failover rotation.
  * If Key 1 fails (429 RateLimit/Quota), switches to Key 2, then Key 3.
- * If all system keys fail and no user key was provided, throws OPENAI_KEYS_EXHAUSTED.
  */
 export async function withOpenAIFailover<T>(
   operation: (client: OpenAI) => Promise<T>,
@@ -24,7 +29,7 @@ export async function withOpenAIFailover<T>(
     const active = getOpenAIClient(userCustomKey);
     if (!active) {
       logger.warn('⚠️ All system OpenAI API keys have exceeded quota limits.');
-      throw new Error('OPENAI_KEYS_EXHAUSTED');
+      return null;
     }
 
     try {
@@ -41,49 +46,62 @@ export async function withOpenAIFailover<T>(
         continue;
       }
 
-      if (isQuotaOrRateLimit || err?.message === 'OPENAI_KEYS_EXHAUSTED') {
-        throw new Error('OPENAI_KEYS_EXHAUSTED');
-      }
-
       logger.warn('OpenAI API call execution error:', err?.message || err);
       return null;
     }
   }
 
-  throw new Error('OPENAI_KEYS_EXHAUSTED');
+  return null;
 }
 
-export async function auditCodebaseWithOpenAI(files: CodeFileContext[], userCustomKey?: string): Promise<any> {
-  if (!hasOpenAIKey(userCustomKey)) {
-    logger.info('OpenAI API key missing or default. Using local static scanner.');
-    return null;
-  }
-
-  try {
-    const prompt = `You are D-OpsPilot AI GitHub Audit Agent. Review the following repository source code files for security vulnerabilities, hardcoded secrets, runtime bugs, and commit risks. Return a JSON object with overallScore (0-100), securityScore, qualityScore, testingScore, summary, and a list of findings (each with severity: CRITICAL|HIGH|MEDIUM|LOW, category: SECURITY|BUG|COMMIT_RISK|TESTING, title, filePath, line, impact, recommendation, patch diff string).
+/**
+ * Priority 1: OpenAI
+ * Priority 2: Google Gemini AI
+ * Priority 3: Local Static Auditor
+ */
+export async function auditCodebaseWithOpenAI(
+  files: CodeFileContext[], 
+  userCustomKey?: string,
+  userCustomGeminiKey?: string
+): Promise<any> {
+  // 1. Try OpenAI
+  if (hasOpenAIKey(userCustomKey)) {
+    try {
+      const prompt = `You are D-OpsPilot AI GitHub Audit Agent. Review the following repository source code files for security vulnerabilities, hardcoded secrets, runtime bugs, and commit risks. Return a JSON object with overallScore (0-100), securityScore, qualityScore, testingScore, summary, and a list of findings (each with severity: CRITICAL|HIGH|MEDIUM|LOW, category: SECURITY|BUG|COMMIT_RISK|TESTING, title, filePath, line, impact, recommendation, patch diff string).
 
 Files to audit:
 ${files.map(f => `--- FILE: ${f.path} ---\n${f.content.substring(0, 1500)}`).join('\n\n')}`;
 
-    return await withOpenAIFailover(async (client) => {
-      const completion = await client.chat.completions.create({
-        model: openaiModel,
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      });
-      const content = completion.choices[0]?.message?.content;
-      return content ? JSON.parse(content) : null;
-    }, userCustomKey);
-  } catch (error: any) {
-    if (error?.message === 'OPENAI_KEYS_EXHAUSTED') throw error;
-    logger.warn('OpenAI API call notice', error?.message || error);
+      const res = await withOpenAIFailover(async (client) => {
+        const completion = await client.chat.completions.create({
+          model: openaiModel,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
+        });
+        const content = completion.choices[0]?.message?.content;
+        return content ? JSON.parse(content) : null;
+      }, userCustomKey);
+
+      if (res) return res;
+    } catch (error: any) {
+      logger.warn('OpenAI codebase audit notice — failing over to Gemini:', error?.message || error);
+    }
   }
+
+  // 2. Try Gemini AI
+  if (hasGeminiKey(userCustomGeminiKey)) {
+    logger.info('🔄 OpenAI unavailable or exhausted. Executing codebase audit via Google Gemini AI...');
+    const geminiRes = await auditCodebaseWithGemini(files, userCustomGeminiKey);
+    if (geminiRes) return geminiRes;
+  }
+
+  // 3. Fallback
+  logger.info('Using local static scanner for codebase audit.');
   return null;
 }
 
 export async function runOpenAIIncidentReasoning(prompt: string, context: any, userCustomKey?: string): Promise<any> {
   if (!hasOpenAIKey(userCustomKey)) {
-    logger.info('OpenAI API key missing. Using deterministic agent reasoning.');
     return null;
   }
 
@@ -141,13 +159,22 @@ export async function runOpenAIIncidentReasoning(prompt: string, context: any, u
       return (choice?.tool_calls && choice.tool_calls.length > 0) ? { toolCalls: choice.tool_calls } : null;
     }, userCustomKey);
   } catch (error: any) {
-    if (error?.message === 'OPENAI_KEYS_EXHAUSTED') throw error;
     logger.warn('OpenAI tool calling notice', error?.message || error);
+    return null;
   }
-  return null;
 }
 
-export async function generateAICommandFromPrompt(query: string, serverContext?: any, userCustomKey?: string): Promise<{
+/**
+ * Priority 1: OpenAI
+ * Priority 2: Google Gemini AI
+ * Priority 3: Local Command Pattern Matcher
+ */
+export async function generateAICommandFromPrompt(
+  query: string, 
+  serverContext?: any, 
+  userCustomKey?: string,
+  userCustomGeminiKey?: string
+): Promise<{
   command: string;
   explanation: string;
   detectedIntent: string;
@@ -155,6 +182,7 @@ export async function generateAICommandFromPrompt(query: string, serverContext?:
 }> {
   const q = query.toLowerCase().trim();
 
+  // 1. Try OpenAI
   if (hasOpenAIKey(userCustomKey)) {
     try {
       const systemPrompt = `You are D-OpsPilot AI Terminal Copilot. Convert natural language DevOps requests into safe Linux shell commands. Context: ${JSON.stringify(serverContext || {})}. Return JSON: { "command": string, "explanation": string, "detectedIntent": string, "confidence": number }.`;
@@ -173,23 +201,35 @@ export async function generateAICommandFromPrompt(query: string, serverContext?:
 
       if (res && res.command) return res;
     } catch (e: any) {
-      if (e?.message === 'OPENAI_KEYS_EXHAUSTED') throw e;
-      logger.warn('OpenAI command copilot notice', e);
+      logger.warn('OpenAI command copilot notice — failing over to Gemini:', e);
     }
   }
 
-  // Fallback pattern matcher
+  // 2. Try Gemini AI
+  if (hasGeminiKey(userCustomGeminiKey)) {
+    logger.info('🔄 OpenAI command copilot unavailable. Requesting shell command via Google Gemini AI...');
+    const geminiRes = await generateGeminiCommandFromPrompt(query, serverContext, userCustomGeminiKey);
+    if (geminiRes && geminiRes.command) return geminiRes;
+  }
+
+  // 3. Local Fallback Pattern Matcher
   if (q.includes('docker') || q.includes('container')) {
     return { command: 'sudo docker ps -a', explanation: 'List all active and stopped Docker containers', detectedIntent: 'INSPECT_CONTAINERS', confidence: 95 };
   }
   return { command: 'uptime', explanation: 'Show system uptime and load average', detectedIntent: 'SYSTEM_STATUS', confidence: 80 };
 }
 
+/**
+ * Priority 1: OpenAI (GPT-4o)
+ * Priority 2: Google Gemini AI (Gemini 1.5 Flash)
+ * Priority 3: Local Deterministic DevOps Engine
+ */
 export async function generateAIIncidentAnalysis(
   userPrompt: string, 
   projectContext: any,
   liveGitContext?: any,
-  userCustomKey?: string
+  userCustomKey?: string,
+  userCustomGeminiKey?: string
 ): Promise<{
   title?: string;
   rootCause: string;
@@ -200,22 +240,39 @@ export async function generateAIIncidentAnalysis(
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   diff?: string;
 } | null> {
-  if (!hasOpenAIKey(userCustomKey)) {
-    logger.info('OpenAI API keys missing or all system keys exhausted.');
-    throw new Error('OPENAI_KEYS_EXHAUSTED');
+  const pLower = (userPrompt || '').trim().toLowerCase();
+  const isGreeting = ['hi', 'hello', 'hey', 'hlo', 'namaste', 'kaise ho', 'who are you', 'help', 'start', 'test'].includes(pLower) || (pLower.length <= 3 && !pLower.includes('db'));
+  const projName = projectContext?.name || 'Repository Workspace';
+
+  if (isGreeting) {
+    return {
+      title: 'OpsPilot AI Workspace Assistant',
+      rootCause: `1. 💬 Greetings: Hello! 👋 I am D-OpsPilot AI, your senior DevOps & SRE Copilot.\n` +
+        `2. ⚙️ Active Workspace: Currently monitoring project **${projName}** (Branch: **${liveGitContext?.targetBranch || 'main'}**).\n` +
+        `3. 📊 Capabilities: Ready to audit repository code security, inspect Docker containers, check outdated dependencies, and debug runtime exceptions.\n` +
+        `4. 📋 How to interact: Type any specific request about your application, code bugs, or infrastructure commands to get started!`,
+      confidence: 99,
+      approvalTitle: 'Verify Workspace Active Guardrails',
+      approvalDesc: `OpsPilot AI workspace monitoring active and ready for commands on ${projName}.`,
+      commands: ['git status'],
+      riskLevel: 'LOW',
+      diff: ''
+    };
   }
 
-  const gitInfoStr = liveGitContext?.connected && liveGitContext?.repository
-    ? `Live GitHub API Data:
+  // 1. Try OpenAI FIRST
+  if (hasOpenAIKey(userCustomKey)) {
+    const gitInfoStr = liveGitContext?.connected && liveGitContext?.repository
+      ? `Live GitHub API Data:
   - Repository: ${liveGitContext.repository.fullName}
   - Default Branch: ${liveGitContext.repository.defaultBranch}
   - Current Target Branch: ${liveGitContext.targetBranch || 'main'}
   - Total Branches: ${liveGitContext.branchesCount || 1}
   - Open Issues: ${liveGitContext.repository.openIssues || 0}
   - Recent Commits: ${JSON.stringify(liveGitContext.recentCommits || [])}`
-    : 'Live GitHub API Data: Repository not connected via API';
+      : 'Live GitHub API Data: Repository not connected via API';
 
-  const prompt = `You are D-OpsPilot AI Incident Commander & Senior DevOps Engineer. Analyze the user's prompt for the project and generate a realistic, high-quality incident diagnosis, root cause, recovery plan, shell commands, and code patch diff.
+    const prompt = `You are D-OpsPilot AI Incident Commander & Senior DevOps Engineer. Analyze the user's prompt for the project and generate a realistic, high-quality incident diagnosis, root cause, recovery plan, shell commands, and code patch diff.
 
 Project Details:
 - Name: ${projectContext?.name || 'Repository Workspace'}
@@ -242,36 +299,54 @@ Return a JSON object with EXACTLY these fields:
   "diff": "unified git diff string or empty string"
 }`;
 
-  return withOpenAIFailover(async (client) => {
-    logger.info(`🤖 Invoking OpenAI GPT-4o model for prompt: "${userPrompt}"`);
-    const completion = await client.chat.completions.create({
-      model: openaiModel,
-      messages: [
-        { role: 'system', content: 'You are D-OpsPilot AI DevOps Commander. Return valid JSON.' },
-        { role: 'user', content: prompt }
-      ],
-      response_format: { type: 'json_object' }
-    });
+    try {
+      const openAiRes = await withOpenAIFailover(async (client) => {
+        logger.info(`🤖 Invoking OpenAI GPT-4o model for prompt: "${userPrompt}"`);
+        const completion = await client.chat.completions.create({
+          model: openaiModel,
+          messages: [
+            { role: 'system', content: 'You are D-OpsPilot AI DevOps Commander. Return valid JSON.' },
+            { role: 'user', content: prompt }
+          ],
+          response_format: { type: 'json_object' }
+        });
 
-    const content = completion.choices[0]?.message?.content;
-    if (content) {
-      const parsed = JSON.parse(content);
-      return {
-        title: parsed.title || userPrompt,
-        rootCause: parsed.rootCause || `AI Analysis completed for "${userPrompt}".`,
-        confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 95,
-        approvalTitle: parsed.approvalTitle || 'Execute AI Suggested Patch',
-        approvalDesc: parsed.approvalDesc || 'Apply proposed code changes and run verification tests.',
-        commands: Array.isArray(parsed.commands) ? parsed.commands : ['git status'],
-        riskLevel: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(parsed.riskLevel) ? parsed.riskLevel : 'MEDIUM',
-        diff: parsed.diff || ''
-      };
+        const content = completion.choices[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          return {
+            title: parsed.title || userPrompt,
+            rootCause: parsed.rootCause || `AI Analysis completed for "${userPrompt}".`,
+            confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 95,
+            approvalTitle: parsed.approvalTitle || 'Execute AI Suggested Patch',
+            approvalDesc: parsed.approvalDesc || 'Apply proposed code changes and run verification tests.',
+            commands: Array.isArray(parsed.commands) ? parsed.commands : ['git status'],
+            riskLevel: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(parsed.riskLevel) ? parsed.riskLevel : 'MEDIUM',
+            diff: parsed.diff || ''
+          };
+        }
+        return null;
+      }, userCustomKey);
+
+      if (openAiRes) return openAiRes;
+    } catch (error: any) {
+      logger.info('OpenAI API call notice — failing over to Google Gemini AI:', error?.message || error);
     }
-    return null;
-  }, userCustomKey);
+  }
+
+  // 2. Try Google Gemini AI SECOND
+  if (hasGeminiKey(userCustomGeminiKey)) {
+    logger.info('🔄 OpenAI unavailable or exhausted. Executing incident analysis via Google Gemini AI...');
+    const geminiRes = await generateGeminiIncidentAnalysis(userPrompt, projectContext, liveGitContext, userCustomGeminiKey);
+    if (geminiRes) return geminiRes;
+  }
+
+  // 3. Fallback to Local Deterministic DevOps Engine THIRD
+  logger.info('Using built-in local DevOps AST engine fallback for incident analysis.');
+  return null;
 }
 
-export async function summarizeLogsWithAI(rawLogs: string, userCustomKey?: string): Promise<{
+export async function summarizeLogsWithAI(rawLogs: string, userCustomKey?: string, userCustomGeminiKey?: string): Promise<{
   summary: string;
   errors: string[];
   recommendation: string;
@@ -316,7 +391,6 @@ Purge repetitive noise, debug lines, and heartbeat pings. Return a JSON object:
         };
       }
     } catch (err: any) {
-      if (err?.message === 'OPENAI_KEYS_EXHAUSTED') throw err;
       logger.warn('OpenAI log summarizer notice', err);
     }
   }
@@ -351,7 +425,6 @@ export async function filterProjectsWithAI(dirs: string[], userCustomKey?: strin
         return res.projectDirectories.filter((d: any): d is string => typeof d === 'string');
       }
     } catch (err: any) {
-      if (err?.message === 'OPENAI_KEYS_EXHAUSTED') throw err;
       logger.warn('OpenAI directory filter notice:', err?.message || err);
     }
   }

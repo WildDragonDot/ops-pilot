@@ -60,7 +60,7 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incide
           </button>
 
           <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-            <Cpu className="w-3 h-3 animate-pulse" /> OpenAI GPT-4o Agent Active
+            <Cpu className="w-3 h-3 animate-pulse" /> OpsPilot AI Engine Active
           </span>
 
           <button
