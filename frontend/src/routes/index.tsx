@@ -120,6 +120,7 @@ export function AppRoutes() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState<boolean>(false);
+  const [isLoadingProjects, setIsLoadingProjects] = useState<boolean>(true);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -149,6 +150,8 @@ export function AppRoutes() {
       setScan(scanData);
     } catch (err) {
       logger.error('Error loading API data', err);
+    } finally {
+      setIsLoadingProjects(false);
     }
   }, [user, project?.id]);
 
@@ -251,6 +254,7 @@ export function AppRoutes() {
               <ProjectSelectionPage
                 projects={projects}
                 activeProject={project}
+                isLoading={isLoadingProjects}
                 onSelectProject={(selectedP) => {
                   handleSelectProject(selectedP);
                   navigate('/dashboard');

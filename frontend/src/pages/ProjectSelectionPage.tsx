@@ -5,6 +5,7 @@ import { Project } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { removeProject } from '../services/api';
+import { ProjectSelectionSkeleton } from '../components/SkeletonLoader';
 
 interface ProjectSelectionPageProps {
   projects: Project[];
@@ -12,6 +13,7 @@ interface ProjectSelectionPageProps {
   onSelectProject: (project: Project) => void;
   onOpenSetupModal: () => void;
   onProjectDeleted?: (id: string) => void;
+  isLoading?: boolean;
 }
 
 export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
@@ -19,7 +21,8 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
   activeProject,
   onSelectProject,
   onOpenSetupModal,
-  onProjectDeleted
+  onProjectDeleted,
+  isLoading = false
 }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -145,7 +148,14 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
           </div>
 
           <div className="flex items-center gap-3 text-xs font-mono text-slate-500 dark:text-slate-400">
-            <span>Active Projects: <strong className="text-slate-900 dark:text-slate-100">{projects.length}</strong></span>
+            <span>
+              Active Projects:{' '}
+              {isLoading ? (
+                <span className="inline-block w-4 h-3 skeleton-box" />
+              ) : (
+                <strong className="text-slate-900 dark:text-slate-100">{projects.length}</strong>
+              )}
+            </span>
             <span>•</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold">Client Vault Active</span>
           </div>
@@ -180,8 +190,11 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
           </div>
 
           {/* Existing Projects Cards */}
-          {filteredProjects.map((p) => {
-            const isSelected = activeProject?.id === p.id;
+          {isLoading ? (
+            <ProjectSelectionSkeleton />
+          ) : (
+            filteredProjects.map((p) => {
+              const isSelected = activeProject?.id === p.id;
             return (
               <div
                 key={p.id}
@@ -283,7 +296,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
       </main>

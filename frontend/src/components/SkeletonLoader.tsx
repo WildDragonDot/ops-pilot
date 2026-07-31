@@ -176,3 +176,52 @@ export const GenericPageSkeleton: React.FC = () => {
     </div>
   );
 };
+
+/**
+ * Project Selection Page Skeleton Loader
+ */
+export const ProjectSelectionSkeleton: React.FC = () => {
+  return (
+    <>
+      {[1, 2].map((i) => (
+        <div
+          key={i}
+          className="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0d1117] flex flex-col justify-between min-h-[240px] space-y-4 shadow-card shadow-card-hover"
+        >
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <SkeletonBlock className="h-10 w-10 rounded-xl" />
+                <div className="space-y-2">
+                  <SkeletonBlock className="h-4 w-28 rounded-md" />
+                  <SkeletonBlock className="h-3 w-16 rounded-md" />
+                </div>
+              </div>
+            </div>
+
+            {/* Status Pill Skeleton */}
+            <SkeletonBlock className="h-7 w-full rounded-lg" />
+
+            {/* Server & GitHub Config Box Skeleton */}
+            <div className="space-y-2 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80">
+              <SkeletonBlock className="h-3 w-full rounded-md" />
+              <SkeletonBlock className="h-3 w-3/4 rounded-md" />
+            </div>
+
+            {/* Small Dates Skeleton */}
+            <div className="flex justify-between items-center pt-1">
+              <SkeletonBlock className="h-3 w-20 rounded" />
+              <SkeletonBlock className="h-3 w-20 rounded" />
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <SkeletonBlock className="h-3.5 w-24 rounded" />
+            <SkeletonBlock className="h-8 w-28 rounded-xl" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
+
