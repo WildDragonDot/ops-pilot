@@ -23,7 +23,7 @@ function handleUnauthorized() {
 async function apiFetch<T = any>(
   url: string,
   options: RequestInit = {},
-  timeoutMs = 30_000
+  timeoutMs = 120_000
 ): Promise<T> {
   // Network offline short-circuit
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
