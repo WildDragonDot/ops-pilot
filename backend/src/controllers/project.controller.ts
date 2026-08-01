@@ -1007,27 +1007,28 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         fi
 
         echo "Launching application process with PM2..."
-        pm2 restart ${shellQuote(repoName)} 2>&1 || (
-          if [ -f "src/index.ts" ]; then
-            pm2 start "npx tsx src/index.ts" --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "src/main.ts" ]; then
-            pm2 start "npx tsx src/main.ts" --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "src/app.ts" ]; then
-            pm2 start "npx tsx src/app.ts" --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "index.js" ]; then
-            pm2 start index.js --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "server.js" ]; then
-            pm2 start server.js --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "app.js" ]; then
-            pm2 start app.js --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "src/index.js" ]; then
-            pm2 start src/index.js --name ${shellQuote(repoName)} 2>&1
-          elif [ -f "src/server.js" ]; then
-            pm2 start src/server.js --name ${shellQuote(repoName)} 2>&1
-          else
-            pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1 || pm2 start npm --name ${shellQuote(repoName)} -- run dev 2>&1
-          fi
-        ) || true
+        pm2 delete ${shellQuote(repoName)} 2>/dev/null || true
+        if [ -f "src/index.ts" ]; then
+          pm2 start "npx tsx src/index.ts" --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "src/main.ts" ]; then
+          pm2 start "npx tsx src/main.ts" --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "src/app.ts" ]; then
+          pm2 start "npx tsx src/app.ts" --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "index.js" ]; then
+          pm2 start index.js --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "server.js" ]; then
+          pm2 start server.js --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "app.js" ]; then
+          pm2 start app.js --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "src/index.js" ]; then
+          pm2 start src/index.js --name ${shellQuote(repoName)} 2>&1
+        elif [ -f "src/server.js" ]; then
+          pm2 start src/server.js --name ${shellQuote(repoName)} 2>&1
+        elif grep -q '"dev":' package.json 2>/dev/null; then
+          pm2 start npm --name ${shellQuote(repoName)} -- run dev 2>&1
+        else
+          pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1
+        fi
         pm2 save 2>&1 || true
       elif [ -f "requirements.txt" ] || [ -f "main.py" ] || [ -f "app.py" ]; then
         echo "Python application detected. Launching process..."
