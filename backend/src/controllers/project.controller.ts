@@ -1018,12 +1018,14 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         # Clean any git locks if present
         rm -f .git/index.lock 2>/dev/null || true
         
-        # Auto-recover node processes if server.js/index.js exists
-        if [ -f "server.js" ]; then
-          pkill -f "node server.js" 2>/dev/null || true
+        # Auto-recover application process safely without affecting opspilot-backend
+        if command -v pm2 &> /dev/null; then
+          pm2 restart ${shellQuote(repoName)} 2>/dev/null || true
+        elif [ -f "server.js" ]; then
+          pkill -f "${shellQuote(targetDir)}" 2>/dev/null || true
           nohup node server.js > app.log 2>&1 &
         elif [ -f "index.js" ]; then
-          pkill -f "node index.js" 2>/dev/null || true
+          pkill -f "${shellQuote(targetDir)}" 2>/dev/null || true
           nohup node index.js > app.log 2>&1 &
         elif [ -f "package.json" ]; then
           nohup npm start > app.log 2>&1 &
