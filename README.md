@@ -130,7 +130,7 @@ graph TD
 
 > **No laptop? No problem.** D-OpsPilot AI is fully usable from your smartphone or tablet.
 
-- **Full Mobile Support**: The entire dashboard, audit workflows, incident commander, and SSH terminal UI are optimized for iPhone SE (375px) and tablet viewports without any feature loss.
+- **Full Mobile Support**: The entire dashboard, audit workflows, incident commander, and SSH terminal UI are optimized for small screen mobile devices (375px+) and tablet viewports without any feature loss.
 - **Audit GitHub from Your Phone**: Run a full AI-powered code security scan on any GitHub repository directly from your mobile browser — no laptop needed.
 - **Monitor & Fix Production Servers on Mobile**: Check live server health, stream real-time logs, trigger container restarts, and review AI incident diagnoses — all from your phone.
 - **On-the-Go Incident Response**: Get alerted, diagnose root cause, and approve or reject high-risk AI operations from your mobile device during off-hours without opening a laptop.
