@@ -235,6 +235,42 @@ Live Application URL: **`https://dopspilot.chandandev.online`**
 
 ---
 
+## ❓ Frequently Asked Questions (FAQ) & Troubleshooting
+
+### Q1. What if SSH connection fails with `SSH AUTH FAILED` or `Permission Denied`?
+- Verify that your remote server Security Group inbound rules allow SSH port `22` from `0.0.0.0/0` (or your IP).
+- Make sure the SSH username is correct (e.g. `ubuntu` for AWS EC2 Ubuntu instances, `root` for DigitalOcean).
+- If pasting a private key, ensure it includes headers: `-----BEGIN OPENSSH PRIVATE KEY-----` or `-----BEGIN RSA PRIVATE KEY-----`.
+- If using local key files, specify the key name e.g. `id_rsa_no_pass` or path `~/.ssh/id_rsa_no_pass`.
+
+### Q2. What if GitHub API rate limit is exceeded during repository audit?
+- Open **Project Settings** or **Project Setup Modal** and provide a GitHub Personal Access Token (PAT).
+- The system automatically sends the PAT in request headers for authenticated GitHub API calls.
+
+### Q3. How does AI key failover work if an API quota is reached?
+- D-OpsPilot AI monitors Gemini and OpenAI key health.
+- If key quota/rate limit error (HTTP 429) occurs, it automatically rotates to the next available system key or switches to local heuristic reasoning without failing the request.
+
+---
+
+## 💡 Useful Production Operations Commands
+
+```bash
+# View backend application logs on production server
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'pm2 logs opspilot-backend'
+
+# Restart backend service
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'pm2 restart opspilot-backend'
+
+# View Nginx access & error logs
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'sudo tail -f /var/log/nginx/error.log'
+
+# Reload Nginx server configuration
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'sudo systemctl reload nginx'
+```
+
+---
+
 ## 📡 REST API Reference
 
 | Endpoint | Method | Description |
