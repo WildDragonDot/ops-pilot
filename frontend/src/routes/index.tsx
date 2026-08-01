@@ -126,30 +126,47 @@ export function AppRoutes() {
     if (!user) return;
     try {
       const savedId = localStorage.getItem('opspilot_selected_project_id');
-      const currentProjectId = project?.id || savedId || undefined;
+      let currentProjectId = project?.id || savedId || undefined;
 
-      const [allProjects, scanData, incData] = await Promise.all([
-        fetchProjects(),
-        fetchRepositoryScan(currentProjectId),
-        fetchIncidents(currentProjectId)
-      ]);
+      const allProjects = await fetchProjects();
       setProjects(allProjects);
       
       const found = allProjects.find(p => p.id === (project?.id || savedId)) || allProjects[0];
       if (found) {
         setProject(prev => (!prev || prev.id !== found.id) ? found : prev);
-        if (found.id !== currentProjectId && allProjects.length > 0) {
-          const scopedInc = await fetchIncidents(found.id);
-          setIncidents(scopedInc);
-        } else {
-          setIncidents(incData);
-        }
-      } else {
-        setIncidents(incData);
+        currentProjectId = found.id;
+      } else if (savedId) {
+        localStorage.removeItem('opspilot_selected_project_id');
+        currentProjectId = undefined;
+        setProject(null);
       }
-      setScan(scanData);
+
+      const [scanResult, incidentsResult] = await Promise.allSettled([
+        fetchRepositoryScan(currentProjectId),
+        fetchIncidents(currentProjectId)
+      ]);
+
+      if (scanResult.status === 'fulfilled') {
+        setScan(scanResult.value);
+      } else {
+        logger.warn('Repository scan data failed to load', scanResult.reason);
+        setScan(null);
+      }
+
+      if (incidentsResult.status === 'fulfilled') {
+        setIncidents(incidentsResult.value);
+      } else {
+        logger.warn('Incident data failed to load', incidentsResult.reason);
+        if (!currentProjectId) {
+          setIncidents([]);
+        }
+      }
     } catch (err) {
       logger.error('Error loading API data', err);
+      setProjects([]);
+      setProject(null);
+      setScan(null);
+      setIncidents([]);
     } finally {
       setIsLoadingProjects(false);
     }
