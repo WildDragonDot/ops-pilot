@@ -8,7 +8,7 @@
 [![AI Engine: Gemini--3.6--Flash--&--GPT--4o](https://img.shields.io/badge/AI--Engine-Gemini--3.6--Flash--%26--GPT--4o-amber.svg)]()
 [![Target Host: 54.237.198.207](https://img.shields.io/badge/Target--Host-54.237.198.207-blue.svg)](https://dopspilot.chandandev.online)
 
-D-OpsPilot AI is an evidence-driven, autonomous DevOps/SRE AI agent designed for production incidents, real-time microservices management, and GitHub repository intelligence. It inspects live container logs, traces root-cause failures across health checks, correlates recent commits with outages, and executes recovery actions with human-in-the-loop safety guardrails.
+D-OpsPilot AI is an enterprise-grade, evidence-driven autonomous DevOps & SRE AI Agent. It bridges production operations with intelligence — inspecting live microservice container logs, diagnosing complex root-cause outages, correlating recent git commits with failures, executing zero-downtime deployments, and automating server health verification with human-in-the-loop safety guardrails.
 
 ---
 
@@ -16,63 +16,95 @@ D-OpsPilot AI is an evidence-driven, autonomous DevOps/SRE AI agent designed for
 
 ```mermaid
 graph TD
-    User([👨‍💻 SRE / Developer UI]) -->|AES-256 WebCrypto Vault| Frontend[⚡ React + Vite Dashboard]
-    Frontend -->|REST API / SSE Streams| Backend[🚀 Node.js + Express Backend]
+    User([👨‍💻 SRE / Developer UI]) -->|AES-256 WebCrypto Vault| Frontend[⚡ React + Vite + Tailwind Dashboard]
+    Frontend -->|REST API / SSE Event Stream| Backend[🚀 Node.js + Express + Prisma Engine]
     
-    subgraph AI Intelligence Layer
-        Backend <-->|Multi-Key Failover & Tool Calling| Gemini[✨ Google Gemini 3.6 Flash / Pro]
-        Backend <-->|Function Calling & AST Audit| OpenAI[🤖 OpenAI GPT-4o Engine]
-        Backend <-->|Deterministic Fallback| FallbackAI[⚡ Local System AI Engine]
+    subgraph AI Intelligence Core
+        Backend <-->|Function Calling & Multi-Key Failover| Gemini[✨ Google Gemini 3.6 Flash / Pro]
+        Backend <-->|AST Code Audit & Reasoning| OpenAI[🤖 OpenAI GPT-4o Codex Engine]
+        Backend <-->|Deterministic Local Fallback| FallbackAI[⚡ System Heuristic Engine]
     end
     
     subgraph Zero-DB Security Shield
         Backend <-->|Prisma ORM| DB[(SQLite / PostgreSQL DB)]
-        Backend -->|Strict Guardrails| Policy[🛡️ Forbidden Commands Filter]
+        Backend -->|Strict Guardrails| Policy[🛡️ Forbidden Commands Security Filter]
     end
     
-    subgraph Target Production Host: 54.237.198.207
-        Backend -->|Encrypted SSH Tunnel| Host[🐧 Ubuntu 26.04 Server]
-        Host --> Docker[🐳 Docker Microservices]
-        Docker --> PG[(PostgreSQL)]
-        Docker --> Redis[(Redis)]
+    subgraph Target Production Infrastructure: 54.237.198.207
+        Backend -->|Encrypted SSH2 Tunnel| Host[🐧 Ubuntu 26.04 AWS Server]
+        Host --> Docker[🐳 Docker Microservices Engine]
+        Docker --> PG[(PostgreSQL Database)]
+        Docker --> Redis[(Redis Cache)]
+        Docker --> Microservices[⚙️ Node.js / Go Microservices]
         Docker --> Nginx[🌐 Nginx Reverse Proxy]
     end
 ```
 
 ---
 
-## ⚙️ How D-OpsPilot AI Works
+## ⚙️ Core Working Mechanism
 
-1. **Client-Side WebCrypto Security Vault**:
-   - Server SSH private keys and GitHub access tokens are encrypted inside the user's browser using AES-256 WebCrypto.
-   - Credentials are submitted only when executing SSH sessions and are never stored plain-text in server databases.
+1. **Client-Side WebCrypto Vault Architecture**:
+   - Server SSH private keys and GitHub access tokens are encrypted inside the browser using AES-256 WebCrypto.
+   - Plain-text credentials are **NEVER** stored in backend databases or server log files.
 
-2. **Smart Key Parsing & Dynamic Key Files**:
-   - When an SSH private key (PEM format `-----BEGIN...`) is supplied, the backend writes a temporary isolated key file with strict `0600` permissions.
-   - Upon command completion, the temporary key file is automatically purged from disk.
-   - Supports tilde path resolution (`~/.ssh/id_rsa_no_pass`) and automatic fallback to default host SSH keys.
+2. **Dynamic Key Handling & Isolated Temp Files**:
+   - Raw PEM keys (`-----BEGIN OPENSSH PRIVATE KEY-----`) are written transiently to isolated temporary files with strict `0600` permissions.
+   - Keys are automatically unlinked (deleted) from disk immediately upon command execution completion.
+   - Automatically resolves file path references (`~/.ssh/id_rsa_no_pass`) and falls back to host system default keys.
 
-3. **ANSI Control Sequence Sanitizer**:
-   - Both backend and frontend include automatic ANSI and VT100 control character sanitization.
-   - Terminal monitors (`htop`, `top`, `docker ps`) render clean, human-readable text tables without garbled formatting.
+3. **ANSI & VT100 Control Sequence Sanitizer**:
+   - Automatic ANSI escape sequence stripper filters out terminal formatting characters (`\x1b[?1049h`, `\x1b[22;0;0t`).
+   - Terminal monitoring outputs (`htop`, `top`, `docker ps`, `free -m`) render clean, human-readable text tables.
 
-4. **Automated Project Cleanup**:
-   - When a project workspace is deleted from the database, its local cloned repository folder (`backend/data/cloned_repos/<id>`) is immediately purged from server storage.
+4. **Automated Workspace Storage Purger**:
+   - Deleting a project workspace automatically deletes its local cloned git repository directory (`backend/data/cloned_repos/<id>`).
    - Background cleanup auto-purges any orphaned or inactive workspaces older than 3 days.
 
 5. **Human-in-the-Loop Safety Approvals**:
-   - High-risk operations (destructive commands, service restarts, code patches) require explicit operator confirmation before execution.
+   - High-risk operations (service restarts, code deployments, database modifications) pause for explicit operator sign-off with unified diff previews.
 
 ---
 
-## 🌟 Key Features & Capabilities
+## 🌟 Complete System Features Breakdown
 
-- 🚀 **Autonomous Incident Commander**: AI-driven diagnosis of production outages (502 Bad Gateway, PostgreSQL connection limits, memory exhaustion).
-- 📦 **1-Click AI Deployment**: Automates git sync, build, Docker container restart, and health check verification.
-- 💻 **Interactive Remote SSH Web Terminal**: Real-time terminal with AI Copilot problem-to-command solver.
-- 🕵️ **GitHub AST & Security Auditor**: Scans repositories for plain-text secrets, vulnerable dependencies, and unsanitized parameters.
-- 🛡️ **Tech-Stack Chaos Engine**: Simulates live production outages tailored to your specific microservices stack.
-- 📊 **Real-time SSE Terminal Streams**: Stream live container logs and diagnostic event timelines directly to the dashboard.
+### 🤖 1. Autonomous AI Incident Commander & Root Cause Diagnosis
+- **Outage Diagnosis**: Automatically diagnoses production failures including `502 Bad Gateway`, PostgreSQL connection limits, memory leaks, and Nginx proxy errors.
+- **Multi-Model Key Failover**: Intelligently rotates across Gemini & OpenAI API keys with auto-recovery from rate limits or quota exhaustion.
+- **Evidence-Based Reasoning**: Gathers live logs, container states, and system metrics before generating root-cause reports.
+
+### 📦 2. 1-Click Autonomous AI Deployment Pipeline
+- **Commit Gap Detector**: Compares latest GitHub `main` commit hash against the running server commit.
+- **Zero-Downtime Pipeline**: Automates git sync, dependency installation, build step, container restart, and Nginx reload.
+- **Automated Health Verification**: Sends HTTP GET verification pings post-deployment to confirm HTTP 200 OK service status.
+
+### 💻 3. Interactive Web SSH Terminal & AI Command Copilot
+- **Live SSH Shell**: Real-time interactive remote server terminal directly in your web browser.
+- **AI Command Copilot Drawer**: Translates natural language questions (in English/Hindi, e.g., *"check error log in docker"*, *"mera server setup kya h"*) into verified bash commands.
+- **Preset Toolbar**: 1-Click preset buttons for `docker ps`, `curl health`, `free -m`, `uptime`, `git status`, `ls -la`.
+- **Command Interceptor**: Blocks dangerous operations (`rm -rf /`, `mkfs`, `reboot`, fork bombs).
+
+### 🛡️ 4. Microservices Dynamic Chaos Engine
+- **Stack Auto-Detection**: Detects active microservices stack (Node.js, Go, PostgreSQL, Redis, Nginx, Docker).
+- **Failure Injection**: Simulates database connection timeouts, secret mismatches, panics, and key eviction bottlenecks.
+- **AI Suggest Stack Scenarios**: One-click AI generator proposes tailored fault scenarios based on live system architecture.
+
+### 🕵️ 5. GitHub AST Code & Security Auditor
+- **Secret Scanner**: Identifies plain-text API keys, AWS credentials, and hardcoded secrets in source files and commit history.
+- **Dependency Vulnerability Audit**: Scans package manifests for CVE vulnerabilities and outdated packages.
+- **Endpoint Safety Auditor**: Traces API controllers for type mismatches, missing parameter validations, and unhandled promises.
+
+### ⏸️ 6. Human-in-the-Loop Safety Approval Queue
+- **Operator Sign-Off**: Mandatory approval gate before executing write actions or server patches.
+- **Diff & Risk Inspection**: Displays exact bash commands, threat classification (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), rollback strategy, and code diffs.
+
+### 📊 7. Real-Time SSE Log Streaming & Visual Topology Graph
+- **Server-Sent Events (SSE)**: Streams live command execution, terminal output, and incident event timelines.
+- **Interactive Microservices Topology**: Visual SVG graph illustrating service node health, open ports, latency, and container relationships.
+
+### 🔐 8. Role-Based Access Control (RBAC) & Audit Logs
+- **Role Hierarchy**: Enforces permissions across `ADMIN`, `OPERATOR`, and `VIEWER` roles.
+- **System Audit Trail**: Logs user email, IP address, timestamp, category, action, and target resource for every operation.
 
 ---
 
@@ -92,12 +124,12 @@ cd ops-pilot
 ### 2. Install Dependencies
 ```bash
 # Install root, backend, and frontend dependencies
-npm run install:all || (npm install && cd backend && npm install && cd ../frontend && npm install)
+npm install && cd backend && npm install && cd ../frontend && npm install && cd ..
 ```
 
-### 3. Environment Setup
+### 3. Configure Environment
 
-Create `.env` file in `backend/`:
+Create `.env` inside `backend/`:
 ```env
 PORT=5080
 DATABASE_URL="file:./dev.db"
@@ -106,7 +138,7 @@ GEMINI_API_KEY="your-google-gemini-api-key"
 OPENAI_API_KEY="your-openai-api-key"
 ```
 
-Initialize Prisma database schema:
+Initialize Prisma database:
 ```bash
 cd backend
 npx prisma db push
@@ -121,19 +153,19 @@ cd ..
 ```bash
 ./start.sh
 ```
-This launches both the **Backend Service (port 5080)** and **Frontend Dashboard (port 5173 / 3000)** simultaneously.
+Launches both **Backend Service (port 5080)** and **Frontend Dashboard (port 5173 / 3000)** simultaneously.
 
-Access the Web Dashboard at: **`http://localhost:5173`** or **`http://localhost:3000`**.
+Web Dashboard: **`http://localhost:5173`** or **`http://localhost:3000`**
 
 ### Option B: Manual Start
 
-**Start Backend:**
+**Backend:**
 ```bash
 cd backend
 npm run dev
 ```
 
-**Start Frontend:**
+**Frontend:**
 ```bash
 cd frontend
 npm run dev
@@ -148,47 +180,47 @@ npm run dev
 
 ## 🧪 Testing & Verification Guide
 
-D-OpsPilot AI comes with a comprehensive End-to-End Master Test Suite covering 5 major system areas:
+D-OpsPilot AI includes an End-to-End Master Test Suite covering 5 major system areas:
 
 ```bash
 cd backend
 npm test
 ```
 
-### Test Suite Execution Scope:
-1. **Authentication & RBAC Suite**: Password hashing, JWT issuance, and role hierarchy authorization.
-2. **Project Management & Server Discovery**: Host parsing, command injection guardrails, and path traversal protection.
-3. **AI Intelligence & Activities Suite**: AI prompt reasoning, AST code auditing, outage detection, and log analysis.
-4. **Repository Auditor & AST Code Scan**: GitHub URL parsing, rate-limit handling, and secret scanning.
-5. **Incidents & Safety Approval Queue**: Incident scenarios, failure injection transitions, and environment restoration.
+### Test Execution Scope:
+1. **Authentication & RBAC Suite**: Password hashing, JWT token issuance, role hierarchy.
+2. **Project Management & Server Discovery**: Host parsing, command injection guardrails, directory traversal protection.
+3. **AI Intelligence & Activities Suite**: Prompt reasoning, AST code auditing, outage detection, log analysis.
+4. **Repository Auditor & AST Code Scan**: GitHub URL parsing, rate-limit response handling, secret scanning.
+5. **Incidents & Safety Approval Queue**: Incident scenarios, failure injection state transitions, environment reset.
 
-To typecheck frontend and backend code:
+Typechecking:
 ```bash
-# Backend Typecheck
+# Backend
 cd backend && npx tsc --noEmit
 
-# Frontend Typecheck
+# Frontend
 cd frontend && npx tsc --noEmit
 ```
 
 ---
 
-## 🌐 Production Deployment
+## 🌐 Production Server Deployment
 
-Deploy updated changes to the production server `ubuntu@54.237.198.207`:
+Deploy changes to production server `ubuntu@54.237.198.207`:
 
 ```bash
 ./deploy-to-server.sh
 ```
 
-This deployment script:
-1. Tests SSH connectivity to `ubuntu@54.237.198.207`.
+Deployment Script Steps:
+1. Verifies SSH connectivity to `ubuntu@54.237.198.207`.
 2. Syncs backend and frontend source files via SCP.
-3. Compiles backend TypeScript (`tsc`) and restarts PM2 process `opspilot-backend`.
-4. Builds Vite production bundle (`vite build`) and reloads Nginx reverse proxy.
-5. Performs automated HTTP `/api/health` verification.
+3. Compiles backend TypeScript (`tsc`) and restarts PM2 (`opspilot-backend`).
+4. Builds Vite production bundle (`vite build`) and reloads Nginx proxy.
+5. Runs `/api/health` verification test.
 
-Live Production URL: **`https://dopspilot.chandandev.online`**
+Live Application URL: **`https://dopspilot.chandandev.online`**
 
 ---
 
@@ -196,29 +228,29 @@ Live Production URL: **`https://dopspilot.chandandev.online`**
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `GET /api/health` | `GET` | Service health status check |
-| `GET /api/projects` | `GET` | List all workspace projects |
+| `GET /api/health` | `GET` | Backend health check status |
+| `GET /api/projects` | `GET` | Fetch all configured projects |
 | `POST /api/projects` | `POST` | Create a new project workspace |
-| `DELETE /api/projects/:id` | `DELETE` | Delete project & auto-purge local cloned repos |
-| `POST /api/projects/test-connection` | `POST` | Validate SSH server and GitHub repository credentials |
+| `DELETE /api/projects/:id` | `DELETE` | Delete project workspace & purge local cloned repos |
+| `POST /api/projects/test-connection` | `POST` | Validate SSH server and GitHub credentials |
 | `POST /api/server/execute` | `POST` | Execute authenticated remote SSH shell command |
-| `POST /api/incidents` | `POST` | Initialize AI-driven incident investigation |
+| `POST /api/incidents` | `POST` | Trigger AI incident investigation loop |
 | `GET /api/incidents/:id/stream` | `GET` | Real-time Server-Sent Events (SSE) log stream |
-| `POST /api/approvals/:id/approve` | `POST` | Operator sign-off for executing recovery action |
+| `POST /api/approvals/:id/approve` | `POST` | Operator approval sign-off for recovery patch |
 | `POST /api/repo/audit` | `POST` | Trigger repository AST security & vulnerability scan |
 
 ---
 
-## 🛡️ Forbidden Command Guardrails
+## 🛡️ Security Guardrails & Intercepted Commands
 
-D-OpsPilot AI strictly blocks high-risk terminal commands at both the API and SSH execution layers:
-- ❌ `rm -rf /` or `rm -r /` (Catastrophic file deletion)
-- ❌ `mkfs` or `dd if=` (Disk partition wipe)
+D-OpsPilot AI strictly intercepts dangerous operations at both API and SSH execution layers:
+- ❌ `rm -rf /` or `rm -r /` (File system deletion)
+- ❌ `mkfs` or `dd if=` (Disk partition formatting)
 - ❌ `:(){ :|:& };:` (Fork bombs)
-- ❌ `shutdown`, `reboot`, or `poweroff` (Server reboot)
+- ❌ `shutdown`, `reboot`, `poweroff` (Server shutdown)
 
 ---
 
-## 📄 License
+## 📄 License & Credits
 
 Developed with ❤️ by **Chandan Vishwakarma (WildDragon)**. Licensed under [MIT License](LICENSE).
