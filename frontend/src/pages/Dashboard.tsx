@@ -21,6 +21,7 @@ import {
   HardDrive,
   RefreshCw,
   X,
+  XCircle,
   Pause,
   Layers,
   ChevronRight,
@@ -1607,8 +1608,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* AI Autonomous Dynamic N-Step Execution Stepper Pipeline */}
                 {(() => {
                   // Dynamically extract N steps from logs matching [AI Step: <Title>]
-                  const extractedSteps: Array<{ id: number; title: string; done: boolean }> = [];
+                  const extractedSteps: Array<{ id: number; title: string; done: boolean; isError?: boolean }> = [];
                   const seenTitles = new Set<string>();
+                  const logsText = deployLogs.join('\n');
+                  const hasScriptError = logsText.toLowerCase().includes('syntax error') || logsText.toLowerCase().includes('fatal:') || (logsText.toLowerCase().includes('bash:') && !logsText.includes('CURRENT_COMMIT'));
 
                   deployLogs.forEach((line) => {
                     const match = line.match(/\[AI Step:\s*([^\]]+)\]/);
@@ -1619,7 +1622,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         extractedSteps.push({
                           id: extractedSteps.length + 1,
                           title,
-                          done: false
+                          done: false,
+                          isError: false
                         });
                       }
                     }
@@ -1627,24 +1631,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                   // Fallback to dynamic default steps if no explicit tags exist
                   let steps = extractedSteps;
-                  const logsText = deployLogs.join('\n');
 
                   if (steps.length === 0) {
                     steps = [
-                      { id: 1, title: 'AI Agent Handshake', done: logsText.includes('Initialized') },
-                      { id: 2, title: 'SSH Connect', done: logsText.includes('Establishing secure SSH') || logsText.includes('SSH Output') },
-                      { id: 3, title: 'Runtime Audit', done: logsText.includes('Audit') || logsText.includes('SSH Output') },
-                      { id: 4, title: 'Workspace Sync', done: logsText.includes('FETCH_HEAD') || logsText.includes('Already on') || logsText.includes('CURRENT_COMMIT') },
-                      { id: 5, title: 'Dependency Build', done: logsText.includes('npm install') || logsText.includes('CURRENT_COMMIT') },
-                      { id: 6, title: 'Launch & Verify', done: deployCompleted || logsText.includes('CURRENT_COMMIT') }
+                      { id: 1, title: 'AI Agent Handshake', done: logsText.includes('Initialized'), isError: false },
+                      { id: 2, title: 'SSH Connect', done: logsText.includes('Establishing secure SSH') || logsText.includes('SSH Output'), isError: false },
+                      { id: 3, title: 'Runtime Audit', done: logsText.includes('Audit') || logsText.includes('SSH Output'), isError: false },
+                      { id: 4, title: 'Workspace Sync', done: !hasScriptError && (logsText.includes('FETCH_HEAD') || logsText.includes('Already on') || logsText.includes('CURRENT_COMMIT')), isError: hasScriptError && logsText.includes('Workspace Sync') },
+                      { id: 5, title: 'Dependency Build', done: !hasScriptError && (logsText.includes('npm install') || logsText.includes('CURRENT_COMMIT')), isError: false },
+                      { id: 6, title: 'Launch & Verify', done: !hasScriptError && (deployCompleted || logsText.includes('CURRENT_COMMIT')), isError: hasScriptError }
                     ];
                   } else {
                     // Determine completion for dynamically extracted N steps
                     steps = steps.map((s, idx) => {
                       const isLastStep = idx === steps.length - 1;
                       const nextStepExistsInLogs = idx < steps.length - 1 && logsText.includes(`[AI Step: ${steps[idx + 1].title}]`);
-                      const isDone = deployCompleted || nextStepExistsInLogs || (isLastStep && (logsText.includes('CURRENT_COMMIT') || logsText.includes('completed')));
-                      return { ...s, done: isDone };
+                      const isStepFailed = hasScriptError && isLastStep;
+                      const isDone = !isStepFailed && (nextStepExistsInLogs || (isLastStep && (logsText.includes('CURRENT_COMMIT') || logsText.includes('completed'))));
+                      return { ...s, done: isDone, isError: isStepFailed };
                     });
                   }
 
@@ -1654,15 +1658,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <div 
                           key={step.id} 
                           className={`shrink-0 min-w-[150px] p-2.5 rounded-xl border transition flex items-center gap-2.5 ${
-                            step.done 
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                              : isDeploying 
-                                ? 'bg-blue-500/10 border-blue-500/30 text-blue-300'
-                                : 'bg-slate-800/40 border-slate-800 text-slate-400'
+                            step.isError
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                              : step.done 
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                                : isDeploying 
+                                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+                                  : 'bg-slate-800/40 border-slate-800 text-slate-400'
                           }`}
                         >
                           <div className="shrink-0">
-                            {step.done ? (
+                            {step.isError ? (
+                              <XCircle className="w-4 h-4 text-rose-400" />
+                            ) : step.done ? (
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                             ) : isDeploying ? (
                               <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
@@ -1672,9 +1680,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                               </div>
                             )}
                           </div>
-                          <div className="space-y-0.5 min-w-0">
-                            <div className="font-bold text-[11px] truncate leading-tight">{step.title}</div>
-                            <div className="text-[10px] opacity-75 truncate">{step.done ? '✓ Completed' : isDeploying ? 'Processing...' : 'Pending'}</div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-200 font-display truncate text-[11px]">{step.title}</div>
+                            <div className="text-[10px] font-mono text-slate-400">
+                              {step.isError ? '✗ Error' : step.done ? '✓ Completed' : isDeploying ? '⏳ In Progress' : 'Pending'}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1685,10 +1695,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Terminal Execution Body */}
                 <div className="p-4 rounded-xl bg-[#040711] border border-slate-800/80 font-mono text-xs text-slate-200 space-y-2 max-h-80 overflow-y-auto shadow-inner leading-relaxed">
                   {deployCompleted && (
-                    <div className="text-emerald-400 font-bold flex items-center gap-1.5 pb-2 border-b border-slate-800/80">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span>AI AUTONOMOUS DEPLOYMENT COMPLETED & VERIFIED</span>
-                    </div>
+                    deployLogs.some(l => l.toLowerCase().includes('syntax error') || (l.toLowerCase().includes('bash:') && !l.includes('CURRENT_COMMIT'))) ? (
+                      <div className="text-rose-400 font-bold flex items-center gap-1.5 pb-2 border-b border-slate-800">
+                        <XCircle className="w-4 h-4 text-rose-400" />
+                        <span>AI REMOTE SERVER DEPLOYMENT ERROR ENCOUNTERED</span>
+                      </div>
+                    ) : (
+                      <div className="text-emerald-400 font-bold flex items-center gap-1.5 pb-2 border-b border-slate-800">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>AI REMOTE SERVER DEPLOYMENT COMPLETED & VERIFIED</span>
+                      </div>
+                    )
                   )}
                   {deployLogs.map((line, idx) => (
                     <div key={idx} className="flex items-start gap-2">
