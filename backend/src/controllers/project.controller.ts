@@ -1017,6 +1017,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         if [ -f "requirements.txt" ]; then
           pip install -r requirements.txt 2>&1 || pip3 install -r requirements.txt 2>&1 || true
         fi
+        if [ -f "main.py" ]; then
           nohup python3 main.py > app.log 2>&1 &
         elif [ -f "app.py" ]; then
           nohup python3 app.py > app.log 2>&1 &
@@ -1077,7 +1078,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       )
     );
 
-    if (healthOk && !hasError) {
+    if (healthOk) {
       logs.push(
         `--------------------------------------------------`,
         `🎉 [DEPLOYMENT SUCCESSFUL & LIVE VERIFIED]`,
@@ -1095,7 +1096,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       );
     }
 
-    if (hasError) {
+    if (!healthOk && hasError) {
       logs.push(
         `[OpsPilot Autonomous AI Engine] 🤖 Analyzing terminal deployment logs via Autonomous AI Engine...`
       );
@@ -1173,8 +1174,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
     }
 
     // ✅ CRITICAL: success = true ONLY when health check confirmed HTTP 200 OK
-    // Previously this was always true — causing false green checkmark in UI
-    const deploymentVerified = Boolean(healthOk && !hasError);
+    const deploymentVerified = Boolean(healthOk);
 
     res.json({
       success: deploymentVerified,

@@ -1741,7 +1741,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     {isDeploying
                       ? '☕ Sit back and relax — D-OpsPilot AI is executing remote SSH deployment for you...'
                       : deployFailed
-                      ? '✗ Deployment failed — SSH error. Check logs above.'
+                      ? '✗ Deployment failed — server health check did not return HTTP 200. Check logs above.'
                       : deployCompleted
                       ? '✓ Execution sequence completed successfully'
                       : '✓ Execution sequence completed'
