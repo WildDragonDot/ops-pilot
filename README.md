@@ -117,6 +117,14 @@ graph TD
 - **Role Hierarchy**: Enforces permissions across `ADMIN`, `OPERATOR`, and `VIEWER` roles.
 - **System Audit Trail**: Logs user email, IP address, timestamp, category, action, and target resource for every operation.
 
+### 📚 9. Automated SRE Runbooks Execution Library
+- **Pre-Built Operations**: Library of verified operational procedures for database vacuuming, cache invalidation, disk space reclamation, and security posture checks.
+- **Parametrized Execution**: Triggers runbook steps directly on remote servers with step-by-step verification logs.
+
+### 📝 10. AI Post-Mortem Incident Reports Generator
+- **Automated Root-Cause Reports**: Generates structured post-mortem incident reports complete with incident timeline, impact metrics, root cause analysis, and preventive recommendations.
+- **Export & Share**: Shareable incident reports for team post-mortems and compliance documentation.
+
 ---
 
 ## 🛠️ Installation & Local Setup
