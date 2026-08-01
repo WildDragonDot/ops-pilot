@@ -163,10 +163,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="h-14 sm:h-16 header-bg backdrop-blur-xl border-b px-2 sm:px-5 lg:px-6 flex items-center justify-between sticky top-0 z-40 gap-1.5 sm:gap-3">
+      <header className="h-14 sm:h-16 header-bg backdrop-blur-xl border-b px-2 sm:px-4 lg:px-6 flex items-center justify-between sticky top-0 z-40 gap-1.5 sm:gap-3 max-w-full overflow-hidden">
         
         {/* Left Section: Mobile Menu & Search Bar */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 shrink">
           <button
             onClick={onToggleMobileSidebar}
             aria-label="Toggle Mobile Navigation Menu"
@@ -188,24 +188,24 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Desktop & Tablet Search Bar */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
-            className="hidden sm:flex items-center gap-2.5 bg-white/75 dark:bg-slate-950/75 px-3.5 py-2 rounded-lg border theme-border text-xs w-64 md:w-80 lg:w-96 hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shadow-xs group"
+            className="hidden sm:flex items-center gap-2 bg-white/75 dark:bg-slate-950/75 px-3 py-1.5 sm:py-2 rounded-lg border theme-border text-xs w-36 md:w-52 lg:w-72 max-w-full hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shadow-xs group shrink min-w-0"
           >
             <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
             <span className="flex-1 text-slate-600 dark:text-slate-400 font-mono text-xs truncate">
-              Search commands, incidents and servers...
+              Search commands, incidents...
             </span>
-            <kbd className="px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400 border theme-border font-mono shrink-0 font-bold bg-white dark:bg-slate-950">⌘K</kbd>
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 rounded text-[10px] text-slate-500 dark:text-slate-400 border theme-border font-mono shrink-0 font-bold bg-white dark:bg-slate-950">⌘K</kbd>
           </div>
         </div>
 
         {/* Right Section: Target Path Selector, Status Pills & Action Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0 ml-auto min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0 shrink ml-auto justify-end">
           
           {/* Target Path Dropdown Selector in Header (Shown ONLY when remote SSH host is active) */}
           {Boolean(project?.serverHost?.trim()) && (
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg card-bg-subtle border theme-border font-mono text-xs text-subtitle whitespace-nowrap shrink-0 shadow-xs">
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg card-bg-subtle border theme-border font-mono text-xs text-subtitle whitespace-nowrap shrink min-w-0 shadow-xs">
               <Folder className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span className="font-semibold">Target:</span>
+              <span className="font-semibold shrink-0">Target:</span>
               {isEditingCustomPath ? (
                 <div className="flex items-center gap-1">
                   <input
@@ -213,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
                     value={customPathInput}
                     onChange={(e) => setCustomPathInput(e.target.value)}
                     placeholder="/home/ubuntu/my-app"
-                    className="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-blue-500 text-blue-600 dark:text-blue-400 text-xs w-40 font-extrabold"
+                    className="px-2 py-1 rounded bg-white dark:bg-slate-900 border border-blue-500 text-blue-600 dark:text-blue-400 text-xs w-32 font-extrabold"
                   />
                   <button
                     onClick={() => {
@@ -248,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
                       if (onSelectTargetPath) onSelectTargetPath(e.target.value);
                     }
                   }}
-                  className="bg-transparent text-blue-600 dark:text-blue-400 font-extrabold font-mono text-xs cursor-pointer focus:outline-none border-none py-0 pr-1 max-w-[200px] lg:max-w-[280px] truncate"
+                  className="bg-transparent text-blue-600 dark:text-blue-400 font-extrabold font-mono text-xs cursor-pointer focus:outline-none border-none py-0 pr-1 max-w-[140px] xl:max-w-[240px] truncate"
                 >
                   {serverDirectories.map((dir) => (
                     <option key={dir} value={dir} className="bg-slate-900 text-white font-mono">
