@@ -104,9 +104,26 @@ export async function cloneOrSyncRepository(
 }
 
 /**
+ * Instantly deletes the local cloned repository folder for a specific project from disk storage.
+ */
+export function deleteClonedRepo(projectId: string): boolean {
+  try {
+    const repoDir = path.join(CLONE_BASE_DIR, projectId);
+    if (fs.existsSync(repoDir)) {
+      fs.rmSync(repoDir, { recursive: true, force: true });
+      logger.info(`🗑️ Deleted local cloned repository folder for project ${projectId}`);
+      return true;
+    }
+  } catch (err: any) {
+    logger.warn(`⚠️ Failed to remove local cloned repository for project ${projectId}:`, err?.message || err);
+  }
+  return false;
+}
+
+/**
  * Automatically purges cloned repository directories from server disk storage if:
- * 1. The repository clone has not been accessed for > maxAgeDays (default: 3 days).
- * 2. Or the associated user/project has been inactive for > 3 days.
+ * 1. The associated project has been deleted from the database.
+ * 2. Or the repository clone has not been accessed for > maxAgeDays (default: 3 days).
  */
 export async function cleanupInactiveClonedRepos(maxAgeDays: number = 3): Promise<{ purgedCount: number; purgedProjects: string[] }> {
   ensureBaseDirExists();
@@ -142,7 +159,14 @@ export async function cleanupInactiveClonedRepos(maxAgeDays: number = 3): Promis
         where: { id: projectId }
       }).catch(() => null);
 
-      if (project?.updatedAt) {
+      if (!project) {
+        logger.info(`🧹 Auto-purging orphaned cloned repo for deleted project ${projectId}...`);
+        fs.rmSync(repoDir, { recursive: true, force: true });
+        purgedProjects.push(projectId);
+        continue;
+      }
+
+      if (project.updatedAt) {
         const projectActivityTime = new Date(project.updatedAt).getTime();
         lastAccessTime = Math.max(lastAccessTime, projectActivityTime);
       }

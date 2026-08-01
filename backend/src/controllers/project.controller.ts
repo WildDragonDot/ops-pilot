@@ -187,6 +187,12 @@ export async function deleteProject(req: AuthenticatedRequest, res: Response) {
     }
     await prisma.project.delete({ where: { id } });
 
+    // Instantly delete local cloned repository folder from disk storage
+    try {
+      const { deleteClonedRepo } = await import('../services/repo-clone.service.js');
+      deleteClonedRepo(id);
+    } catch (e) {}
+
     if (user) {
       await writeAuditLog({
         orgId: user.organizationId,
