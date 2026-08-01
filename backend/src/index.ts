@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import { router as apiRouter } from './routes/api.routes.js';
 import { hasOpenAIKey } from './config/openai.js';
 import { hasGeminiKey } from './config/gemini.js';
@@ -35,13 +36,38 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 const app = express();
 const PORT = Number(process.env.PORT || 5080);
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
 // Allow specific origins from env; fall back to common dev origins.
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173,http://localhost:3000,https://dopspilot.chandandev.online,http://dopspilot.chandandev.online')
   .split(',')
   .map(o => o.trim())
   .filter(Boolean);
 
+app.disable('x-powered-by');
+
+// ─── Security headers ─────────────────────────────────────────────────────────
+// Helmet adds defense-in-depth headers; CSP allows this API to serve JSON/SSE
+// safely while permitting local/Vite and configured frontend connections.
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      objectSrc: ["'none'"],
+      scriptSrc: ["'self'"],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: ["'self'", ...allowedOrigins],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. Postman, curl, mobile apps)
