@@ -941,10 +941,18 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         echo "Docker Compose file detected. Building and launching container services..."
         sudo docker compose up -d --build 2>&1 || sudo docker-compose up -d --build 2>&1 || docker compose up -d --build 2>&1 || true
       elif [ -f "package.json" ]; then
-        echo "Node.js application detected. Running dependency & process startup..."
+        echo "Node.js application detected. Auditing runtime environment..."
+        NODE_VER=$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ -n "$NODE_VER" ] && [ "$NODE_VER" -lt 20 ]; then
+          echo "[AI Auto-Upgrade] Target Node.js (v$NODE_VER) is outdated for modern ORMs/Prisma (requires Node 20+)."
+          echo "[AI Auto-Upgrade] Autonomously upgrading target server to Node.js 20 LTS..."
+          (curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash - && sudo yum install -y nodejs) 2>&1 || \
+          (curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - && sudo apt-get install -y nodejs) 2>&1 || true
+        fi
+
         if command -v npm &> /dev/null; then
-          echo "Running smart dependency installation (bypassing pre-install engine checks)..."
-          npm install --ignore-scripts 2>&1 || npm install --production 2>&1 || npm install 2>&1 || true
+          echo "Running dependency installation..."
+          npm install --ignore-scripts 2>&1 || npm install 2>&1 || true
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
         fi
