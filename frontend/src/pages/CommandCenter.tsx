@@ -174,7 +174,8 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   const toggleVoiceRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Voice input is not supported in this browser environment. Please try Chrome or Edge.');
+      // Voice recognition not supported - this is a feature limitation, not an error
+      // Simply return without doing anything
       return;
     }
 
@@ -626,23 +627,6 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
                     </div>
                     {renderFormattedPoints(activeIncident?.rootCause || getPromptFallbackRootCause(activeIncident?.userPrompt))}
                   </motion.div>
-
-                  {/* STEP 2: FIX (RECOVERY PLAN) */}
-                  {activeIncident?.recommendedFix && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1 }}
-                      className="border-l-4 theme-alert-emerald p-4 rounded-r-xl space-y-1.5 shadow-sm"
-                    >
-                      <div className="text-xs text-emerald-600 font-bold flex items-center gap-1.5 uppercase tracking-wider">
-                        <Sparkles className="w-4 h-4 text-emerald-600" /> Step 2: Automated Recovery Action
-                      </div>
-                      <div className="text-xs text-title font-mono font-medium leading-relaxed whitespace-pre-wrap">
-                        {activeIncident.recommendedFix}
-                      </div>
-                    </motion.div>
-                  )}
 
                   {/* PROPOSED DIFF DETAILS */}
                   {activeIncident?.activeApproval?.diff && (

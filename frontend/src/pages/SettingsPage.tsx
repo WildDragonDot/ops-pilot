@@ -38,6 +38,7 @@ import { fetchProjects, removeProject, testConnection, updateProject } from '../
 import { useNotification } from '../context/NotificationContext';
 import { Project } from '../types';
 import { logger } from '../services/logger';
+import { SkeletonBlock } from '../components/SkeletonLoader';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -444,16 +445,39 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
     });
   };
 
-  const handleTestWebhook = () => {
+  const handleTestWebhook = async () => {
+    if (!webhookUrl.trim() || webhookUrl.includes('XXXXX')) {
+      addNotification({ type: 'warning', title: 'No Webhook Configured', message: 'Please enter a valid webhook URL before testing.' });
+      return;
+    }
     setIsTestingWebhook(true);
-    setTimeout(() => {
-      setIsTestingWebhook(false);
-      addNotification({
-        type: 'success',
-        title: 'Webhook Delivered',
-        message: `Sent test alert payload to Slack endpoint (HTTP 200 OK).`
+    try {
+      const payload = payloadFormat === 'Slack Block Kit'
+        ? {
+            blocks: [
+              { type: 'section', text: { type: 'mrkdwn', text: '*D-OpsPilot AI* — Test webhook delivery ✅\nThis is a test notification from your OpsPilot workspace.' } }
+            ]
+          }
+        : { text: 'D-OpsPilot AI — Test webhook delivery', source: 'OpsPilot', status: 'TEST' };
+
+      const res = await fetch(webhookUrl.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10_000)
       });
-    }, 1000);
+
+      if (res.ok || res.status === 204) {
+        addNotification({ type: 'success', title: 'Webhook Delivered', message: `Test payload sent to webhook endpoint (HTTP ${res.status}).` });
+      } else {
+        addNotification({ type: 'warning', title: 'Webhook Responded', message: `Endpoint returned HTTP ${res.status}. Check your webhook URL.` });
+      }
+    } catch (err: any) {
+      const msg = err.name === 'AbortError' ? 'Request timed out.' : err.message || 'Failed to reach webhook endpoint.';
+      addNotification({ type: 'danger', title: 'Webhook Failed', message: msg });
+    } finally {
+      setIsTestingWebhook(false);
+    }
   };
 
   const handleSaveProfileAndUI = () => {
@@ -787,7 +811,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                 </div>
 
                 {isLoading ? (
-                  <div className="p-6 text-center text-subtitle text-[11px] font-mono">Loading connected projects...</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {[1, 2].map(i => (
+                      <div key={i} className="p-4 rounded-xl card-bg-subtle border theme-border space-y-3">
+                        <SkeletonBlock className="h-5 w-32 rounded-md" />
+                        <SkeletonBlock className="h-4 w-full rounded-md" />
+                        <SkeletonBlock className="h-3 w-3/4 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
                 ) : projectsList.length === 0 ? (
                   <div className="glass-panel p-6 rounded-xl theme-border border text-center space-y-2.5">
                     <Server className="w-6 h-6 text-subtitle mx-auto" />

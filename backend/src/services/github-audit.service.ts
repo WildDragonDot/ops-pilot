@@ -128,18 +128,26 @@ export async function fetchGitHubSourceFiles(params: GitHubAuditParams & { maxFi
     .slice(0, params.maxFiles || 24);
 
   const files: { path: string; content: string }[] = [];
-  for (const entry of candidates) {
-    const fileRes = await fetch(
-      `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${encodeURIComponent(entry.path).replace(/%2F/g, '/')}?ref=${encodeURIComponent(branch)}`,
-      { headers }
-    );
-    if (!fileRes.ok) continue;
-    const fileData = await fileRes.json();
-    if (fileData.encoding === 'base64' && fileData.content) {
-      files.push({
-        path: entry.path,
-        content: Buffer.from(fileData.content, 'base64').toString('utf-8')
-      });
+
+  // Fetch all candidate files in parallel instead of sequentially
+  const results = await Promise.allSettled(
+    candidates.map(async (entry: any) => {
+      const fileRes = await fetch(
+        `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${encodeURIComponent(entry.path).replace(/%2F/g, '/')}?ref=${encodeURIComponent(branch)}`,
+        { headers }
+      );
+      if (!fileRes.ok) return null;
+      const fileData = await fileRes.json();
+      if (fileData.encoding === 'base64' && fileData.content) {
+        return { path: entry.path, content: Buffer.from(fileData.content, 'base64').toString('utf-8') };
+      }
+      return null;
+    })
+  );
+
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value) {
+      files.push(result.value);
     }
   }
 

@@ -41,7 +41,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
         await removeProject(id);
         if (onProjectDeleted) onProjectDeleted(id);
       } catch (err: any) {
-        alert(err.message);
+        console.error('[ProjectSelectionPage] Failed to delete project:', err.message);
       }
     }
   };

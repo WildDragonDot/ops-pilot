@@ -147,12 +147,14 @@ export async function inviteUser(req: AuthenticatedRequest, res: Response) {
 
     const org = await prisma.organization.findUnique({ where: { id: admin.organizationId } });
 
-    // Create an invite token (in production: store in DB with expiry, send email)
+    // Create an invite token with 48h expiry — in production store in DB and send email
+    const expiresAt = Date.now() + 48 * 60 * 60 * 1000;
     const inviteToken = Buffer.from(
-      JSON.stringify({ email: email.toLowerCase(), orgId: admin.organizationId, role, ts: Date.now() })
+      JSON.stringify({ email: email.toLowerCase(), orgId: admin.organizationId, role, expiresAt })
     ).toString('base64url');
 
-    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/register?invite=${inviteToken}`;
+    const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
+    const inviteUrl = `${baseUrl}/register?invite=${inviteToken}`;
 
     await writeAuditLog({
       orgId: admin.organizationId,

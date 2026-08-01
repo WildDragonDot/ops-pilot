@@ -5,12 +5,10 @@ import { logger } from '../services/logger.service.js';
 dotenv.config();
 
 export function getGeminiModelName(): string {
-  dotenv.config();
   return process.env.GEMINI_MODEL || 'gemini-flash-latest';
 }
 
 export function getSystemGeminiKeys(): string[] {
-  dotenv.config();
   const rawGeminiKeys = [
     process.env.GEMINI_API_KEY_1,
     process.env.GEMINI_API_KEY_2,

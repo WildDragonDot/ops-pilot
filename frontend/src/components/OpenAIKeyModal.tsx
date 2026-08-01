@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Key, ShieldAlert, X, Sparkles, Check, ArrowRight } from 'lucide-react';
 import { saveUserCredentials, getUserCredentials } from '../services/vault';
@@ -14,14 +14,21 @@ export const OpenAIKeyModal: React.FC<OpenAIKeyModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const existingCreds = getUserCredentials();
-  const [apiKey, setApiKey] = useState<string>(existingCreds?.openaiApiKey || '');
+  const [apiKey, setApiKey] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
+  // Load existing key from async vault on mount
+  useEffect(() => {
+    if (!isOpen) return;
+    getUserCredentials().then(creds => {
+      if (creds?.openaiApiKey) setApiKey(creds.openaiApiKey);
+    });
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanKey = apiKey.trim();
     if (!cleanKey) {
@@ -29,7 +36,7 @@ export const OpenAIKeyModal: React.FC<OpenAIKeyModalProps> = ({
       return;
     }
 
-    saveUserCredentials({ openaiApiKey: cleanKey });
+    await saveUserCredentials({ openaiApiKey: cleanKey });
     setIsSaved(true);
     setError('');
 

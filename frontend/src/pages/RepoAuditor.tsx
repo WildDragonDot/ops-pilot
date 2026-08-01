@@ -44,10 +44,6 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
-
-  if (isScanning && !scan) {
-    return <RepoAuditorSkeleton />;
-  }
   const [appliedPatchIds, setAppliedPatchIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('opspilot_resolved_patches');
@@ -79,6 +75,8 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     `/opt/services/${repoName}`
   ]);
 
+  const { addNotification } = useNotification();
+
   useEffect(() => {
     if (project?.serverHost) {
       scanServerDirectoriesApi({
@@ -94,6 +92,11 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
       }).catch(() => {});
     }
   }, [project?.id, project?.serverHost]);
+
+  // Early return AFTER all hooks are declared
+  if (isScanning && !scan) {
+    return <RepoAuditorSkeleton />;
+  }
 
   const handleRunAIDeployment = async (customPath?: string) => {
     const pathToUse = customPath || deployServerPath || initialTargetPath;
@@ -179,8 +182,6 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
   });
 
   const selectedFinding = filteredFindings.find(f => f.id === selectedFindingId) || filteredFindings[0] || null;
-
-  const { addNotification } = useNotification();
 
   const handleApplyPatch = async (finding: Finding) => {
     setIsApplyingPatch(true);

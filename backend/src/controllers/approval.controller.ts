@@ -34,7 +34,7 @@ export async function rejectFix(req: AuthenticatedRequest, res: Response) {
   const approvalId = String(req.params.id);
   const user = req.user;
 
-  const incident = rejectIncidentFix(approvalId);
+  const incident = await rejectIncidentFix(approvalId);
   if (!incident) {
     return res.status(404).json({ error: 'Approval request not found' });
   }

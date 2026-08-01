@@ -3,7 +3,6 @@ import { Cpu, Lock, Mail, User as UserIcon, Building, ArrowRight, Eye, EyeOff } 
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, githubProvider } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { logger } from '../services/logger';
 
 interface RegisterPageProps {
   onSwitchToLogin: () => void;
@@ -26,52 +25,51 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
     try {
       const selectedProvider = providerType === 'google' ? googleProvider : githubProvider;
       let firebaseUid = '';
-      let email = '';
-      let name = '';
-      let providerName = providerType === 'google' ? 'google.com' : 'github.com';
+      let socialEmail = '';
+      let socialName = '';
+      const providerName = providerType === 'google' ? 'google.com' : 'github.com';
       let avatarUrl = '';
 
       try {
         const result = await signInWithPopup(auth, selectedProvider);
         const fbUser = result.user;
         firebaseUid = fbUser.uid;
-        email = fbUser.email || '';
-        name = fbUser.displayName || email.split('@')[0] || 'Developer';
+        socialEmail = fbUser.email || '';
+        socialName = fbUser.displayName || socialEmail.split('@')[0] || 'Developer';
         avatarUrl = fbUser.photoURL || '';
       } catch (fbErr: any) {
-        if (fbErr.code === 'auth/invalid-api-key' || fbErr.code === 'auth/api-key-not-valid' || fbErr.code === 'auth/popup-closed-by-user' || fbErr.code?.includes('domain-not-allowed') || fbErr.code?.includes('unauthorized-domain')) {
-          logger.warn('Firebase popup notice, using dev session fallback', fbErr);
-          firebaseUid = `demo-${providerType}-${Date.now()}`;
-          email = providerType === 'google' ? 'dev.google@opspilot.ai' : 'dev.github@opspilot.ai';
-          name = providerType === 'google' ? 'Google Developer' : 'GitHub Developer';
-          avatarUrl = providerType === 'google' 
-            ? 'https://lh3.googleusercontent.com/a/default-user' 
-            : 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
-        } else {
-          throw fbErr;
+        if (fbErr.code === 'auth/popup-closed-by-user' || fbErr.code === 'auth/cancelled-popup-request') {
+          setSocialLoading(null);
+          return;
         }
+        if (
+          fbErr.code === 'auth/invalid-api-key' ||
+          fbErr.code === 'auth/api-key-not-valid' ||
+          fbErr.code?.includes('domain-not-allowed') ||
+          fbErr.code?.includes('unauthorized-domain')
+        ) {
+          throw new Error('This domain is not authorized for social sign-in. Please use Email & Password registration below, or contact your admin to whitelist this domain in Firebase Console.');
+        }
+        throw fbErr;
       }
 
-      if (!email) {
+      if (!socialEmail) {
         throw new Error(`Could not retrieve email from ${providerType === 'google' ? 'Google' : 'GitHub'}.`);
       }
 
       const res = await fetch('/api/auth/firebase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firebaseUid,
-          email,
-          name,
-          provider: providerName,
-          avatarUrl
-        })
+        body: JSON.stringify({ firebaseUid, email: socialEmail, name: socialName, provider: providerName, avatarUrl }),
+        signal: AbortSignal.timeout(15_000)
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Social sign-in failed on backend.');
-      }
+      const text = await res.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { throw new Error('Authentication service unavailable.'); }
+
+      if (res.status === 429) throw new Error('Too many sign-in attempts. Please wait 15 minutes and try again.');
+      if (!res.ok) throw new Error(data.error || 'Social sign-in failed on backend.');
 
       login(data.token, data.user);
     } catch (err: any) {
@@ -95,17 +93,24 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, organizationName })
+        body: JSON.stringify({ name, email, password, organizationName }),
+        signal: AbortSignal.timeout(15_000)
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed.');
-      }
+      const text = await res.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { throw new Error('Registration service unavailable. Please try again.'); }
+
+      if (res.status === 429) throw new Error('Too many registration attempts. Please wait 15 minutes and try again.');
+      if (!res.ok) throw new Error(data.error || 'Registration failed.');
 
       login(data.token, data.user);
     } catch (err: any) {
-      setError(err.message || 'Registration failed.');
+      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+        setError('Request timed out. Please check your connection.');
+      } else {
+        setError(err.message || 'Registration failed.');
+      }
     } finally {
       setIsLoading(false);
     }

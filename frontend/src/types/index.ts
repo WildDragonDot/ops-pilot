@@ -61,7 +61,7 @@ export interface IncidentEvent {
   incidentId: string;
   type: 'PLAN' | 'TOOL_CALL' | 'EVIDENCE' | 'DIAGNOSIS' | 'APPROVAL_REQUEST' | 'EXECUTION' | 'VERIFICATION' | 'REPORT';
   title: string;
-  details: any;
+  details: Record<string, unknown>;
   status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'WARNING' | 'FAILED';
   createdAt: string;
 }
@@ -91,7 +91,6 @@ export interface Incident {
   affectedService: string;
   confidence: number;
   rootCause?: string;
-  recommendedFix?: string;
   report?: string;
   startedAt: string;
   resolvedAt?: string;

@@ -63,6 +63,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
 
   // Form Fields
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
   const [environmentType, setEnvironmentType] = useState('Docker Compose');
   const [gitUrl, setGitUrl] = useState('');
   const [gitBranch, setGitBranch] = useState('main');
@@ -136,12 +137,12 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   const validateStep = (currentStep: number): boolean => {
     if (currentStep === 1) {
       if (!name.trim()) {
-        alert('Please enter a project name to continue.');
+        setNameError('Project Name is required to continue');
+        setTestResult({ success: false, error: 'Project Name is required. Please enter a project name to continue.' });
         return false;
       }
     }
-    // GitHub Repo URL, PAT token, Server Host IP, and SSH keys are 100% OPTIONAL.
-    // Users can create a workspace with just a name and add or edit credentials later!
+    setNameError(null);
     return true;
   };
 
@@ -200,7 +201,12 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
   };
 
   const handleCreateProject = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setNameError('Project Name is required');
+      setTestResult({ success: false, error: 'Project Name is required. Please enter a project name to continue.' });
+      setStep(1);
+      return;
+    }
     setLoading(true);
     try {
       const finalGitUrl = setupScope !== 'SERVER_ONLY' ? gitUrl.trim() : undefined;
@@ -211,7 +217,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
         const testRes = await handleTestConnection();
         if (!testRes?.success) {
           setLoading(false);
-          alert(`Connection Verification Failed: ${testRes?.github?.message || testRes?.ssh?.message || testRes?.error || 'Check details & try again.'}`);
+          setTestResult({ ...testRes, error: testRes?.github?.message || testRes?.ssh?.message || testRes?.error || 'Check details & try again.' });
           return;
         }
       }
@@ -238,7 +244,7 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
       onProjectCreated(created);
       onClose();
     } catch (err: any) {
-      alert(`Error creating project: ${err.message}`);
+      setTestResult({ success: false, error: err.message || 'Failed to create project. Please try again.' });
     } finally {
       setLoading(false);
     }
@@ -366,19 +372,53 @@ export const ProjectSetupModal: React.FC<ProjectSetupModalProps> = ({
 
           {/* Body Content */}
           <div className="p-5 space-y-4 max-h-[58vh] overflow-y-auto font-sans">
+            {testResult?.error && !testResult.success && step !== maxSteps && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1">
+                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-0.5">
+                  <span className="font-extrabold text-rose-600 dark:text-rose-400 block">Validation Error</span>
+                  <span className="text-[11px] leading-relaxed">{testResult.error}</span>
+                </div>
+              </div>
+            )}
+
             {step === 1 && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Project Name <span className="text-rose-500">*</span>
+                  <label className="block text-[11px] font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center justify-between">
+                    <span>Project Name <span className="text-rose-500">*</span></span>
+                    {nameError && (
+                      <span className="text-[10px] text-rose-500 font-extrabold flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-rose-500" />
+                        <span>Required</span>
+                      </span>
+                    )}
                   </label>
                   <input
                     type="text"
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      setName(e.target.value);
+                      if (e.target.value.trim()) {
+                        setNameError(null);
+                        if (testResult?.error?.includes('Project Name')) {
+                          setTestResult(null);
+                        }
+                      }
+                    }}
                     placeholder="e.g. Production E-Commerce API / Payments Worker"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium focus:outline-none transition-all shadow-xs ${
+                      nameError
+                        ? 'border-rose-500 ring-2 ring-rose-500/30 bg-rose-50/50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-100 placeholder-rose-400 dark:placeholder-rose-500'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                    }`}
                   />
+                  {nameError && (
+                    <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 text-[11px] font-bold mt-1.5 animate-in fade-in slide-in-from-top-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span>{nameError}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Integration Scope Mode Selector */}

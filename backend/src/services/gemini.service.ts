@@ -2,7 +2,7 @@ import { getGeminiClient, hasGeminiKey, markGeminiKeyExhausted, resetExhaustedGe
 import { logger } from './logger.service.js';
 import { CodeFileContext } from './openai.service.js';
 
-function extractJsonFromText(text: string): any {
+export function extractJsonFromText(text: string): any {
   if (!text || typeof text !== 'string') return null;
 
   // 1. Direct clean & parse

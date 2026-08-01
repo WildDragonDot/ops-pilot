@@ -14,6 +14,10 @@ function shouldLog(level: LogLevel) {
   return LEVEL_WEIGHT[level] >= LEVEL_WEIGHT[activeLevel];
 }
 
+function timestamp(): string {
+  return new Date().toISOString();
+}
+
 function formatMeta(meta?: unknown) {
   if (!meta) return '';
   if (meta instanceof Error) return ` ${meta.message}`;
@@ -27,15 +31,15 @@ function formatMeta(meta?: unknown) {
 
 export const logger = {
   debug(message: string, meta?: unknown) {
-    if (shouldLog('debug')) console.debug(`[debug] ${message}${formatMeta(meta)}`);
+    if (shouldLog('debug')) console.debug(`${timestamp()} [debug] ${message}${formatMeta(meta)}`);
   },
   info(message: string, meta?: unknown) {
-    if (shouldLog('info')) console.info(`[info] ${message}${formatMeta(meta)}`);
+    if (shouldLog('info')) console.info(`${timestamp()} [info] ${message}${formatMeta(meta)}`);
   },
   warn(message: string, meta?: unknown) {
-    if (shouldLog('warn')) console.warn(`[warn] ${message}${formatMeta(meta)}`);
+    if (shouldLog('warn')) console.warn(`${timestamp()} [warn] ${message}${formatMeta(meta)}`);
   },
   error(message: string, meta?: unknown) {
-    if (shouldLog('error')) console.error(`[error] ${message}${formatMeta(meta)}`);
+    if (shouldLog('error')) console.error(`${timestamp()} [error] ${message}${formatMeta(meta)}`);
   }
 };

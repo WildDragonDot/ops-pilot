@@ -31,11 +31,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (token) {
+      // Use the centralized apiFetch pattern directly to get proper 401 handling
       fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(15_000)
       })
-        .then(res => res.json())
-        .then(data => {
+        .then(async res => {
+          if (res.status === 401 || res.status === 403) {
+            logout();
+            return;
+          }
+          if (!res.ok) {
+            // Non-auth error (e.g. 500) — keep existing cached user, don't force logout
+            return;
+          }
+          const data = await res.json();
           if (data.user) {
             setUser(data.user);
             localStorage.setItem('opspilot_user', JSON.stringify(data.user));
@@ -43,7 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             logout();
           }
         })
-        .catch(() => logout())
+        .catch(() => {
+          // Network error — keep cached user so app works offline
+        })
         .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);

@@ -5,6 +5,8 @@ import { broadcastEvent } from '../controllers/stream.controller.js';
 import { logger } from './logger.service.js';
 
 export const incidentEmitter = new EventEmitter();
+// Raise max listeners to avoid Node.js memory leak warnings under concurrent incidents
+incidentEmitter.setMaxListeners(100);
 
 let projectState = {
   id: 'opspilot-workspace',
@@ -24,7 +26,7 @@ let projectState = {
   }
 };
 
-let activeScenarios: Record<string, any> = {
+export const activeScenarios: Record<string, any> = {
   DATABASE_STOPPED: {
     key: 'DATABASE_STOPPED',
     title: 'API returning 502 Bad Gateway',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Check, ShieldAlert, CheckCircle2, CheckSquare, Folder } from 'lucide-react';
 import { Incident } from '../types';
@@ -63,14 +63,26 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project
   const pendingApprovals = allApprovals.filter(a => a.approval.status === 'PENDING');
   const pastApprovals = allApprovals.filter(a => a.approval.status !== 'PENDING');
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const handleApprove = async (approvalId: string) => {
-    await approveFix(approvalId);
-    onRefreshIncidents();
+    setActionError(null);
+    try {
+      await approveFix(approvalId);
+      onRefreshIncidents();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to approve fix. Please try again.');
+    }
   };
 
   const handleReject = async (approvalId: string) => {
-    await rejectFix(approvalId);
-    onRefreshIncidents();
+    setActionError(null);
+    try {
+      await rejectFix(approvalId);
+      onRefreshIncidents();
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to reject fix. Please try again.');
+    }
   };
 
   return (
@@ -101,6 +113,14 @@ export const ApprovalsPage: React.FC<ApprovalsPageProps> = ({ incidents, project
             <Folder className="w-4 h-4 text-amber-500 shrink-0" />
             <span>Target Path <b>{activeTargetPath}</b> selected.</span>
           </div>
+        </div>
+      )}
+
+      {/* Action Error Banner */}
+      {actionError && (
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs font-semibold flex items-center justify-between gap-3">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="text-rose-500 hover:text-rose-700 font-bold">×</button>
         </div>
       )}
 

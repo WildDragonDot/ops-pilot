@@ -103,25 +103,25 @@ export const TerminalConsole: React.FC<TerminalConsoleProps> = ({ events, incide
                 <span className="text-[10px] text-slate-600">[{new Date(evt.createdAt).toLocaleTimeString()}]</span>
               </div>
 
-              {evt.details?.command && (
+              {(evt.details?.command && typeof evt.details.command === 'string') ? (
                 <div className="text-blue-400 bg-slate-950 p-2 rounded border border-slate-900">
                   Executing: {evt.details.command}
                 </div>
-              )}
+              ) : null}
 
-              {evt.details?.output && (
+              {(evt.details?.output && typeof evt.details.output === 'string') ? (
                 <pre className="text-slate-300 bg-slate-950 p-2.5 rounded border border-slate-900 overflow-x-auto text-[11px]">
                   {evt.details.output}
                 </pre>
-              )}
+              ) : null}
 
-              {evt.details?.steps && (
+              {(evt.details?.steps && Array.isArray(evt.details.steps)) ? (
                 <div className="text-cyan-300 bg-slate-950 p-2 rounded border border-slate-900 space-y-0.5">
-                  {evt.details.steps.map((s: string, i: number) => (
-                    <div key={i}>➔ {s}</div>
+                  {evt.details.steps.map((s: unknown, i: number) => (
+                    <div key={i}>➔ {String(s)}</div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           ))
         )}

@@ -1,4 +1,4 @@
-import { prisma } from '../services/db.service.js';
+import { prisma } from './db.service.js';
 
 export interface AuditLogPayload {
   orgId: string;
@@ -22,6 +22,7 @@ export async function writeAuditLog(payload: AuditLogPayload): Promise<void> {
     await prisma.auditLog.create({ data: payload });
   } catch (err) {
     // Never throw — audit log failures should not break the primary operation
-    console.error('[AuditLog] Failed to write audit entry:', err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[${new Date().toISOString()}] [error] [AuditLog] Failed to write audit entry: ${errorMessage}\n`);
   }
 }

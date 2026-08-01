@@ -99,12 +99,10 @@ async function readLocalWorkspaceFiles() {
 }
 
 export async function executeRepoScan(options: RepoScanOptions = {}) {
-  // Delete legacy scans to ensure fresh deterministic findings state
   const repo = await getOrCreateWorkspaceRepository(options.projectId);
   const project = repo.projectId ? await prisma.project.findUnique({ where: { id: repo.projectId } }) : null;
-  await prisma.repositoryScan.deleteMany({
-    where: { repositoryId: repo.id }
-  });
+  // NOTE: We no longer delete previous scans — history is preserved.
+  // Old scans remain queryable; only the latest is served to the UI.
 
   const scanId = `scan-${Date.now()}`;
 
@@ -331,17 +329,9 @@ export async function executeRepoScan(options: RepoScanOptions = {}) {
 }
 
 export async function applyFindingPatch(findingId: string) {
-  let finding = await prisma.repositoryFinding.findUnique({ where: { id: findingId } });
-  
-  if (!finding) {
-    if (findingId.includes('jwt') || findingId.includes('sec')) {
-      finding = await prisma.repositoryFinding.findFirst({ where: { category: 'SECURITY' } });
-    } else {
-      finding = await prisma.repositoryFinding.findFirst({ where: { category: 'BUG' } });
-    }
-  }
+  const finding = await prisma.repositoryFinding.findUnique({ where: { id: findingId } });
 
-  if (!finding) throw new Error('Finding not found');
+  if (!finding) throw new Error(`Finding not found: ${findingId}`);
 
   // Update status in DB to RESOLVED
   await prisma.repositoryFinding.update({

@@ -144,9 +144,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const BASE_DELAY_MS = 2000;
 
     function connect() {
-      if (retryCount >= MAX_RETRIES) return; // Give up after 5 attempts
+      if (retryCount >= MAX_RETRIES) return;
       try {
-        eventSource = new EventSource('/api/stream/events');
+        // Pass JWT token as query param since EventSource doesn't support headers
+        const token = localStorage.getItem('opspilot_token');
+        const url = token ? `/api/stream/events?token=${encodeURIComponent(token)}` : null;
+        if (!url) return; // Not authenticated — skip SSE connection
+
+        eventSource = new EventSource(url);
 
         eventSource.onopen = () => {
           retryCount = 0; // Reset retry count on successful connection

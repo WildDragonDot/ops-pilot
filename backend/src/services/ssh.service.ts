@@ -16,7 +16,7 @@ function normalizePort(port?: number): number {
   return normalized;
 }
 
-function assertSafeHost(host?: string): string {
+export function assertSafeHost(host?: string): string {
   const normalized = host?.trim();
   if (!normalized) {
     throw new Error('Host IP/Domain is required');
@@ -27,7 +27,7 @@ function assertSafeHost(host?: string): string {
   return normalized;
 }
 
-function assertSafeUser(user?: string): string {
+export function assertSafeUser(user?: string): string {
   const normalized = (user || 'root').trim();
   if (!USER_PATTERN.test(normalized)) {
     throw new Error('Invalid SSH user format.');
@@ -35,7 +35,7 @@ function assertSafeUser(user?: string): string {
   return normalized;
 }
 
-function assertSafeAbsolutePath(pathValue: string): string {
+export function assertSafeAbsolutePath(pathValue: string): string {
   const normalized = pathValue.trim();
   if (!ABSOLUTE_PATH_PATTERN.test(normalized) || normalized.includes('..')) {
     throw new Error('Invalid remote path.');

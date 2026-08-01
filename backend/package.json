@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "node --import tsx --test $(find src -name '*.test.ts')",
+    "test": "tsx src/tests/run_all_tests.ts",
     "start": "node dist/index.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push"
@@ -19,6 +19,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.2",
     "openai": "^4.85.2"
   },

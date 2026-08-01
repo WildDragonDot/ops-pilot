@@ -297,23 +297,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     let es: EventSource | null = null;
     try {
-      es = new EventSource('/api/stream/events');
-      es.onmessage = (evt) => {
-        try {
-          const data = JSON.parse(evt.data);
-          const now = new Date();
-          const timeStr = now.toTimeString().split(' ')[0];
-          const lvlMap: Record<string, 'INFO' | 'OK' | 'WARN' | 'ERR'> = {
-            info: 'INFO',
-            success: 'OK',
-            warning: 'WARN',
-            danger: 'ERR'
-          };
-          const level: 'INFO' | 'OK' | 'WARN' | 'ERR' = lvlMap[data.type] || 'INFO';
-          const newLog: { id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string } = { id: Date.now().toString(), time: timeStr, level, message: `${data.title} -- ${data.message}` };
-          setLogFeed(prev => [...prev, newLog].slice(-20));
-        } catch (e) {}
-      };
+      const token = localStorage.getItem('opspilot_token');
+      const url = token ? `/api/stream/events?token=${encodeURIComponent(token)}` : null;
+      if (url) {
+        es = new EventSource(url);
+        es.onmessage = (evt) => {
+          try {
+            const data = JSON.parse(evt.data);
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            const lvlMap: Record<string, 'INFO' | 'OK' | 'WARN' | 'ERR'> = {
+              info: 'INFO', success: 'OK', warning: 'WARN', danger: 'ERR'
+            };
+            const level: 'INFO' | 'OK' | 'WARN' | 'ERR' = lvlMap[data.type] || 'INFO';
+            const newLog: { id: string; time: string; level: 'INFO' | 'OK' | 'WARN' | 'ERR'; message: string } = {
+              id: Date.now().toString(), time: timeStr, level, message: `${data.title} -- ${data.message}`
+            };
+            setLogFeed(prev => [...prev, newLog].slice(-20));
+          } catch (e) {}
+        };
+      }
     } catch (err) {}
 
     if (!isLogStreaming) return () => { es?.close(); };
@@ -339,7 +342,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     };
 
     syncRealLogs();
-    const interval = setInterval(syncRealLogs, 3500);
+    const interval = setInterval(syncRealLogs, 10000);
 
     return () => {
       es?.close();
@@ -432,7 +435,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       } catch {}
     };
     syncHtop();
-    const interval = setInterval(syncHtop, 4000);
+    const interval = setInterval(syncHtop, 15000);
     return () => clearInterval(interval);
   }, [project?.id]);
 

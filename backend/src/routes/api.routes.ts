@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { register, login, firebaseAuth, getMe } from '../controllers/auth.controller.js';
 import { getProject, getProjects, createProject, updateProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv, suggestAICommand, scanServerDirectories, inspectTargetFolder, analyzeLogsWithAIController, checkDeploymentGap, executeAIDeployment } from '../controllers/project.controller.js';
 import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
@@ -15,10 +16,19 @@ import { asyncHandler } from '../middleware/errorHandler.middleware.js';
 
 export const router = Router();
 
+// ─── Auth rate limiter: max 20 attempts per 15 min per IP ─────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts from this IP, please try again after 15 minutes.' }
+});
+
 // ─── Public Authentication Routes ────────────────────────────────────────────
-router.post('/auth/register', asyncHandler(register));
-router.post('/auth/login', asyncHandler(login));
-router.post('/auth/firebase', asyncHandler(firebaseAuth));
+router.post('/auth/register', authLimiter, asyncHandler(register));
+router.post('/auth/login', authLimiter, asyncHandler(login));
+router.post('/auth/firebase', authLimiter, asyncHandler(firebaseAuth));
 
 // ─── Protected Authentication Profile ────────────────────────────────────────
 router.get('/auth/me', requireAuth, asyncHandler(getMe));

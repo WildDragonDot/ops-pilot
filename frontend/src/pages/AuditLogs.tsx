@@ -22,6 +22,7 @@ import { fetchAuditLogs } from '../services/api';
 import { useOutletContext } from 'react-router-dom';
 import { logger } from '../services/logger';
 import { RoleGuard, useHasRole } from '../components/RoleGuard';
+import { SkeletonBlock } from '../components/SkeletonLoader';
 
 interface AuditLogEntry {
   id: string;
@@ -298,14 +299,17 @@ export const AuditLogs: React.FC = () => {
             </thead>
             <tbody className="divide-y theme-border text-xs font-sans">
               {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="p-12 text-center text-subtitle">
-                    <div className="flex items-center justify-center gap-2 font-mono">
-                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                      <span>Loading audit logs...</span>
-                    </div>
-                  </td>
-                </tr>
+                [1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i}>
+                    <td className="p-4"><SkeletonBlock className="h-4 w-28 rounded-md" /></td>
+                    <td className="p-4"><SkeletonBlock className="h-4 w-36 rounded-md" /></td>
+                    <td className="p-4"><SkeletonBlock className="h-4 w-40 rounded-md" /></td>
+                    <td className="p-4"><SkeletonBlock className="h-6 w-20 rounded-full" /></td>
+                    <td className="p-4"><SkeletonBlock className="h-4 w-32 rounded-md" /></td>
+                    <td className="p-4"><SkeletonBlock className="h-4 w-24 rounded-md" /></td>
+                    <td className="p-4"><SkeletonBlock className="h-6 w-16 rounded-full" /></td>
+                  </tr>
+                ))
               ) : logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-subtitle font-mono">

@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { logger } from './logger.service.js';
 import { prisma } from './db.service.js';
 
+const execAsync = promisify(exec);
 const CLONE_BASE_DIR = path.join(process.cwd(), 'data', 'cloned_repos');
 
 interface CloneMetadata {
@@ -39,6 +41,14 @@ export async function cloneOrSyncRepository(
   githubToken?: string
 ): Promise<{ success: boolean; repoPath: string; message: string; updated: boolean }> {
   ensureBaseDirExists();
+
+  // Validate branch name to prevent command injection
+  const BRANCH_PATTERN = /^[a-zA-Z0-9._\-/]+$/;
+  if (!BRANCH_PATTERN.test(branch)) {
+    return { success: false, repoPath: '', message: `Invalid branch name: "${branch}"`, updated: false };
+  }
+  const safeBranch = branch;
+
   const repoDir = path.join(CLONE_BASE_DIR, projectId);
   const metaFile = path.join(repoDir, '.opspilot_meta.json');
   const authGitUrl = getAuthenticatedGitUrl(gitUrl, githubToken);
@@ -59,50 +69,29 @@ export async function cloneOrSyncRepository(
 
   try {
     if (fs.existsSync(repoDir)) {
-      // Repository directory exists - Sync & pull latest branch updates
       logger.info(`🔄 Existing clone found for project ${projectId}. Syncing branch "${branch}"...`);
-      
       try {
         // Verify git worktree
-        execSync('git rev-parse --is-inside-work-tree', { cwd: repoDir, stdio: 'ignore' });
-        
-        // Fetch remote updates
-        execSync('git fetch origin', { cwd: repoDir, stdio: 'ignore', timeout: 30000 });
-        
-        // Checkout target branch and pull latest code
-        execSync(`git checkout ${branch}`, { cwd: repoDir, stdio: 'ignore' });
-        execSync(`git pull origin ${branch}`, { cwd: repoDir, stdio: 'ignore', timeout: 30000 });
-        
+        await execAsync('git rev-parse --is-inside-work-tree', { cwd: repoDir });
+        // Fetch & pull latest
+        await execAsync('git fetch origin', { cwd: repoDir, timeout: 30000 });
+        await execAsync(`git checkout ${safeBranch}`, { cwd: repoDir });
+        await execAsync(`git pull origin ${safeBranch}`, { cwd: repoDir, timeout: 30000 });
         saveMetadata(branch);
         logger.info(`✅ Successfully updated repository ${projectId} on branch "${branch}" to latest commit.`);
-        return {
-          success: true,
-          repoPath: repoDir,
-          message: `Repository synced and updated to latest commit on branch "${branch}".`,
-          updated: true
-        };
+        return { success: true, repoPath: repoDir, message: `Repository synced to latest commit on branch "${branch}".`, updated: true };
       } catch (syncErr: any) {
-        logger.warn(`⚠️ Git sync failed for ${projectId}. Re-cloning repository... Reason: ${syncErr?.message}`);
+        logger.warn(`⚠️ Git sync failed for ${projectId}. Re-cloning... Reason: ${syncErr?.message}`);
         fs.rmSync(repoDir, { recursive: true, force: true });
       }
     }
 
-    // Fresh Git Clone
+    // Fresh clone
     logger.info(`📥 Cloning repository ${gitUrl} (branch: ${branch}) for project ${projectId}...`);
-    execSync(`git clone --depth 1 --branch ${branch} "${authGitUrl}" "${repoDir}"`, {
-      stdio: 'ignore',
-      timeout: 60000
-    });
-
+    await execAsync(`git clone --depth 1 --branch ${safeBranch} "${authGitUrl}" "${repoDir}"`, { timeout: 60000 });
     saveMetadata(branch);
-    logger.info(`✅ Successfully cloned repository for project ${projectId} into local server workspace.`);
-
-    return {
-      success: true,
-      repoPath: repoDir,
-      message: `Repository cloned successfully on branch "${branch}".`,
-      updated: false
-    };
+    logger.info(`✅ Successfully cloned repository for project ${projectId}.`);
+    return { success: true, repoPath: repoDir, message: `Repository cloned on branch "${branch}".`, updated: false };
   } catch (err: any) {
     logger.error(`❌ Failed to clone or sync repository ${gitUrl}:`, err?.message || err);
     return {

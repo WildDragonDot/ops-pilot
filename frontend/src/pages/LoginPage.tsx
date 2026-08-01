@@ -77,13 +77,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
       const res = await fetch('/api/auth/firebase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firebaseUid,
-          email,
-          name,
-          provider: providerName,
-          avatarUrl
-        })
+        body: JSON.stringify({ firebaseUid, email, name, provider: providerName, avatarUrl }),
+        signal: AbortSignal.timeout(15_000)
       });
 
       const text = await res.text();
@@ -94,9 +89,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         throw new Error('Authentication service unavailable. Please try again.');
       }
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Social sign-in failed on backend.');
-      }
+      if (res.status === 429) throw new Error('Too many sign-in attempts. Please wait 15 minutes and try again.');
+      if (!res.ok) throw new Error(data.error || 'Social sign-in failed on backend.');
 
       login(data.token, data.user);
     } catch (err: any) {
@@ -133,7 +127,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
+        signal: AbortSignal.timeout(15_000)
       });
 
       const text = await res.text();
@@ -144,21 +139,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
         throw new Error('Authentication service unavailable. Please try again.');
       }
 
+      if (res.status === 429) {
+        throw new Error('Too many login attempts. Please wait 15 minutes and try again.');
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Login failed.');
       }
 
       login(data.token, data.user);
     } catch (err: any) {
-      setError(err.message || 'Login failed.');
+      if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+        setError('Request timed out. Please check your connection.');
+      } else {
+        setError(err.message || 'Login failed.');
+      }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleDemoLogin = () => {
-    setEmail('admin@opspilot.ai');
-    setPassword('password123');
   };
 
   return (

@@ -30,8 +30,10 @@ const getHeaderString = (val: string | string[] | undefined): string | undefined
 
 const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 
-export async function getProjects(req: Request, res: Response) {
+export async function getProjects(req: AuthenticatedRequest, res: Response) {
+  const orgId = req.user?.organizationId;
   const projects = await prisma.project.findMany({
+    where: orgId ? { organizationId: orgId } : {},
     include: { repositories: true },
     orderBy: { createdAt: 'desc' }
   });
@@ -46,11 +48,19 @@ export async function getProjects(req: Request, res: Response) {
   });
 }
 
-export async function getProject(req: Request, res: Response) {
+export async function getProject(req: AuthenticatedRequest, res: Response) {
   const projectId = req.params.id ? String(req.params.id) : undefined;
-  let project = projectId 
-    ? await prisma.project.findUnique({ where: { id: projectId }, include: { repositories: true } })
-    : await prisma.project.findFirst({ include: { repositories: true } });
+  const orgId = req.user?.organizationId;
+
+  let project = projectId
+    ? await prisma.project.findFirst({
+        where: { id: projectId, ...(orgId ? { organizationId: orgId } : {}) },
+        include: { repositories: true }
+      })
+    : await prisma.project.findFirst({
+        where: orgId ? { organizationId: orgId } : {},
+        include: { repositories: true }
+      });
 
   const state = getProjectState();
 
@@ -81,6 +91,10 @@ export async function createProject(req: AuthenticatedRequest, res: Response) {
     return res.status(400).json({ error: 'Project name is required' });
   }
 
+  if (!user?.organizationId) {
+    return res.status(400).json({ error: 'User organization is required to create a project.' });
+  }
+
   // NOTE: SSH Keys & GitHub Tokens are NEVER stored in DB for security!
   const newProject = await prisma.project.create({
     data: {
@@ -91,7 +105,8 @@ export async function createProject(req: AuthenticatedRequest, res: Response) {
       gitUrl: gitUrl || null,
       serverHost: serverHost || null,
       serverPort: serverPort ? parseInt(serverPort, 10) : 22,
-      serverUser: serverUser || 'root'
+      serverUser: serverUser || 'root',
+      organizationId: user.organizationId
     },
     include: { repositories: true }
   });
@@ -163,10 +178,15 @@ export async function deleteProject(req: AuthenticatedRequest, res: Response) {
   const id = String(req.params.id);
   const user = req.user;
   try {
-    const existing = await prisma.project.findUnique({ where: { id } });
+    // Verify the project belongs to the user's org before deleting
+    const existing = await prisma.project.findFirst({
+      where: { id, ...(user?.organizationId ? { organizationId: user.organizationId } : {}) }
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
     await prisma.project.delete({ where: { id } });
 
-    // Audit: project deleted
     if (user) {
       await writeAuditLog({
         orgId: user.organizationId,
@@ -175,10 +195,10 @@ export async function deleteProject(req: AuthenticatedRequest, res: Response) {
         userName: user.email,
         action: 'PROJECT_DELETED',
         category: 'SYSTEM',
-        target: `Project: ${existing?.name || id}`,
+        target: `Project: ${existing.name}`,
         ipAddress: getIp(req),
         status: 'SUCCESS',
-        details: `Project "${existing?.name || id}" permanently deleted by ${user.email} (role: ${user.role})`
+        details: `Project "${existing.name}" permanently deleted by ${user.email} (role: ${user.role})`
       });
     }
 
@@ -252,9 +272,16 @@ async function fetchHtopSystemMetrics(serverHost?: string, creds?: any) {
   };
 }
 
-export async function getProjectHealth(req: Request, res: Response) {
+export async function getProjectHealth(req: AuthenticatedRequest, res: Response) {
   const projectId = String(req.params.id);
-  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  const orgId = req.user?.organizationId;
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, ...(orgId ? { organizationId: orgId } : {}) }
+  });
+
+  if (!project) {
+    return res.status(404).json({ error: 'Project not found.' });
+  }
   
   const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']);
   const headerSshPass = getHeaderString(req.headers['x-server-pass']);
@@ -483,9 +510,12 @@ export async function executeServerCommand(req: AuthenticatedRequest, res: Respo
   }
 }
 
-export async function getServerLogs(req: Request, res: Response) {
+export async function getServerLogs(req: AuthenticatedRequest, res: Response) {
   const projectId = String(req.params.id);
-  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  const orgId = req.user?.organizationId;
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, ...(orgId ? { organizationId: orgId } : {}) }
+  });
   
   const serverHost = project?.serverHost?.trim();
   const gitUrl = project?.gitUrl?.trim();
@@ -718,11 +748,16 @@ export async function analyzeLogsWithAIController(req: Request, res: Response) {
   }
 }
 
-export async function checkDeploymentGap(req: Request, res: Response) {
+export async function checkDeploymentGap(req: AuthenticatedRequest, res: Response) {
   const projectId = req.params.id ? String(req.params.id) : undefined;
-  const project = projectId 
-    ? await prisma.project.findUnique({ where: { id: projectId } })
-    : await prisma.project.findFirst();
+  const orgId = req.user?.organizationId;
+  const project = projectId
+    ? await prisma.project.findFirst({
+        where: { id: projectId, ...(orgId ? { organizationId: orgId } : {}) }
+      })
+    : await prisma.project.findFirst({
+        where: orgId ? { organizationId: orgId } : {}
+      });
 
   const serverHost = project?.serverHost?.trim();
   const gitUrl = project?.gitUrl?.trim();
@@ -797,11 +832,16 @@ export async function checkDeploymentGap(req: Request, res: Response) {
   }
 }
 
-export async function executeAIDeployment(req: Request, res: Response) {
+export async function executeAIDeployment(req: AuthenticatedRequest, res: Response) {
   const { projectId, targetPath: requestedTargetPath, selectedPath } = req.body;
-  const project = projectId 
-    ? await prisma.project.findUnique({ where: { id: String(projectId) } })
-    : await prisma.project.findFirst();
+  const orgId = req.user?.organizationId;
+  const project = projectId
+    ? await prisma.project.findFirst({
+        where: { id: String(projectId), ...(orgId ? { organizationId: orgId } : {}) }
+      })
+    : await prisma.project.findFirst({
+        where: orgId ? { organizationId: orgId } : {}
+      });
 
   const serverHost = project?.serverHost?.trim();
   const gitUrl = project?.gitUrl?.trim();
@@ -943,8 +983,16 @@ export async function executeAIDeployment(req: Request, res: Response) {
 
 export async function updateProject(req: AuthenticatedRequest, res: Response) {
   const id = String(req.params.id);
+  const orgId = req.user?.organizationId;
   const { gitUrl, gitBranch, serverHost, serverPort, serverUser, rootPath } = req.body;
   try {
+    // Verify ownership before updating
+    const existing = await prisma.project.findFirst({
+      where: { id, ...(orgId ? { organizationId: orgId } : {}) }
+    });
+    if (!existing) {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
     const updated = await prisma.project.update({
       where: { id },
       data: {
