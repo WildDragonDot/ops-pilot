@@ -1007,6 +1007,30 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
           (sudo -n systemctl enable --now redis6 2>&1 || sudo -n systemctl enable --now redis 2>&1 || sudo -n service redis start 2>&1 || true)
         fi
 
+        # Autonomous Nginx Web Proxy Auto-Provisioner (Port 80 -> Port 3000)
+        if ! command -v nginx &> /dev/null || ! systemctl is-active --quiet nginx 2>/dev/null; then
+          echo "[AI Auto-Provision] Provisioning Nginx web proxy on Port 80..."
+          (sudo -n dnf install -y nginx 2>&1 || sudo -n yum install -y nginx 2>&1 || sudo -n apt-get install -y nginx 2>&1 || true)
+          (sudo -n systemctl enable --now nginx 2>&1 || true)
+          (sudo -n sed -i 's/listen       80 default_server;/#listen       80 default_server;/g' /etc/nginx/nginx.conf 2>/dev/null || true)
+          (sudo cat << 'NGINX_CONF' | sudo tee /etc/nginx/conf.d/app.conf 2>/dev/null || true)
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+NGINX_CONF
+          (sudo -n systemctl restart nginx 2>&1 || true)
+        fi
+
         # Free stale port 3000
         fuser -k 3000/tcp 2>/dev/null || true
 
@@ -1126,8 +1150,9 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       logs.push(
         `--------------------------------------------------`,
         `🎉 [DEPLOYMENT SUCCESSFUL & LIVE VERIFIED]`,
-        `🌐 Live Backend Base URL: http://${serverHost}:3000`,
-        `🔍 Health Check API: http://${serverHost}:3000/api/health`,
+        `🌐 Public Web Endpoint (Port 80): http://${serverHost}`,
+        `🔍 Public Health Check API (Port 80): http://${serverHost}/api/health`,
+        `🔌 Node App Port 3000: http://${serverHost}:3000/api/health (AWS EC2 Port 3000)`,
         `--------------------------------------------------`
       );
     } else {
