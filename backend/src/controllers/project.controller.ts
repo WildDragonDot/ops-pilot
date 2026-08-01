@@ -1052,6 +1052,10 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         nohup ./app > app.log 2>&1 &
       fi
 
+      echo "VERIFYING_HEALTH_CHECK..."
+      sleep 3
+      HEALTH_RES=\$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || curl -s -w "\nHTTP_STATUS:%{http_code}" http://127.0.0.1:3000/ 2>/dev/null || echo "HEALTH_CHECK_FAILED")
+      echo "HEALTH_RESULT:\$HEALTH_RES"
       echo "CURRENT_COMMIT:\$(git rev-parse --short HEAD 2>/dev/null || echo 'deployed')"
     `;
 
@@ -1059,21 +1063,16 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
     let deployedCommit = 'deployed';
 
     if (remoteOut) {
-      const sshLines = remoteOut.split('\n').map(l => l.trim()).filter(l => l && !l.includes('CURRENT_COMMIT:'));
+      const sshLines = remoteOut
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.includes('CURRENT_COMMIT:') && !l.includes('HEALTH_RESULT:') && !l.includes('HTTP_STATUS:'));
       logs.push('[SSH Terminal Output]', ...sshLines);
       const commitMatch = remoteOut.match(/CURRENT_COMMIT:([a-f0-9]+|deployed)/);
       if (commitMatch) {
         deployedCommit = commitMatch[1];
       }
     }
-
-    logs.push(
-      `--------------------------------------------------`,
-      `✅ [Deployment Verified & Active]`,
-      `🌐 Live Backend Base URL: http://${serverHost}:3000`,
-      `🔍 Health Endpoint: http://${serverHost}:3000/api/health`,
-      `--------------------------------------------------`
-    );
 
     // AI Self-Healing & Error Remediation Trigger
     const hasError = remoteOut && (
@@ -1084,8 +1083,32 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       remoteOut.toLowerCase().includes('command not found') ||
       remoteOut.toLowerCase().includes('npm error') ||
       remoteOut.toLowerCase().includes('prisma only supports') ||
+      remoteOut.toLowerCase().includes('cannot find module') ||
       remoteOut.toLowerCase().includes('please upgrade your node')
     );
+
+    const healthOk = remoteOut && (
+      remoteOut.includes('HTTP_STATUS:200') || 
+      remoteOut.includes('"status":"OK"') || 
+      remoteOut.includes('status: 200')
+    );
+
+    if (healthOk && !hasError) {
+      logs.push(
+        `--------------------------------------------------`,
+        `🎉 [DEPLOYMENT SUCCESSFUL & LIVE VERIFIED]`,
+        `🌐 Live Backend Base URL: http://${serverHost}:3000`,
+        `🔍 Health Check API: http://${serverHost}:3000/api/health`,
+        `--------------------------------------------------`
+      );
+    } else {
+      logs.push(
+        `--------------------------------------------------`,
+        `⚠️ [VERIFICATION NOTICE] Remote process health check pending/failed.`,
+        `🤖 Invoking AI Self-Healing Engine for log analysis...`,
+        `--------------------------------------------------`
+      );
+    }
 
     if (hasError) {
       logs.push(
