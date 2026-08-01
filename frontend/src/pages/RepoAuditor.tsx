@@ -287,10 +287,10 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     <div className="space-y-5 font-sans">
       
       {/* Top Repository Banner Card */}
-      <div className="bg-white dark:bg-[#0d1117] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="bg-white dark:bg-[#0d1117] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs overflow-hidden">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-semibold font-mono shadow-xs">
                 <GitBranch className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -320,24 +320,24 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
             </div>
           </div>
 
-          {/* Overall Health Score Ring Card */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:justify-end gap-3 sm:gap-5 bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between sm:block text-left sm:text-right">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Security Health Index</span>
+          {/* Overall Health Score & Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:justify-end gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 max-w-full overflow-hidden">
+            <div className="flex items-center justify-between sm:block text-left sm:text-right pr-0 sm:pr-3 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-800 pb-2 sm:pb-0 shrink-0">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Security Index</span>
               <div className="flex items-baseline gap-1 mt-0.5 font-mono">
-                <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{currentScore}</span>
-                <span className="text-xs font-medium text-slate-500">/ 100</span>
-                <span className="ml-1.5 text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{currentScore}</span>
+                <span className="text-[10px] font-medium text-slate-500">/ 100</span>
+                <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   {currentScore >= 90 ? 'Grade A+' : 'Grade B+'}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 dark:border-slate-800">
+            <div className="flex flex-wrap items-center gap-2 max-w-full">
               <button
                 onClick={handleCommitAndPush}
                 disabled={isCommitting}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-md shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap"
                 title="Commit and Push all AI code fixes to remote GitHub branch"
               >
                 {isCommitting ? (
@@ -350,7 +350,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               {Boolean(project?.gitUrl?.trim()) && Boolean(project?.serverHost?.trim()) && (
                 <button
                   onClick={() => setShowDeployServerModal(true)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-md shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap"
                 >
                   <Rocket className="w-3.5 h-3.5" />
                   <span>Deploy Over Server</span>
@@ -359,7 +359,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               <button
                 onClick={onScanRepo}
                 disabled={isScanning}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#1f883d] hover:bg-[#1a7f37] disabled:opacity-50 text-white text-xs font-semibold rounded-md shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#1f883d] hover:bg-[#1a7f37] disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
                 <span className="whitespace-nowrap">{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
