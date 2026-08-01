@@ -1025,7 +1025,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
     if (hasError) {
       logs.push(
-        `[OpenAI & Google Gemini AI Engine] 🤖 Analyzing terminal deployment logs via OpenAI GPT-4o & Gemini AI...`
+        `[OpsPilot Autonomous AI Engine] 🤖 Analyzing terminal deployment logs via Autonomous AI Engine...`
       );
 
       try {
@@ -1039,13 +1039,13 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
         if (geminiAnalysis) {
           logs.push(
-            `[OpenAI / Gemini AI Diagnosis] 🧠 ${geminiAnalysis.title || 'Deployment Exception Analysis'}`,
-            `[OpenAI & Gemini Root Cause] ${geminiAnalysis.rootCause}`,
-            `[OpenAI & Gemini Recovery Plan] 💡 Risk Level: ${geminiAnalysis.riskLevel} | Recommended Actions: ${geminiAnalysis.commands.join('; ') || 'Apply fallback flags'}`
+            `[AI Incident Diagnosis] 🧠 ${geminiAnalysis.title || 'Deployment Exception Analysis'}`,
+            `[AI Root Cause Analysis] ${geminiAnalysis.rootCause}`,
+            `[AI Recovery Plan] 💡 Risk Level: ${geminiAnalysis.riskLevel} | Recommended Actions: ${geminiAnalysis.commands.join('; ') || 'Apply fallback flags'}`
           );
         }
       } catch (geminiErr) {
-        // Fallback silently if Gemini API key not present or rate limited
+        // Fallback silently if AI key not present or rate limited
       }
 
       try {
