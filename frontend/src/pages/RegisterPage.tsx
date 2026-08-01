@@ -220,7 +220,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) =
                 required
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
-                placeholder="Acme Operations Corp"
+                placeholder="OpsPilot Production Org"
                 className="w-full bg-transparent border-none text-xs text-title focus:outline-none"
               />
             </div>

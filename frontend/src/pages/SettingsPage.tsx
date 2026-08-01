@@ -149,7 +149,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
 
   // Operator & Org profile
   const [operatorName, setOperatorName] = useState<string>(() => localStorage.getItem('opspilot_operator_name') || user?.name || 'Chandan Vishwakarma');
-  const [orgName, setOrgName] = useState<string>(() => localStorage.getItem('opspilot_org_name') || user?.organizationName || 'Acme Operations Corp');
+  const [orgName, setOrgName] = useState<string>(() => {
+    const saved = localStorage.getItem('opspilot_org_name');
+    if (saved && saved !== 'Acme Operations Corp') return saved;
+    return user?.organizationName && user.organizationName !== 'Acme Operations Corp' ? user.organizationName : 'OpsPilot Workspace';
+  });
   const [isVerifyingVault, setIsVerifyingVault] = useState<boolean>(false);
 
   // Team Roster & Invite Modal State — loaded from API
@@ -1348,7 +1352,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                         <input
                           type="text"
                           disabled
-                          value={user?.organizationId || 'org-acme-corp'}
+                          value={user?.organizationId || 'org-opspilot-workspace'}
                           className="w-full px-3 py-1.5 rounded-lg border theme-border card-bg-subtle text-subtitle font-mono text-[11px]"
                         />
                       </div>

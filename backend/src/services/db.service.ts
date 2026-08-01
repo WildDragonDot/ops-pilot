@@ -11,12 +11,20 @@ export async function initDatabase() {
     if (orgCount === 0) {
       logger.info('Initializing database with default Organization & Admin User');
 
-      const org = await prisma.organization.create({
-        data: {
-          name: 'Acme Operations Corp',
-          slug: 'acme-corp'
-        }
-      });
+      let org = await prisma.organization.findFirst();
+      if (!org) {
+        org = await prisma.organization.create({
+          data: {
+            name: 'OpsPilot Workspace',
+            slug: 'opspilot-workspace'
+          }
+        });
+      } else if (org.name === 'Acme Operations Corp' || org.slug === 'acme-corp') {
+        org = await prisma.organization.update({
+          where: { id: org.id },
+          data: { name: 'OpsPilot Workspace', slug: 'opspilot-workspace' }
+        });
+      }
 
       // Use SEED_ADMIN_PASSWORD from env, or generate a random one-time password.
       // The generated password is printed once to logs so the operator can retrieve it.
