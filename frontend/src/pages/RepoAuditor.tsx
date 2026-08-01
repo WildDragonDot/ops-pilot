@@ -257,15 +257,15 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-lg text-blue-600 dark:text-blue-400 shrink-0">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-mono">
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-xl font-bold text-slate-900 dark:text-slate-100 font-mono truncate">
                   {project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured'}
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 sm:line-clamp-1">
                   Last Scanned: {scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : 'Just now'} • <span className="font-semibold text-slate-700 dark:text-slate-300">{countAll} active risks</span> detected ({countResolved} resolved)
                 </p>
               </div>
