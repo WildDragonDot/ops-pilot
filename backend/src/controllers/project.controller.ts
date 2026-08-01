@@ -965,6 +965,29 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
           fi
         fi
 
+        # Autonomous Database & Cache Provisioner (PostgreSQL 15 & Redis 6)
+        if ! command -v psql &> /dev/null || ! systemctl is-active --quiet postgresql 2>/dev/null; then
+          echo "[AI Auto-Provision] Provisioning PostgreSQL database server..."
+          (sudo -n dnf install -y postgresql15-server postgresql15 2>&1 || sudo -n yum install -y postgresql-server postgresql 2>&1 || sudo -n apt-get install -y postgresql postgresql-contrib 2>&1 || true)
+          (sudo -n postgresql-setup --initdb 2>/dev/null || sudo -n service postgresql initdb 2>/dev/null || true)
+          (sudo -n systemctl enable --now postgresql 2>&1 || sudo -n service postgresql start 2>&1 || true)
+          (sudo -n sed -i 's/ident/trust/g' /var/lib/pgsql/data/pg_hba.conf 2>/dev/null || true)
+          (sudo -n sed -i 's/peer/trust/g' /var/lib/pgsql/data/pg_hba.conf 2>/dev/null || true)
+          (sudo -n sed -i 's/scram-sha-256/trust/g' /var/lib/pgsql/data/pg_hba.conf 2>/dev/null || true)
+          (sudo -n systemctl restart postgresql 2>&1 || true)
+          (sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true)
+          (sudo -u postgres psql -c "CREATE DATABASE testdb;" 2>/dev/null || true)
+        fi
+
+        if ! command -v redis-cli &> /dev/null || ! systemctl is-active --quiet redis6 2>/dev/null; then
+          echo "[AI Auto-Provision] Provisioning Redis in-memory cache..."
+          (sudo -n dnf install -y redis6 2>&1 || sudo -n yum install -y redis 2>&1 || sudo -n apt-get install -y redis-server 2>&1 || true)
+          (sudo -n systemctl enable --now redis6 2>&1 || sudo -n systemctl enable --now redis 2>&1 || sudo -n service redis start 2>&1 || true)
+        fi
+
+        # Free stale port 3000
+        fuser -k 3000/tcp 2>/dev/null || true
+
         if command -v npm &> /dev/null; then
           echo "Running dependency installation..."
           npm install 2>&1 || npm install --ignore-scripts 2>&1 || true
