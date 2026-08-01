@@ -30,6 +30,8 @@ interface SidebarProps {
   onSelectProject?: (project: Project) => void;
   onOpenSetupModal?: () => void;
   onOpenTerminal?: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -39,7 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   projects = [], 
   onSelectProject = () => {}, 
   onOpenSetupModal = () => {},
-  onOpenTerminal = () => {}
+  onOpenTerminal = () => {},
+  mobileOpen = false,
+  onCloseMobile = () => {}
 }) => {
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState<boolean>(false);
@@ -65,55 +69,60 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  return (
-    <aside className={`sticky top-0 h-screen sidebar-bg backdrop-blur-2xl border-r flex flex-col justify-between transition-all duration-300 z-50 relative shrink-0 ${
-      collapsed ? 'w-20' : 'w-64'
-    }`}>
-      
-      {/* Floating Expand/Collapse Toggle Button on Sidebar Border */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
-        className="absolute -right-3 top-6 w-6 h-6 rounded-full card-bg-subtle border theme-border shadow-md text-title hover:bg-blue-600 hover:text-white hover:scale-105 flex items-center justify-center transition z-50 cursor-pointer"
-      >
-        {collapsed ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" /> : <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />}
-      </button>
-
+  const renderContent = (isMobileView: boolean = false) => (
+    <>
       {/* Top Section */}
-      <div className={`space-y-4 ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
+      <div className={`space-y-4 ${!isMobileView && collapsed ? 'px-2 py-4' : 'p-4'}`}>
         
         {/* Brand Logo */}
-        <div className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-3'}`}>
-          <div className="p-2.5 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-lg text-white shadow-lg glow-blue shrink-0 flex items-center justify-center">
-            <Cpu className="w-5 h-5" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-title">
-                  D-OpsPilot
-                </span>
-                <span className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/20">
-                  AI
-                </span>
-              </div>
-              <div className="mt-1">
-                <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border block truncate text-center ${modeBadge.color}`}>
-                  {modeBadge.label}
-                </span>
-              </div>
+        <div className={`flex items-center ${!isMobileView && collapsed ? 'justify-center w-full' : 'gap-3 justify-between'}`}>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-lg text-white shadow-lg glow-blue shrink-0 flex items-center justify-center">
+              <Cpu className="w-5 h-5" />
             </div>
+            {(isMobileView || !collapsed) && (
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-base tracking-tight text-title">
+                    D-OpsPilot
+                  </span>
+                  <span className="text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                    AI
+                  </span>
+                </div>
+                <div className="mt-1">
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border block truncate text-center ${modeBadge.color}`}>
+                    {modeBadge.label}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {isMobileView && (
+            <button
+              onClick={onCloseMobile}
+              className="text-slate-400 hover:text-white font-mono text-lg font-bold p-1"
+            >
+              ×
+            </button>
           )}
         </div>
 
-        {/* Active Project / Server Switcher Dropdown in Sidebar */}
-        {!collapsed && (
+        {/* Active Project / Server Switcher Dropdown */}
+        {(isMobileView || !collapsed) && (
           <div className="my-1">
             <ProjectSwitcher
               projects={projects}
               activeProject={project || null}
-              onSelectProject={onSelectProject}
-              onOpenSetupModal={onOpenSetupModal}
+              onSelectProject={(p) => {
+                onSelectProject(p);
+                if (isMobileView) onCloseMobile();
+              }}
+              onOpenSetupModal={() => {
+                onOpenSetupModal();
+                if (isMobileView) onCloseMobile();
+              }}
             />
           </div>
         )}
@@ -127,17 +136,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.path}
                   type="button"
-                  onClick={item.action}
-                  title={collapsed ? item.label : undefined}
+                  onClick={() => {
+                    item.action!();
+                    if (isMobileView) onCloseMobile();
+                  }}
+                  title={!isMobileView && collapsed ? item.label : undefined}
                   className={`flex items-center transition-all w-full ${
-                    collapsed 
+                    !isMobileView && collapsed 
                       ? 'justify-center w-11 h-11 mx-auto my-1 rounded-lg' 
                       : 'justify-between px-3 py-2.5 rounded-lg'
                     } text-xs font-semibold text-subtitle hover:text-title hover:bg-slate-500/10 border border-transparent cursor-pointer`}
                 >
-                  <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
+                  <div className={`flex items-center ${!isMobileView && collapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
                     <Icon className="w-4 h-4 shrink-0" />
-                    {!collapsed && <span className="truncate leading-none">{item.label}</span>}
+                    {(isMobileView || !collapsed) && <span className="truncate leading-none">{item.label}</span>}
                   </div>
                 </button>
               );
@@ -146,10 +158,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavLink
                 key={item.path}
                 to={item.path}
-                title={collapsed ? item.label : undefined}
+                onClick={() => {
+                  if (isMobileView) onCloseMobile();
+                }}
+                title={!isMobileView && collapsed ? item.label : undefined}
                 className={({ isActive }) =>
                   `flex items-center transition-all ${
-                    collapsed 
+                    !isMobileView && collapsed 
                       ? 'justify-center w-11 h-11 mx-auto my-1 rounded-lg' 
                       : 'justify-between px-3 py-2.5 rounded-lg'
                     } text-xs font-semibold ${
@@ -161,12 +176,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`flex items-center ${collapsed ? 'justify-center relative' : 'gap-3 min-w-0'}`}>
+                    <div className={`flex items-center ${!isMobileView && collapsed ? 'justify-center relative' : 'gap-3 min-w-0'}`}>
                       <Icon className="w-4 h-4 shrink-0" />
-                      {!collapsed && <span className="truncate leading-none">{item.label}</span>}
+                      {(isMobileView || !collapsed) && <span className="truncate leading-none">{item.label}</span>}
                       
                       {/* Collapsed Notification Dot Badge */}
-                      {collapsed && item.badge && !item.badge.includes('/') && (
+                      {!isMobileView && collapsed && item.badge && !item.badge.includes('/') && (
                         <span className={`absolute -top-2 -right-2 px-1.5 py-0.2 rounded-full text-[9px] font-extrabold font-mono border shadow-sm ${
                           isActive
                             ? 'bg-white text-blue-700 border-white font-extrabold'
@@ -178,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
 
                     {/* Expanded Sidebar Badge Pill */}
-                    {!collapsed && item.badge && (
+                    {(isMobileView || !collapsed) && item.badge && (
                       <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold border transition-all ${
                         isActive
                           ? 'bg-white/25 text-white border-white/40 shadow-sm'
@@ -198,12 +213,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Glass User Profile Footer */}
       <div className="p-3 border-t sidebar-bg">
         {user && (
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
-            <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
+          <div className={`flex items-center ${!isMobileView && collapsed ? 'justify-center' : 'justify-between'} gap-2`}>
+            <div className={`flex items-center ${!isMobileView && collapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
               <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-extrabold text-xs shrink-0 shadow-md shadow-emerald-600/25 mx-auto" title={user.name}>
                 {user.name.charAt(0)}
               </div>
-              {!collapsed && (
+              {(isMobileView || !collapsed) && (
                 <div className="min-w-0">
                   <span className="text-xs font-bold text-title block truncate">{user.name}</span>
                   <span className="text-[10px] text-subtitle font-mono block">{user.role}</span>
@@ -211,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
 
-            {!collapsed && (
+            {(isMobileView || !collapsed) && (
               <button
                 onClick={logout}
                 title="Logout"
@@ -224,7 +239,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </div>
+    </>
+  );
 
-    </aside>
+  return (
+    <>
+      {/* Mobile Drawer Overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div 
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+            onClick={onCloseMobile}
+          />
+          <div className="fixed inset-y-0 left-0 w-72 sidebar-bg border-r theme-border flex flex-col justify-between z-50 shadow-2xl animate-slideRight">
+            {renderContent(true)}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Sticky Sidebar */}
+      <aside className={`hidden lg:flex sticky top-0 h-screen sidebar-bg backdrop-blur-2xl border-r flex-col justify-between transition-all duration-300 z-40 relative shrink-0 ${
+        collapsed ? 'w-20' : 'w-64'
+      }`}>
+        
+        {/* Floating Expand/Collapse Toggle Button */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
+          className="absolute -right-3 top-6 w-6 h-6 rounded-full card-bg-subtle border theme-border shadow-md text-title hover:bg-blue-600 hover:text-white hover:scale-105 flex items-center justify-center transition z-50 cursor-pointer"
+        >
+          {collapsed ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" /> : <ChevronLeft className="w-3.5 h-3.5 stroke-[2.5]" />}
+        </button>
+
+        {renderContent(false)}
+      </aside>
+    </>
   );
 };

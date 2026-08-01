@@ -34,6 +34,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const { toggleTheme } = useTheme();
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState<boolean>(false);
   const [terminalModalOpen, setTerminalModalOpen] = useState<boolean>(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
   const getCleanTargetPath = (p?: string | null, gitUrl?: string | null, serverUser?: string | null) => {
@@ -112,6 +113,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             onSelectProject={onSelectProject}
             onOpenSetupModal={onOpenSetupModal}
             onOpenTerminal={() => setTerminalModalOpen(true)}
+            mobileOpen={mobileSidebarOpen}
+            onCloseMobile={() => setMobileSidebarOpen(false)}
           />
         );
       })()}
@@ -132,6 +135,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           isScanning={isScanning}
           selectedTargetPath={selectedTargetPath}
           onSelectTargetPath={(path) => setSelectedTargetPath(path)}
+          onToggleMobileSidebar={() => setMobileSidebarOpen(prev => !prev)}
         />
 
         {/* Page Content — scrollable area */}

@@ -14,7 +14,8 @@ import {
   Database,
   Layers,
   Globe,
-  Folder
+  Folder,
+  Menu
 } from 'lucide-react';
 import { Project, Scan } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -36,6 +37,7 @@ interface HeaderProps {
   isScanning: boolean;
   selectedTargetPath?: string;
   onSelectTargetPath?: (path: string) => void;
+  onToggleMobileSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -49,7 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
   onScanRepo,
   isScanning,
   selectedTargetPath = '',
-  onSelectTargetPath = () => {}
+  onSelectTargetPath = () => {},
+  onToggleMobileSidebar = () => {}
 }) => {
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState<boolean>(false);
   const [showStatusPopover, setShowStatusPopover] = useState<boolean>(false);
@@ -162,9 +165,27 @@ export const Header: React.FC<HeaderProps> = ({
     <>
       <header className="h-16 header-bg backdrop-blur-xl border-b px-3 sm:px-5 lg:px-6 flex items-center justify-between sticky top-0 z-40 gap-3">
         
-        {/* Left Section: Search Bar & Command Palette Trigger */}
-        <div className="flex items-center gap-3 flex-1 max-w-xl min-w-0">
-          {/* Search Bar - Smoothly balanced width for modern header layout */}
+        {/* Left Section: Mobile Menu & Search Bar */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl min-w-0">
+          <button
+            onClick={onToggleMobileSidebar}
+            aria-label="Toggle Mobile Navigation Menu"
+            className="lg:hidden p-2 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title shrink-0 cursor-pointer"
+          >
+            <Menu className="w-5 h-5 text-blue-500" />
+          </button>
+
+          {/* Compact Mobile Search Icon */}
+          <button 
+            onClick={() => setCmdPaletteOpen(true)}
+            aria-label="Open Command Palette Search"
+            className="flex sm:hidden p-2 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title cursor-pointer shrink-0"
+            title="Search commands (⌘K)"
+          >
+            <Search className="w-4 h-4 text-blue-500" />
+          </button>
+
+          {/* Desktop & Tablet Search Bar */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
             className="hidden sm:flex items-center gap-2.5 bg-white/75 dark:bg-slate-950/75 px-3.5 py-2 rounded-lg border theme-border text-xs w-full hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shadow-xs group"
