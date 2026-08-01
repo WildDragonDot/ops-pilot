@@ -165,7 +165,6 @@ Create `.env` inside `backend/`:
 PORT=5080
 DATABASE_URL="file:./dev.db"
 JWT_SECRET="your-super-secret-jwt-key-min-32-characters"
-GEMINI_API_KEY="your-google-gemini-api-key"
 OPENAI_API_KEY="your-openai-api-key"
 ```
 
