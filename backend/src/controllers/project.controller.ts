@@ -13,9 +13,9 @@ import { writeAuditLog } from '../services/audit-log.service.js';
 const execAsync = promisify(exec);
 
 function getIp(req: Request): string {
-  const fwd = req.headers['x-forwarded-for'];
+  const fwd = req?.headers ? req.headers['x-forwarded-for'] : undefined;
   const first = Array.isArray(fwd) ? fwd[0] : fwd;
-  return (first?.split(',')[0]?.trim() || String(req.ip || '') || 'unknown').replace('::ffff:', '');
+  return (first?.split(',')[0]?.trim() || String(req?.ip || '') || 'unknown').replace('::ffff:', '');
 }
 
 const getHeaderString = (val: string | string[] | undefined): string | undefined => {
@@ -31,7 +31,7 @@ const getHeaderString = (val: string | string[] | undefined): string | undefined
 const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 
 export async function getProjects(req: AuthenticatedRequest, res: Response) {
-  const orgId = req.user?.organizationId;
+  const orgId = req?.user?.organizationId;
   const projects = await prisma.project.findMany({
     where: orgId ? { organizationId: orgId } : {},
     include: { repositories: true },
@@ -49,8 +49,8 @@ export async function getProjects(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function getProject(req: AuthenticatedRequest, res: Response) {
-  const projectId = req.params.id ? String(req.params.id) : undefined;
-  const orgId = req.user?.organizationId;
+  const projectId = req?.params?.id ? String(req.params.id) : undefined;
+  const orgId = req?.user?.organizationId;
 
   let project = projectId
     ? await prisma.project.findFirst({
@@ -84,8 +84,8 @@ export async function getProject(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function createProject(req: AuthenticatedRequest, res: Response) {
-  const { name, gitUrl, serverHost, serverPort, serverUser, environmentType } = req.body;
-  const user = req.user;
+  const { name, gitUrl, serverHost, serverPort, serverUser, environmentType } = req?.body || {};
+  const user = req?.user;
 
   if (!name) {
     return res.status(400).json({ error: 'Project name is required' });
@@ -125,7 +125,7 @@ export async function createProject(req: AuthenticatedRequest, res: Response) {
       target: `Project: ${name}`,
       ipAddress: getIp(req),
       status: 'SUCCESS',
-      details: `New project created — Type: ${environmentType || 'Docker Compose'} — Git: ${gitUrl || 'none'} — Server: ${serverHost || 'local sandbox'}`
+      details: `Project "${name}" created with runtime ${environmentType || 'Docker Compose'}`
     });
   }
 
@@ -138,11 +138,13 @@ export async function createProject(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function testProjectConnection(req: Request, res: Response) {
-  const { gitUrl, gitBranch, serverHost, serverPort, serverUser, sshKey, sshPassword, githubToken } = req.body;
+  const headers = req?.headers || {};
+  const body = req?.body || {};
+  const { gitUrl, gitBranch, serverHost, serverPort, serverUser, sshKey, sshPassword, githubToken } = body;
 
-  const headerSshKey = getHeaderString(req.headers['x-server-ssh-key']) || sshKey;
-  const headerSshPass = getHeaderString(req.headers['x-server-pass']) || sshPassword;
-  const headerGitToken = getHeaderString(req.headers['x-github-token']) || githubToken;
+  const headerSshKey = getHeaderString(headers['x-server-ssh-key']) || sshKey;
+  const headerSshPass = getHeaderString(headers['x-server-pass']) || sshPassword;
+  const headerGitToken = getHeaderString(headers['x-github-token']) || githubToken;
 
   const sshCreds = {
     host: serverHost,
