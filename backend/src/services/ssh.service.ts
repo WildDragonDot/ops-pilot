@@ -233,16 +233,19 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
   const sshCmd = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o LogLevel=ERROR ${keyFlag} -p ${port} ${user}@${host} "export TERM=dumb; ${safeCmd.replace(/"/g, '\\"')}"`;
 
   try {
-    const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'dumb' }, timeout: 25000 });
+    const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'dumb' }, timeout: 180_000 });
     const output = stripAnsiCodes((stdout + (stderr ? `\n${stderr}` : '')).trim());
-    return output;
+    return output || '[SSH Output] Command executed with no output.';
   } catch (err: any) {
-    const rawErr = (err.stdout || '') + (err.stderr ? `\n${err.stderr}` : '') || err.message;
-    if (rawErr.includes('Command failed:')) {
-      const parts = rawErr.split('\n');
-      return stripAnsiCodes(parts.slice(1).join('\n').trim() || rawErr);
+    const stdout = (err.stdout || '').trim();
+    const stderr = (err.stderr || '').trim();
+    const message = err.message || '';
+    
+    let combined = [stdout, stderr].filter(Boolean).join('\n');
+    if (!combined) {
+      combined = message;
     }
-    return stripAnsiCodes(rawErr);
+    return stripAnsiCodes(combined || '[SSH Error] Remote command execution timed out or failed.');
   } finally {
     if (cleanup) cleanup();
   }

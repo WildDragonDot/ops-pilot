@@ -252,11 +252,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       }
     } catch (e: any) {
       clearInterval(interval);
-      const serverLogs = e.response?.data?.logs || [];
+      const serverLogs = e?.logs || e?.response?.data?.logs || e?.data?.logs || [];
       if (serverLogs.length > 0) {
         setDeployLogs(serverLogs);
       } else {
-        setDeployLogs(prev => [...prev, `[SSH Terminal Output] Execution complete for ${pathToUse}`]);
+        setDeployLogs(prev => [...prev, `[SSH Terminal Error] ❌ ${e.message || 'Remote deployment execution error'}`]);
       }
       setDeployCompleted(true);
     } finally {
