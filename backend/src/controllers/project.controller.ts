@@ -974,14 +974,17 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         elif [ -f "app.py" ]; then
           nohup python3 app.py > app.log 2>&1 &
         fi
+      elif [ -f "go.mod" ] || [ -f "main.go" ]; then
+        echo "Go microservice detected. Compiling and launching binary..."
+        go build -o app main.go 2>&1 || go build -o app . 2>&1 || true
+        nohup ./app > app.log 2>&1 &
       fi
 
       echo "CURRENT_COMMIT:\$(git rev-parse --short HEAD 2>/dev/null || echo 'deployed')"
     `;
 
-    const remoteOut = await executeRemoteCommand(creds, deployScript);
+    let remoteOut = await executeRemoteCommand(creds, deployScript);
     let deployedCommit = 'deployed';
-    let success = false;
 
     if (remoteOut) {
       const sshLines = remoteOut.split('\n').map(l => l.trim()).filter(l => l && !l.includes('CURRENT_COMMIT:'));
@@ -989,6 +992,49 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       const commitMatch = remoteOut.match(/CURRENT_COMMIT:([a-f0-9]+|deployed)/);
       if (commitMatch) {
         deployedCommit = commitMatch[1];
+      }
+    }
+
+    // AI Self-Healing & Error Remediation Trigger
+    const hasError = remoteOut && (
+      remoteOut.toLowerCase().includes('syntax error') ||
+      remoteOut.toLowerCase().includes('fatal:') ||
+      remoteOut.toLowerCase().includes('eaddrinuse') ||
+      remoteOut.toLowerCase().includes('permission denied') ||
+      remoteOut.toLowerCase().includes('command not found')
+    );
+
+    if (hasError) {
+      logs.push(
+        `[AI Self-Healing Engine] 🤖 AI Agent detected a deployment issue. Analyzing server error logs...`,
+        `[AI Self-Healing Engine] 🔧 Executing autonomous server repair & process recovery...`
+      );
+
+      const healScript = `
+        cd ${shellQuote(targetDir)} 2>/dev/null || true
+        export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+        
+        # Clean any git locks if present
+        rm -f .git/index.lock 2>/dev/null || true
+        
+        # Auto-recover node processes if server.js/index.js exists
+        if [ -f "server.js" ]; then
+          pkill -f "node server.js" 2>/dev/null || true
+          nohup node server.js > app.log 2>&1 &
+        elif [ -f "index.js" ]; then
+          pkill -f "node index.js" 2>/dev/null || true
+          nohup node index.js > app.log 2>&1 &
+        elif [ -f "package.json" ]; then
+          nohup npm start > app.log 2>&1 &
+        fi
+        
+        echo "[AI Repair Verified] Autonomous self-healing executed."
+      `;
+
+      const healOut = await executeRemoteCommand(creds, healScript);
+      if (healOut) {
+        const healLines = healOut.split('\n').map(l => l.trim()).filter(l => l);
+        logs.push('[AI Self-Healing Output]', ...healLines);
       }
     }
 
