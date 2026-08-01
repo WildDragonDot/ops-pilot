@@ -914,16 +914,18 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       fi
 
       echo "[AI Step: Target Directory Setup]"
-      if [ ! -d ${shellQuote(targetDir)} ]; then
-        echo "Creating target directory ${shellQuote(targetDir)}..."
-        mkdir -p ${shellQuote(targetDir)}
-      fi
+      mkdir -p ${shellQuote(targetDir)}
       cd ${shellQuote(targetDir)}
 
       echo "[AI Step: Git Repo Workspace Sync]"
       if [ ! -d .git ]; then
-        echo "Cloning repository into ${shellQuote(targetDir)}..."
-        git clone --depth 1 ${shellQuote(cloneUrl)} . 2>&1 || git clone ${shellQuote(cloneUrl)} . 2>&1
+        echo "Initializing repository in ${shellQuote(targetDir)}..."
+        git clone --depth 1 ${shellQuote(cloneUrl)} . 2>&1 || (
+          git init 2>&1 &&
+          git remote add origin ${shellQuote(cloneUrl)} 2>&1 || git remote set-url origin ${shellQuote(cloneUrl)} 2>&1 &&
+          git fetch origin ${shellQuote(branch)} 2>&1 &&
+          git checkout -B ${shellQuote(branch)} origin/${shellQuote(branch)} 2>&1
+        ) || true
       else
         echo "Fetching latest changes for branch ${shellQuote(branch)}..."
         git fetch origin ${shellQuote(branch)} 2>&1
@@ -932,9 +934,9 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       fi
 
       echo "[AI Step: Container & Process Runtime Deployment]"
-      if [ -f "docker-compose.yml" ] || [ -f "compose.yml" ]; then
+      if [ -f "docker-compose.yml" ] || [ -f "compose.yml" ] || [ -f "docker-compose.yaml" ]; then
         echo "Docker Compose file detected. Building and launching container services..."
-        sudo docker compose up -d --build 2>&1 || sudo docker-compose up -d --build 2>&1 || docker compose up -d 2>&1 || true
+        sudo docker compose up -d --build 2>&1 || sudo docker-compose up -d --build 2>&1 || docker compose up -d --build 2>&1 || true
       elif [ -f "package.json" ]; then
         echo "Node.js application detected. Running dependency & process startup..."
         if command -v npm &> /dev/null; then
@@ -944,11 +946,33 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         fi
         if command -v pm2 &> /dev/null; then
           echo "Launching application process with PM2..."
-          pm2 restart all 2>&1 || pm2 start index.js --name ${shellQuote(repoName)} 2>&1 || pm2 start server.js --name ${shellQuote(repoName)} 2>&1 || true
+          pm2 restart all 2>&1 || pm2 start index.js --name ${shellQuote(repoName)} 2>&1 || pm2 start server.js --name ${shellQuote(repoName)} 2>&1 || pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1 || true
           pm2 save 2>&1 || true
         elif command -v node &> /dev/null; then
           echo "Launching via Node.js server entrypoint..."
-          nohup node server.js > app.log 2>&1 & || nohup node index.js > app.log 2>&1 & || true
+          if [ -f "server.js" ]; then
+            nohup node server.js > app.log 2>&1 &
+          elif [ -f "index.js" ]; then
+            nohup node index.js > app.log 2>&1 &
+          elif [ -f "app.js" ]; then
+            nohup node app.js > app.log 2>&1 &
+          elif [ -f "src/server.js" ]; then
+            nohup node src/server.js > app.log 2>&1 &
+          elif [ -f "src/index.js" ]; then
+            nohup node src/index.js > app.log 2>&1 &
+          else
+            nohup npm start > app.log 2>&1 &
+          fi
+        fi
+      elif [ -f "requirements.txt" ] || [ -f "main.py" ] || [ -f "app.py" ]; then
+        echo "Python application detected. Launching process..."
+        if [ -f "requirements.txt" ]; then
+          pip install -r requirements.txt 2>&1 || pip3 install -r requirements.txt 2>&1 || true
+        fi
+        if [ -f "main.py" ]; then
+          nohup python3 main.py > app.log 2>&1 &
+        elif [ -f "app.py" ]; then
+          nohup python3 app.py > app.log 2>&1 &
         fi
       fi
 
