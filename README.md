@@ -4,11 +4,16 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build: Passing](https://img.shields.io/badge/Build-Passing-emerald.svg)]()
-[![Security: WebCrypto--AES--256](https://img.shields.io/badge/Security-WebCrypto--AES--256-purple.svg)]()
+[![Security: WebCrypto--AES--256](https://img.shields.io/badge/Security-Zero--Knowledge--WebCrypto-purple.svg)]()
 [![AI Engine: Gemini--3.6--Flash--&--GPT--4o](https://img.shields.io/badge/AI--Engine-Gemini--3.6--Flash--%26--GPT--4o-amber.svg)]()
 [![Target Host: 54.237.198.207](https://img.shields.io/badge/Target--Host-54.237.198.207-blue.svg)](https://dopspilot.chandandev.online)
 
 D-OpsPilot AI is an enterprise-grade, evidence-driven autonomous DevOps & SRE AI Agent. It bridges production operations with intelligence — inspecting live microservice container logs, diagnosing complex root-cause outages, correlating recent git commits with failures, executing zero-downtime deployments, and automating server health verification with human-in-the-loop safety guardrails.
+
+> [!IMPORTANT]
+> 🔒 **Zero-Knowledge & Privacy Guarantee**:
+> **NO SSH Keys, Passwords, GitHub Personal Access Tokens, or AI API Keys are EVER stored on our backend server or in any database.**
+> All credentials remain **100% strictly local** on the user's browser using AES-256 WebCrypto vault encryption. We cannot view, access, store, or log your keys.
 
 ---
 
@@ -16,7 +21,7 @@ D-OpsPilot AI is an enterprise-grade, evidence-driven autonomous DevOps & SRE AI
 
 ```mermaid
 graph TD
-    User([👨‍💻 SRE / Developer UI]) -->|AES-256 WebCrypto Vault| Frontend[⚡ React + Vite + Tailwind Dashboard]
+    User([👨‍💻 SRE / Developer UI]) -->|AES-256 WebCrypto Local Vault| Frontend[⚡ React + Vite + Tailwind Dashboard]
     Frontend -->|REST API / SSE Event Stream| Backend[🚀 Node.js + Express + Prisma Engine]
     
     subgraph AI Intelligence Core
@@ -26,7 +31,7 @@ graph TD
     end
     
     subgraph Zero-DB Security Shield
-        Backend <-->|Prisma ORM| DB[(SQLite / PostgreSQL DB)]
+        Backend <-->|Prisma ORM| DB[(SQLite / PostgreSQL DB - Zero Plaintext Keys)]
         Backend -->|Strict Guardrails| Policy[🛡️ Forbidden Commands Security Filter]
     end
     
@@ -44,9 +49,10 @@ graph TD
 
 ## ⚙️ Core Working Mechanism
 
-1. **Client-Side WebCrypto Vault Architecture**:
-   - Server SSH private keys and GitHub access tokens are encrypted inside the browser using AES-256 WebCrypto.
-   - Plain-text credentials are **NEVER** stored in backend databases or server log files.
+1. **Client-Side WebCrypto Vault & Zero-Knowledge Privacy**:
+   - Server SSH private keys, passwords, and GitHub access tokens are encrypted inside the user's browser using AES-256 WebCrypto.
+   - **Zero Credentials on Server/DB**: Credentials are **NEVER stored, persisted, or logged** in backend databases or server files. They reside exclusively on your local device.
+   - Plain-text credentials are passed transiently in memory only during authorized SSH execution and immediately destroyed.
 
 2. **Dynamic Key Handling & Isolated Temp Files**:
    - Raw PEM keys (`-----BEGIN OPENSSH PRIVATE KEY-----`) are written transiently to isolated temporary files with strict `0600` permissions.
@@ -67,6 +73,11 @@ graph TD
 ---
 
 ## 🌟 Complete System Features Breakdown
+
+### 🔒 0. Client Security Vault & Zero-Knowledge Guarantee
+- **Local Storage Only**: Keys, tokens, and credentials remain in your local browser vault.
+- **No Database Persistence**: Neither database nor backend logs contain any user keys or secret tokens.
+- **Complete Privacy**: Zero remote exposure — we cannot see, access, or intercept your keys.
 
 ### 🤖 1. Autonomous AI Incident Commander & Root Cause Diagnosis
 - **Outage Diagnosis**: Automatically diagnoses production failures including `502 Bad Gateway`, PostgreSQL connection limits, memory leaks, and Nginx proxy errors.
