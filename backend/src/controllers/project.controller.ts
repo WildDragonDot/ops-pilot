@@ -949,16 +949,18 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         # Clean stale prisma modules
         rm -rf node_modules/prisma node_modules/.prisma 2>/dev/null || true
 
-        # Standalone Node 20 LTS auto-provisioner (user-space, zero-sudo)
-        SYS_NODE_VER=\$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ -z "\$SYS_NODE_VER" ] || [ "\$SYS_NODE_VER" -lt 20 ]; then
-          if [ ! -x "\$HOME/.node20/bin/node" ]; then
-            echo "[AI Auto-Upgrade] System Node.js is v\${SYS_NODE_VER:-none}. Provisioning Node.js 20 LTS runtime..."
-            mkdir -p "\$HOME/.node20"
-            curl -fsSL https://nodejs.org/dist/v20.11.1/node-v20.11.1-linux-x64.tar.gz | tar -xz -C "\$HOME/.node20" --strip-components=1 2>&1 || true
+        # Autonomous Standalone Node 22 LTS Provisioner (user-space, zero-sudo)
+        SYS_NODE_MAJOR=\$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ -z "\$SYS_NODE_MAJOR" ] || [ "\$SYS_NODE_MAJOR" -lt 22 ]; then
+          if [ ! -x "\$HOME/.node22/bin/node" ]; then
+            echo "[AI Auto-Upgrade] System Node.js (v\${SYS_NODE_MAJOR:-none}) is below v22.12 required by Prisma 7.9+. Provisioning Node.js 22 LTS runtime..."
+            mkdir -p "\$HOME/.node22"
+            curl -fsSL https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.gz | tar -xz -C "\$HOME/.node22" --strip-components=1 2>&1 || true
           fi
-          if [ -x "\$HOME/.node20/bin/node" ]; then
-            export PATH="\$HOME/.node20/bin:\$PATH"
+          if [ -x "\$HOME/.node22/bin/node" ]; then
+            sudo -n ln -sf "\$HOME/.node22/bin/node" /usr/bin/node 2>/dev/null || true
+            sudo -n ln -sf "\$HOME/.node22/bin/npm" /usr/bin/npm 2>/dev/null || true
+            export PATH="\$HOME/.node22/bin:\$PATH"
             echo "[AI Auto-Upgrade Verified] Active Node.js: \$(node -v)"
           fi
         fi
