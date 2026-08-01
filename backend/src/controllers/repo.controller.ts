@@ -103,9 +103,10 @@ export async function getScanById(req: AuthenticatedRequest, res: Response) {
 export async function applyPatch(req: AuthenticatedRequest, res: Response) {
   const findingId = String(req.params.findingId);
   const user = req.user;
+  const headerGitToken = getHeaderString(req.headers['x-github-token']);
 
   try {
-    const updatedScan = await applyFindingPatch(findingId);
+    const updatedScan = await applyFindingPatch(findingId, headerGitToken);
 
     // Audit: security patch applied
     if (user) {
@@ -147,6 +148,7 @@ export async function commitAndPushChanges(req: AuthenticatedRequest, res: Respo
   const user = req.user;
   const { projectId, customCommitMessage } = req.body || {};
   const commitMsg = customCommitMessage || 'fix(ai): commit and push AI applied security & bug fixes';
+  const headerGitToken = getHeaderString(req.headers['x-github-token']);
 
   try {
     let repoPath = process.cwd();
@@ -161,12 +163,14 @@ export async function commitAndPushChanges(req: AuthenticatedRequest, res: Respo
         targetBranch = (project as any).gitBranch || 'main';
         gitToken = (project as any).gitToken || '';
 
+        const effectiveToken = headerGitToken || gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+
         const { cloneOrSyncRepository } = await import('../services/repo-clone.service.js');
         const cloneResult = await cloneOrSyncRepository(
           project.id,
           gitUrl,
           targetBranch,
-          gitToken || undefined
+          effectiveToken || undefined
         ).catch(() => null);
         if (cloneResult?.repoPath) {
           repoPath = cloneResult.repoPath;
@@ -175,6 +179,14 @@ export async function commitAndPushChanges(req: AuthenticatedRequest, res: Respo
     }
 
     const { execFileSync } = await import('child_process');
+
+    if (!gitUrl && repoPath) {
+      try {
+        const remoteUrl = execFileSync('git', ['config', '--get', 'remote.origin.url'], { cwd: repoPath, encoding: 'utf-8' }).trim();
+        if (remoteUrl) gitUrl = remoteUrl;
+      } catch (e) {}
+    }
+
     const statusOutput = execFileSync('git', ['status', '--porcelain'], { cwd: repoPath, encoding: 'utf-8' });
 
     if (!statusOutput.trim()) {
@@ -195,11 +207,17 @@ export async function commitAndPushChanges(req: AuthenticatedRequest, res: Respo
       { cwd: repoPath }
     );
 
-    // Push changes
-    let pushToken = gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+    // Push changes with authenticated token URL
+    const pushToken = headerGitToken || gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+    
     let pushUrl = gitUrl;
     if (pushUrl && pushToken && pushUrl.startsWith('https://')) {
-      pushUrl = `https://${pushToken}@${pushUrl.replace(/^https:\/\//, '')}`;
+      const cleanUrl = pushUrl.replace(/^https:\/\//, '').replace(/^.*@/, '');
+      pushUrl = `https://${pushToken}@${cleanUrl}`;
+    }
+
+    if (!pushToken && pushUrl && pushUrl.startsWith('https://')) {
+      throw new Error('GitHub Personal Access Token is required to push code. Please configure your GitHub token in Vault / Settings.');
     }
 
     if (pushUrl) {

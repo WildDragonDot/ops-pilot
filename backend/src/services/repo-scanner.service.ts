@@ -328,7 +328,7 @@ export async function executeRepoScan(options: RepoScanOptions = {}) {
   });
 }
 
-export async function applyFindingPatch(findingId: string) {
+export async function applyFindingPatch(findingId: string, githubToken?: string) {
   const finding = await prisma.repositoryFinding.findUnique({
     where: { id: findingId },
     include: {
@@ -365,12 +365,14 @@ export async function applyFindingPatch(findingId: string) {
         targetBranch = (project as any).gitBranch || 'main';
         gitToken = (project as any).gitToken || '';
 
+        const effectiveToken = githubToken || gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+
         const { cloneOrSyncRepository } = await import('./repo-clone.service.js');
         const cloneResult = await cloneOrSyncRepository(
           project.id,
           gitUrl,
           targetBranch,
-          gitToken || undefined
+          effectiveToken || undefined
         );
 
         if (cloneResult.success && cloneResult.repoPath) {
@@ -416,14 +418,27 @@ export async function applyFindingPatch(findingId: string) {
         try {
           const commitMsg = `fix(security): resolve ${finding.title} in ${relPath}`;
           execFileSync('git', ['add', '.'], { cwd: repoPath });
-          execFileSync('git', ['commit', '-m', commitMsg], { cwd: repoPath });
+          execFileSync(
+            'git',
+            ['-c', 'user.name=OpsPilot AI Agent', '-c', 'user.email=ai-agent@opspilot.local', 'commit', '-m', commitMsg],
+            { cwd: repoPath }
+          );
           logger.info(`Security patch committed in ${repoPath} for ${relPath}`);
 
-          let pushToken = gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+          const pushToken = githubToken || gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+          
+          if (!gitUrl && repoPath) {
+            try {
+              const remoteUrl = execFileSync('git', ['config', '--get', 'remote.origin.url'], { cwd: repoPath, encoding: 'utf-8' }).trim();
+              if (remoteUrl) gitUrl = remoteUrl;
+            } catch (e) {}
+          }
+
           if (gitUrl) {
             let pushUrl = gitUrl;
             if (pushToken && gitUrl.startsWith('https://')) {
-              pushUrl = `https://${pushToken}@${gitUrl.replace(/^https:\/\//, '')}`;
+              const cleanUrl = gitUrl.replace(/^https:\/\//, '').replace(/^.*@/, '');
+              pushUrl = `https://${pushToken}@${cleanUrl}`;
             }
             execFileSync('git', ['push', pushUrl, targetBranch], { cwd: repoPath });
             logger.info(`Security patch successfully pushed to GitHub repository ${gitUrl} (${targetBranch})!`);
