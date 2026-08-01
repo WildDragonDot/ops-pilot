@@ -339,9 +339,9 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onScanRepo}
               disabled={isScanning}
               title="Scan Repository Codebase"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition whitespace-nowrap shrink-0 cursor-pointer"
+              className="w-8 h-8 sm:w-auto sm:px-3.5 sm:h-9 flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <GitBranch className={`w-3.5 h-3.5 shrink-0 ${isScanning ? 'animate-spin' : ''}`} />
+              <GitBranch className={`w-4 h-4 shrink-0 ${isScanning ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline-block whitespace-nowrap">{isScanning ? 'Scanning...' : 'Scan Repo'}</span>
             </button>
           )}
@@ -369,7 +369,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onResetEnv}
             title="Reset environment status"
             aria-label="Reset environment health status"
-            className="w-9 h-9 flex items-center justify-center text-subtitle hover:text-emerald-500 card-bg-subtle rounded-xl border theme-border transition shrink-0 cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-subtitle hover:text-emerald-500 card-bg-subtle rounded-xl border theme-border transition shrink-0 cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -380,11 +380,11 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setShowNotificationPopover(!showNotificationPopover)}
               title="Notifications"
               aria-label="View notifications"
-              className="w-9 h-9 flex items-center justify-center text-subtitle hover:text-title card-bg-subtle rounded-xl border theme-border transition relative shrink-0 cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-subtitle hover:text-title card-bg-subtle rounded-xl border theme-border transition relative shrink-0 cursor-pointer"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 flex h-2 w-2">
+                <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                 </span>
