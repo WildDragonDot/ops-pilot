@@ -31,9 +31,21 @@ const getHeaderString = (val: string | string[] | undefined): string | undefined
 const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 
 export async function getProjects(req: AuthenticatedRequest, res: Response) {
+  const userId = req?.user?.userId;
   const orgId = req?.user?.organizationId;
+
+  // Strict user-wise scoping: Projects owned by the user (userId), or legacy unassigned projects in the user's org
+  const whereClause: any = userId
+    ? {
+        OR: [
+          { userId: userId },
+          { organizationId: orgId, userId: null }
+        ]
+      }
+    : (orgId ? { organizationId: orgId } : {});
+
   const projects = await prisma.project.findMany({
-    where: orgId ? { organizationId: orgId } : {},
+    where: whereClause,
     include: { repositories: true },
     orderBy: { createdAt: 'desc' }
   });
@@ -50,15 +62,20 @@ export async function getProjects(req: AuthenticatedRequest, res: Response) {
 
 export async function getProject(req: AuthenticatedRequest, res: Response) {
   const projectId = req?.params?.id ? String(req.params.id) : undefined;
+  const userId = req?.user?.userId;
   const orgId = req?.user?.organizationId;
+
+  const userWhere = userId
+    ? { OR: [{ userId: userId }, { organizationId: orgId, userId: null }] }
+    : (orgId ? { organizationId: orgId } : {});
 
   let project = projectId
     ? await prisma.project.findFirst({
-        where: { id: projectId, ...(orgId ? { organizationId: orgId } : {}) },
+        where: { id: projectId, ...userWhere },
         include: { repositories: true }
       })
     : await prisma.project.findFirst({
-        where: orgId ? { organizationId: orgId } : {},
+        where: userWhere,
         include: { repositories: true }
       });
 
@@ -106,7 +123,8 @@ export async function createProject(req: AuthenticatedRequest, res: Response) {
       serverHost: serverHost || null,
       serverPort: serverPort ? parseInt(serverPort, 10) : 22,
       serverUser: serverUser || 'ec2-user',
-      organizationId: user.organizationId
+      organizationId: user.organizationId,
+      userId: user.userId
     },
     include: { repositories: true }
   });

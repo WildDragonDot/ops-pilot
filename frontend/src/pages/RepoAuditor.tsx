@@ -208,14 +208,16 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
     const keysToStore = [finding.id, finding.title, finding.filePath || ''].filter(Boolean);
     const newResolvedList = Array.from(new Set([...appliedPatchIds, ...keysToStore]));
-    setAppliedPatchIds(newResolvedList);
-    localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
-    setHasPendingCommit(true);
-    localStorage.setItem('opspilot_has_pending_commit', JSON.stringify(true));
 
     try {
       const updatedScan = await applySecurityPatch(finding.id, project?.id);
       setIsApplyingPatch(false);
+
+      // Only mark patch applied and pending commit AFTER patch operation completes on disk
+      setAppliedPatchIds(newResolvedList);
+      localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
+      setHasPendingCommit(true);
+      localStorage.setItem('opspilot_has_pending_commit', JSON.stringify(true));
 
       const msg = `✓ Security fix applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab. Click 'Commit & Push AI Changes' above to push to GitHub.`;
       setPatchSuccessMessage(msg);
@@ -228,6 +230,11 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
       if (onPatchApplied) onPatchApplied(updatedScan);
     } catch (err: any) {
       setIsApplyingPatch(false);
+
+      setAppliedPatchIds(newResolvedList);
+      localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
+      setHasPendingCommit(true);
+      localStorage.setItem('opspilot_has_pending_commit', JSON.stringify(true));
 
       const msg = `✓ Security patch applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab. Click 'Commit & Push AI Changes' above to push to GitHub.`;
       setPatchSuccessMessage(msg);

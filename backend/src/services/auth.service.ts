@@ -17,16 +17,14 @@ export async function registerUser(email: string, password: string, name: string
     throw new Error('User with this email already exists.');
   }
 
-  let org = await prisma.organization.findFirst();
-  if (!org || orgName) {
-    const slug = (orgName || 'my-company').toLowerCase().replace(/[^a-z0-9]/g, '-');
-    org = await prisma.organization.create({
-      data: {
-        name: orgName || 'My Organization',
-        slug: `${slug}-${Date.now()}`
-      }
-    });
-  }
+  // Create a dedicated organization for each user account for privacy & isolation
+  const slugName = (orgName || `${name}'s Org`).toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const org = await prisma.organization.create({
+    data: {
+      name: orgName || `${name}'s Org`,
+      slug: `${slugName}-${Date.now()}`
+    }
+  });
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
@@ -115,12 +113,14 @@ export async function authenticateFirebaseUser(
     include: { organization: true }
   });
 
-  let org = user?.organization ? user.organization : await prisma.organization.findFirst();
+  let org = user?.organization;
   if (!org) {
+    const userNameClean = name || email.split('@')[0] || 'User';
+    const slugName = `${userNameClean}'s Org`.toLowerCase().replace(/[^a-z0-9]/g, '-');
     org = await prisma.organization.create({
       data: {
-        name: 'D-OpsPilot Workspace',
-        slug: `opspilot-${Date.now()}`
+        name: `${userNameClean}'s Workspace`,
+        slug: `${slugName}-${Date.now()}`
       }
     });
   }

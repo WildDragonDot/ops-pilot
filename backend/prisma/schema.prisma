@@ -30,6 +30,7 @@ model User {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects       Project[]
   notifications  Notification[]
 }
 
@@ -48,9 +49,11 @@ model Project {
   serverUser      String?
   environmentType String?      @default("Docker Compose")
   organizationId  String?
+  userId          String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   incidents       Incident[]
   repositories    Repository[]
 }
