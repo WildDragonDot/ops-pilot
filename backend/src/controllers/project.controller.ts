@@ -859,10 +859,11 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
   const repoName = gitUrl.split('/').pop()?.replace('.git', '') || 'app';
   const user = project?.serverUser || 'root';
-  const defaultDir = user === 'root' ? `/root/${repoName}` : `/home/${user}/${repoName}`;
   const customPath = requestedTargetPath || selectedPath || project?.rootPath;
+  const isOpsPilotSelfDir = customPath && (customPath.includes('ops-pilot/backend') || customPath.includes('opspilot-backend'));
+  const defaultDir = user === 'root' ? `/root/apps/${repoName}` : `/home/${user}/apps/${repoName}`;
 
-  const targetDir = customPath && !customPath.startsWith('/Users/') && !customPath.includes('Desktop')
+  const targetDir = customPath && !customPath.startsWith('/Users/') && !customPath.includes('Desktop') && !isOpsPilotSelfDir
     ? customPath
     : defaultDir;
 
@@ -946,7 +947,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         fi
         if command -v pm2 &> /dev/null; then
           echo "Launching application process with PM2..."
-          pm2 restart all 2>&1 || pm2 start index.js --name ${shellQuote(repoName)} 2>&1 || pm2 start server.js --name ${shellQuote(repoName)} 2>&1 || pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1 || true
+          pm2 restart ${shellQuote(repoName)} 2>&1 || pm2 start index.js --name ${shellQuote(repoName)} 2>&1 || pm2 start server.js --name ${shellQuote(repoName)} 2>&1 || pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1 || true
           pm2 save 2>&1 || true
         elif command -v node &> /dev/null; then
           echo "Launching via Node.js server entrypoint..."
