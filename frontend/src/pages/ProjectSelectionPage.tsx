@@ -60,42 +60,42 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans flex flex-col">
       
       {/* Standalone Landing Top Header */}
-      <header className="h-auto py-3 sm:h-16 bg-white dark:bg-[#0d1117] border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 md:px-10 flex flex-wrap sm:flex-nowrap items-center justify-between sticky top-0 z-40 shadow-xs gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-500 flex items-center justify-center shrink-0">
-            <Cpu className="w-5 h-5 animate-pulse" />
+      <header className="h-14 sm:h-16 bg-white dark:bg-[#0d1117] border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 md:px-10 flex items-center justify-between sticky top-0 z-40 shadow-xs gap-2">
+        {/* Left: Logo + Name */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="p-1.5 sm:p-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-500 flex items-center justify-center shrink-0">
+            <Cpu className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-slate-100">
+            <div className="flex items-center gap-1.5 flex-nowrap">
+              <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap">
                 D-OpsPilot AI
               </span>
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
+              <span className="text-[8px] sm:text-[9px] font-mono font-bold px-1 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest whitespace-nowrap shrink-0">
                 DevOps Agent
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[150px] sm:max-w-xs">
+            <p className="text-[9px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[120px] sm:max-w-xs">
               {user ? `${user.organizationName || 'Production Org'} • ${user.name}` : 'Autonomous DevOps AI'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
-          {/* Theme Toggle */}
+        {/* Right: Theme + Logout */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             onClick={toggleTheme}
-            className="p-1.5 sm:p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition"
+            className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition shrink-0"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
           </button>
 
-          {/* Logout Button */}
           {user && (
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span>Logout</span>
             </button>
           )}
