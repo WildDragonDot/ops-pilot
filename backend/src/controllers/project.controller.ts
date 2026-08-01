@@ -944,17 +944,19 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         sudo docker compose up -d --build 2>&1 || sudo docker-compose up -d --build 2>&1 || docker compose up -d --build 2>&1 || true
       elif [ -f "package.json" ]; then
         echo "Node.js application detected. Auditing runtime environment..."
+        export npm_config_engine_strict=false
+        export npm_config_ignore_scripts=true
+
         NODE_VER=$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
         if [ -n "$NODE_VER" ] && [ "$NODE_VER" -lt 20 ]; then
-          echo "[AI Auto-Upgrade] Target Node.js (v$NODE_VER) is outdated for modern ORMs/Prisma (requires Node 20+)."
-          echo "[AI Auto-Upgrade] Autonomously upgrading target server to Node.js 20 LTS..."
-          (curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash - && sudo yum install -y nodejs) 2>&1 || \
-          (curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - && sudo apt-get install -y nodejs) 2>&1 || true
+          echo "[AI Auto-Upgrade] Target Node.js (v$NODE_VER) detected. Bypassing engine locks & upgrading..."
+          (curl -sL https://rpm.nodesource.com/setup_20.x | sudo -n bash - && sudo -n yum install -y nodejs) 2>&1 || \
+          (curl -sL https://deb.nodesource.com/setup_20.x | sudo -n bash - && sudo -n apt-get install -y nodejs) 2>&1 || true
         fi
 
         if command -v npm &> /dev/null; then
-          echo "Running dependency installation..."
-          npm install --ignore-scripts 2>&1 || npm install 2>&1 || true
+          echo "Running dependency installation with engine bypass..."
+          npm install --ignore-scripts --no-engine-strict 2>&1 || npm install --ignore-scripts 2>&1 || npm install 2>&1 || true
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
         fi
