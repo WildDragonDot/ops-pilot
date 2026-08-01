@@ -1025,7 +1025,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
     if (hasError) {
       logs.push(
-        `[Google Gemini AI Engine] 🤖 Analyzing terminal deployment logs via Gemini AI (Gemini 1.5 Flash)...`
+        `[OpenAI & Google Gemini AI Engine] 🤖 Analyzing terminal deployment logs via OpenAI GPT-4o & Gemini AI...`
       );
 
       try {
@@ -1039,9 +1039,9 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
         if (geminiAnalysis) {
           logs.push(
-            `[Google Gemini Diagnosis] 🧠 ${geminiAnalysis.title || 'Deployment Exception Analysis'}`,
-            `[Gemini Root Cause] ${geminiAnalysis.rootCause}`,
-            `[Gemini Recovery Plan] 💡 Risk Level: ${geminiAnalysis.riskLevel} | Recommended Actions: ${geminiAnalysis.commands.join('; ') || 'Apply fallback flags'}`
+            `[OpenAI / Gemini AI Diagnosis] 🧠 ${geminiAnalysis.title || 'Deployment Exception Analysis'}`,
+            `[OpenAI & Gemini Root Cause] ${geminiAnalysis.rootCause}`,
+            `[OpenAI & Gemini Recovery Plan] 💡 Risk Level: ${geminiAnalysis.riskLevel} | Recommended Actions: ${geminiAnalysis.commands.join('; ') || 'Apply fallback flags'}`
           );
         }
       } catch (geminiErr) {
