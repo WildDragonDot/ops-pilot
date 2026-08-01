@@ -1015,7 +1015,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
           npm install 2>&1 || npm install --ignore-scripts 2>&1 || true
           if [ -d "prisma" ] || [ -f "prisma/schema.prisma" ]; then
             echo "[AI Toolchain] Generating Prisma Client ORM bindings..."
-            npx prisma generate 2>&1 || true
+            (export PATH="$HOME/.node22/bin:$PATH" && npx prisma generate 2>&1) || "$HOME/.node22/bin/npx" prisma generate 2>&1 || true
           fi
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
@@ -1028,6 +1028,12 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
           sudo -n ln -sf "\$HOME/.node22/bin/tsx" /usr/bin/tsx 2>/dev/null || true
         fi
 
+        # Extra verification for Prisma Client generation
+        if [ -f "prisma/schema.prisma" ] && [ ! -d "src/generated/prisma" ]; then
+          echo "[AI Toolchain Retry] Ensuring Prisma Client ORM bindings generated..."
+          (export PATH="$HOME/.node22/bin:$PATH" && npx prisma generate 2>&1) || true
+        fi
+
         echo "Clearing lingering process locks & freeing port 3000..."
         fuser -k -9 3000/tcp 2>/dev/null || true
         pkill -9 -f "tsx src/index.ts" 2>/dev/null || true
@@ -1036,6 +1042,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
         echo "Launching application process with PM2..."
         pm2 delete ${shellQuote(repoName)} 2>/dev/null || true
+        export PATH="$HOME/.node22/bin:$PATH"
         if [ -f "src/index.ts" ]; then
           pm2 start "npx tsx src/index.ts" --name ${shellQuote(repoName)} 2>&1
         elif [ -f "src/main.ts" ]; then
