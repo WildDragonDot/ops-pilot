@@ -287,57 +287,76 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     <div className="space-y-5 font-sans">
       
       {/* Top Repository Banner Card */}
-      <div className="bg-white dark:bg-[#0d1117] p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xs overflow-hidden">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#0d1117] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+        {/* Top subtle gradient line accent */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-500" />
+
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           
-          <div className="space-y-2.5 min-w-0">
+          {/* Left Repository Meta Info */}
+          <div className="space-y-3 min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-semibold font-mono shadow-xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-bold font-mono shadow-2xs">
                 <GitBranch className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 GitHub Repository Auditor
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-mono border border-slate-200 dark:border-slate-700">
-                <GitCommit className="w-3 h-3 text-slate-400" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-mono border border-slate-200 dark:border-slate-700 font-semibold">
+                <GitCommit className="w-3.5 h-3.5 text-slate-400" />
                 {project?.gitBranch || 'main'}
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-mono font-medium">
-                ● Live Protection Active
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live Protection Active
               </span>
             </div>
 
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-lg text-blue-600 dark:text-blue-400 shrink-0">
-                <ShieldCheck className="w-6 h-6" />
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200/80 dark:border-blue-800/80 rounded-xl text-blue-600 dark:text-blue-400 shrink-0 shadow-2xs">
+                <ShieldCheck className="w-7 h-7" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-xl font-bold text-slate-900 dark:text-slate-100 font-mono truncate">
+                <h1 className="text-base sm:text-xl font-extrabold text-slate-900 dark:text-white font-mono truncate tracking-tight">
                   {project?.gitUrl ? project.gitUrl.replace('https://github.com/', '') : 'No GitHub repository configured'}
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 sm:line-clamp-1">
-                  Last Scanned: {scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : 'Just now'} • <span className="font-semibold text-slate-700 dark:text-slate-300">{countAll} active risks</span> detected ({countResolved} resolved)
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1 font-sans">
+                  Last Scanned: <span className="font-semibold text-slate-700 dark:text-slate-300">{scan?.completedAt ? new Date(scan.completedAt).toLocaleString() : 'Just now'}</span> • <span className="font-bold text-rose-600 dark:text-rose-400">{countAll} active risks</span> ({countResolved} resolved)
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Overall Health Score & Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:justify-end gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 max-w-full overflow-hidden">
-            <div className="flex items-center justify-between sm:block text-left sm:text-right pr-0 sm:pr-3 border-b sm:border-b-0 sm:border-r border-slate-200 dark:border-slate-800 pb-2 sm:pb-0 shrink-0">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Security Index</span>
-              <div className="flex items-baseline gap-1 mt-0.5 font-mono">
-                <span className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{currentScore}</span>
-                <span className="text-[10px] font-medium text-slate-500">/ 100</span>
-                <span className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  {currentScore >= 90 ? 'Grade A+' : 'Grade B+'}
-                </span>
+          {/* Right Section: Security Index Badge + Action Buttons Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            
+            {/* Security Health Score Card */}
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-50 dark:bg-slate-900/80 rounded-xl border border-slate-200/80 dark:border-slate-800 shrink-0 shadow-2xs">
+              <div className="text-left font-mono">
+                <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Security Index</span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-none">{currentScore}</span>
+                  <span className="text-xs font-semibold text-slate-400">/100</span>
+                  <span className="ml-1.5 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    {currentScore >= 90 ? 'Grade A+' : 'Grade B+'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 max-w-full">
+            {/* Action Buttons Toolbar */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={onScanRepo}
+                disabled={isScanning}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1f883d] hover:bg-[#1a7f37] active:scale-[0.98] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
+                <span>{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
+              </button>
+
               <button
                 onClick={handleCommitAndPush}
                 disabled={isCommitting}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
                 title="Commit and Push all AI code fixes to remote GitHub branch"
               >
                 {isCommitting ? (
@@ -347,24 +366,18 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                 )}
                 <span>{isCommitting ? 'Pushing...' : 'Commit & Push AI Changes'}</span>
               </button>
+
               {Boolean(project?.gitUrl?.trim()) && Boolean(project?.serverHost?.trim()) && (
                 <button
                   onClick={() => setShowDeployServerModal(true)}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
                 >
                   <Rocket className="w-3.5 h-3.5" />
                   <span>Deploy Over Server</span>
                 </button>
               )}
-              <button
-                onClick={onScanRepo}
-                disabled={isScanning}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#1f883d] hover:bg-[#1a7f37] disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-                <span className="whitespace-nowrap">{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
-              </button>
             </div>
+
           </div>
 
         </div>
