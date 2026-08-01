@@ -210,20 +210,35 @@ export async function commitAndPushChanges(req: AuthenticatedRequest, res: Respo
     // Push changes with authenticated token URL
     const pushToken = headerGitToken || gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
     
-    let pushUrl = gitUrl;
-    if (pushUrl && pushToken && pushUrl.startsWith('https://')) {
-      const cleanUrl = pushUrl.replace(/^https:\/\//, '').replace(/^.*@/, '');
-      pushUrl = `https://${pushToken}@${cleanUrl}`;
+    let pushTarget = gitUrl;
+    if (pushTarget && pushToken && pushTarget.startsWith('https://')) {
+      const cleanUrl = pushTarget.replace(/^https:\/\//, '').replace(/^.*@/, '');
+      pushTarget = `https://${pushToken}@${cleanUrl}`;
     }
 
-    if (!pushToken && pushUrl && pushUrl.startsWith('https://')) {
-      throw new Error('GitHub Personal Access Token is required to push code. Please configure your GitHub token in Vault / Settings.');
-    }
-
-    if (pushUrl) {
-      execFileSync('git', ['push', pushUrl, targetBranch], { cwd: repoPath });
-    } else {
-      execFileSync('git', ['push', 'origin', targetBranch], { cwd: repoPath });
+    try {
+      if (pushTarget && pushToken) {
+        execFileSync('git', ['push', pushTarget, targetBranch], { 
+          cwd: repoPath,
+          env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+        });
+      } else {
+        execFileSync('git', ['push', 'origin', targetBranch], { 
+          cwd: repoPath,
+          env: { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+        });
+      }
+    } catch (pushErr: any) {
+      const pushMsg = pushErr?.stderr?.toString() || pushErr?.message || '';
+      if (!pushToken || pushMsg.includes('Could not read Username') || pushMsg.includes('terminal prompts disabled') || pushMsg.includes('Authentication failed')) {
+        return res.status(400).json({
+          success: false,
+          requiresToken: true,
+          error: 'GitHub Personal Access Token is required to push code. Please configure your GitHub token in Vault / Settings.',
+          message: 'GitHub Personal Access Token is required to push code. Please configure your GitHub token in Vault / Settings.'
+        });
+      }
+      throw pushErr;
     }
 
     if (user) {

@@ -262,7 +262,7 @@ export async function applySecurityPatch(findingId: string, projectId?: string):
   return data.scan;
 }
 
-export async function commitAndPushAIChanges(projectId?: string, customCommitMessage?: string): Promise<{ success: boolean; message: string; alreadyClean?: boolean }> {
+export async function commitAndPushAIChanges(projectId?: string, customCommitMessage?: string): Promise<{ success: boolean; message?: string; error?: string; requiresToken?: boolean; alreadyClean?: boolean }> {
   const data = await apiFetch<any>(`${API_BASE}/repositories/commit-push`, {
     method: 'POST',
     headers: await getAuthHeaders(projectId),

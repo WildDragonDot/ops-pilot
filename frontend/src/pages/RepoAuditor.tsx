@@ -26,6 +26,8 @@ import { applySecurityPatch, triggerAIDeployment, scanServerDirectoriesApi, comm
 import { useNotification } from '../context/NotificationContext';
 import { RepoAuditorSkeleton } from '../components/SkeletonLoader';
 
+import { OpsPilotVault } from '../services/vault';
+
 interface RepoAuditorProps {
   scan: Scan | null;
   project?: Project | null;
@@ -65,6 +67,8 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     }
   });
   const [patchSuccessMessage, setPatchSuccessMessage] = useState<string | null>(null);
+  const [showTokenModal, setShowTokenModal] = useState<boolean>(false);
+  const [tokenInput, setTokenInput] = useState<string>('');
 
   const [showDeployServerModal, setShowDeployServerModal] = useState<boolean>(false);
   const [showDeployLogsModal, setShowDeployLogsModal] = useState<boolean>(false);
@@ -246,13 +250,18 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     }
   };
 
-  const handleCommitAndPush = async () => {
+  const handleCommitAndPush = async (overrideToken?: string) => {
     setIsCommitting(true);
     try {
+      if (overrideToken && project?.id) {
+        await OpsPilotVault.setCredentials(project.id, { githubToken: overrideToken });
+      }
+
       const res = await commitAndPushAIChanges(project?.id);
       if (res?.success) {
         setHasPendingCommit(false);
         localStorage.setItem('opspilot_has_pending_commit', JSON.stringify(false));
+        setShowTokenModal(false);
 
         if (res.alreadyClean) {
           addNotification({
@@ -269,18 +278,28 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
           setPatchSuccessMessage(`✓ All AI changes committed & pushed to GitHub branch ${project?.gitBranch || 'main'}!`);
         }
       } else {
-        addNotification({
-          type: 'danger',
-          title: 'Git Push Failed',
-          message: res?.message || 'Failed to commit and push AI changes'
-        });
+        const msg = res?.message || res?.error || '';
+        if (res?.requiresToken || msg.includes('Token') || msg.includes('configure') || msg.includes('Username')) {
+          setShowTokenModal(true);
+        } else {
+          addNotification({
+            type: 'danger',
+            title: 'Git Push Failed',
+            message: msg || 'Failed to commit and push AI changes'
+          });
+        }
       }
     } catch (err: any) {
-      addNotification({
-        type: 'danger',
-        title: 'Commit Error',
-        message: err?.message || 'Failed to commit and push changes.'
-      });
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to commit and push changes.';
+      if (err?.response?.data?.requiresToken || errMsg.includes('Token') || errMsg.includes('configure') || errMsg.includes('Username')) {
+        setShowTokenModal(true);
+      } else {
+        addNotification({
+          type: 'danger',
+          title: 'Commit Error',
+          message: errMsg
+        });
+      }
     } finally {
       setIsCommitting(false);
     }
@@ -375,7 +394,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
               {hasPendingCommit && (
                 <button
-                  onClick={handleCommitAndPush}
+                  onClick={() => handleCommitAndPush()}
                   disabled={isCommitting}
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap animate-fadeIn"
                   title="Commit and Push all AI code fixes to remote GitHub branch"
@@ -840,6 +859,79 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                 className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md cursor-pointer transition"
               >
                 Close Console
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* GitHub Token Setup Modal */}
+      {showTokenModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-[#0d1117] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white font-mono">
+                    GitHub Authentication Required
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Personal Access Token (PAT) needed for push permissions
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTokenModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-mono font-bold text-lg p-1 cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                To commit and push AI security fixes directly to your remote repository on GitHub (<code className="font-mono text-purple-600 dark:text-purple-400">{project?.gitUrl}</code>), please enter your GitHub Personal Access Token:
+              </p>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase font-mono mb-1">
+                  GitHub Personal Access Token (PAT)
+                </label>
+                <input
+                  type="password"
+                  value={tokenInput}
+                  onChange={(e) => setTokenInput(e.target.value)}
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  🔒 Encrypted locally in your browser Client Vault. Never stored on server.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <button
+                onClick={() => setShowTokenModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (tokenInput.trim()) {
+                    handleCommitAndPush(tokenInput.trim());
+                  }
+                }}
+                disabled={!tokenInput.trim() || isCommitting}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+              >
+                {isCommitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                <span>Save Token & Push Code</span>
               </button>
             </div>
           </div>
