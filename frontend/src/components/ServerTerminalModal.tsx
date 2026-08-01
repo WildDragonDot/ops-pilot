@@ -153,6 +153,17 @@ const checkCommandSecurityRisk = (cmd: string): SecurityRiskResult | null => {
   return null;
 };
 
+const stripAnsi = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
+    .replace(/[\u001b\u009b]\[[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+    .replace(/\x1B\([B0K]/g, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
+};
+
 export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({ 
   isOpen, 
   onClose, 
@@ -325,10 +336,10 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
       const res = await executeCommandOnServer(execCmd, projectId, currentDir);
       const now = new Date();
       const timeStr = now.toTimeString().split(' ')[0];
-      let displayOutput = res.output;
+      let displayOutput = stripAnsi(res.output);
 
       if (isCdCommand && res.exitCode === 0) {
-        const lines = (res.output || '').trim().split('\n');
+        const lines = (displayOutput || '').trim().split('\n');
         const pwdResult = lines[lines.length - 1]?.trim();
         if (pwdResult && (pwdResult.startsWith('/') || pwdResult.startsWith('~'))) {
           setCurrentDir(pwdResult);
@@ -603,7 +614,7 @@ export const ServerTerminalModal: React.FC<ServerTerminalModalProps> = ({
                       ? 'bg-slate-50 text-title border-slate-200 shadow-inner dark:bg-slate-950/90 dark:text-slate-200 dark:border-slate-900'
                       : 'bg-rose-950/30 text-rose-300 border-rose-900/50 shadow-inner'
                   }`}>
-                    {item.output}
+                    {stripAnsi(item.output)}
                   </pre>
                 </div>
               ))}

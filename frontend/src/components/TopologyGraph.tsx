@@ -91,11 +91,11 @@ export const TopologyGraph: React.FC<TopologyGraphProps> = ({ project, environme
           statusText: 'NO SERVICES DISCOVERED',
           pipeline: ['SERVER_CONNECTED', 'IDLE'],
           nodes: [
-            {
-              id: 'empty_host',
-              label: 'Host Server Attached',
-              port: 22,
-              protocol: 'SSH',
+      {
+        id: 'empty_host',
+        label: `${project?.serverUser || 'root'}@${project?.serverHost || 'server'}`,
+        port: project?.serverPort || 22,
+        protocol: 'SSH',
               latency: 'N/A',
               status: 'RUNNING',
               icon: Server,

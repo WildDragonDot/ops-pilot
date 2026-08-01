@@ -56,20 +56,85 @@ export interface SSHCredentials {
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import crypto from 'crypto';
 
-function getSSHKeyFlag(creds: SSHCredentials): string {
+interface KeyFlagResult {
+  flag: string;
+  cleanup?: () => void;
+}
+
+function resolveKeyPath(p: string): string | null {
+  const trimmed = p.trim();
+  if (!trimmed) return null;
+
+  let expanded = trimmed;
+  if (expanded.startsWith('~')) {
+    expanded = path.join(os.homedir(), expanded.slice(1));
+  } else if (!path.isAbsolute(expanded)) {
+    const inSshDir = path.join(os.homedir(), '.ssh', expanded);
+    if (fs.existsSync(inSshDir)) {
+      return inSshDir;
+    }
+  }
+
+  if (fs.existsSync(expanded)) {
+    return expanded;
+  }
+
+  return null;
+}
+
+function getSSHKeyFlag(creds: SSHCredentials): KeyFlagResult {
+  const keyInput = (creds.key || creds.sshKey || '').trim();
+
+  if (keyInput) {
+    if (keyInput.includes('-----BEGIN') || keyInput.includes('PRIVATE KEY') || keyInput.includes('\n')) {
+      try {
+        const tmpDir = path.join(os.tmpdir(), 'opspilot_keys');
+        if (!fs.existsSync(tmpDir)) {
+          fs.mkdirSync(tmpDir, { recursive: true, mode: 0o700 });
+        }
+        const hash = crypto.createHash('sha256').update(keyInput).digest('hex').substring(0, 12);
+        const tempKeyPath = path.join(tmpDir, `id_rsa_${hash}`);
+        const formattedKey = keyInput.endsWith('\n') ? keyInput : `${keyInput}\n`;
+        fs.writeFileSync(tempKeyPath, formattedKey, { mode: 0o600 });
+        return {
+          flag: `-i "${tempKeyPath}"`,
+          cleanup: () => {
+            try {
+              if (fs.existsSync(tempKeyPath)) {
+                fs.unlinkSync(tempKeyPath);
+              }
+            } catch {}
+          }
+        };
+      } catch (err) {
+        console.error('Failed to write temporary SSH key file:', err);
+      }
+    } else {
+      const resolved = resolveKeyPath(keyInput);
+      if (resolved) {
+        return { flag: `-i "${resolved}"` };
+      }
+    }
+  }
+
   const home = os.homedir();
   const defaultKeys = [
     path.join(home, '.ssh', 'id_rsa_no_pass'),
     path.join(home, '.ssh', 'id_rsa'),
-    path.join(home, '.ssh', 'id_ed25519')
+    path.join(home, '.ssh', 'id_ed25519'),
+    path.join(home, '.ssh', 'id_ecdsa'),
+    path.join(home, '.ssh', 'id_dsa')
   ];
+
   for (const k of defaultKeys) {
     if (fs.existsSync(k)) {
-      return `-i "${k}"`;
+      return { flag: `-i "${k}"` };
     }
   }
-  return '';
+
+  return { flag: '' };
 }
 
 export async function testSSHConnection(creds: SSHCredentials): Promise<{ success: boolean; message: string; output?: string }> {
@@ -77,7 +142,8 @@ export async function testSSHConnection(creds: SSHCredentials): Promise<{ succes
     return { success: false, message: 'Host IP/Domain is required' };
   }
 
-  // In production / local sandbox mode, verify host reachability or SSH connection
+  const { flag: keyFlag, cleanup } = getSSHKeyFlag(creds);
+
   try {
     const host = assertSafeHost(creds.host);
     const user = assertSafeUser(creds.user);
@@ -88,10 +154,15 @@ export async function testSSHConnection(creds: SSHCredentials): Promise<{ succes
       return { success: true, message: 'Local sandbox environment verified successfully', output: stdout };
     }
 
-    const keyFlag = getSSHKeyFlag(creds);
-    // Remote host connection test using ssh command timeout
-    const command = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${keyFlag} -p ${port} ${user}@${host} "echo Connection_OK"`;
-    const { stdout } = await execAsync(command);
+    let authPrefix = '';
+    let batchOpt = '-o BatchMode=yes';
+    if (!keyFlag && creds.password) {
+      authPrefix = `sshpass -p ${shellQuote(creds.password)} `;
+      batchOpt = '';
+    }
+
+    const command = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o ConnectTimeout=8 ${keyFlag} -p ${port} ${user}@${host} "echo Connection_OK"`;
+    const { stdout } = await execAsync(command, { timeout: 12000 });
 
     if (stdout.includes('Connection_OK')) {
       return { success: true, message: `Successfully authenticated SSH session with ${user}@${host}:${port}`, output: stdout };
@@ -104,32 +175,45 @@ export async function testSSHConnection(creds: SSHCredentials): Promise<{ succes
       return { success: false, message: `Permission denied (publickey) for ${creds.user || 'ubuntu'}@${creds.host}:${creds.port || 22}` };
     }
     return { success: false, message: rawErr.trim() || `Failed to connect to ${creds.host}:${creds.port || 22}` };
+  } finally {
+    if (cleanup) cleanup();
   }
+}
+
+export function stripAnsiCodes(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
+    .replace(/[\u001b\u009b]\[[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+    .replace(/\x1B\([B0K]/g, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
 }
 
 export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): Promise<string> {
   if (!creds.host || creds.host === 'localhost' || creds.host === '127.0.0.1') {
     const { stdout } = await execAsync(cmd);
-    return stdout;
+    return stripAnsiCodes(stdout);
   }
 
   const host = assertSafeHost(creds.host);
   const user = assertSafeUser(creds.user || 'root');
   const port = normalizePort(creds.port);
-  const keyFlag = getSSHKeyFlag(creds);
+  const { flag: keyFlag, cleanup } = getSSHKeyFlag(creds);
 
   let safeCmd = cmd.trim();
   const c = safeCmd.toLowerCase();
 
-  // Backend Security Shield Guardrail
   if (c.includes('rm -rf /') || c.includes('rm -r /') || c.includes('mkfs') || c.includes(':(){ :|:& };:') || c === 'reboot' || c === 'shutdown' || c.includes('poweroff')) {
+    if (cleanup) cleanup();
     return '[SECURITY SHIELD BLOCKED] High-risk destructive command intercepted by D-OpsPilot AI Security Engine. Execution denied on remote host.';
   }
 
-  if (safeCmd === 'htop' || safeCmd.includes('htop')) {
-    safeCmd = 'top -b -n 1';
-  } else if (safeCmd === 'top') {
-    safeCmd = 'top -b -n 1';
+  if (c === 'htop' || c.startsWith('htop ') || c.includes('htop')) {
+    safeCmd = 'top -b -n 1 | head -n 30';
+  } else if (c === 'top') {
+    safeCmd = 'top -b -n 1 | head -n 30';
   } else if (safeCmd.startsWith('docker ') || safeCmd === 'docker') {
     safeCmd = `sudo ${safeCmd}`;
   }
@@ -139,19 +223,28 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
     safeCmd = `cd ${shellQuote(projectPath)} 2>/dev/null || true; ${safeCmd}`;
   }
 
-  const sshCmd = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o LogLevel=ERROR ${keyFlag} -p ${port} ${user}@${host} "export TERM=xterm-256color; ${safeCmd.replace(/"/g, '\\"')}"`;
+  let authPrefix = '';
+  let batchOpt = '-o BatchMode=yes';
+  if (!keyFlag && creds.password) {
+    authPrefix = `sshpass -p ${shellQuote(creds.password)} `;
+    batchOpt = '';
+  }
+
+  const sshCmd = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o LogLevel=ERROR ${keyFlag} -p ${port} ${user}@${host} "export TERM=dumb; ${safeCmd.replace(/"/g, '\\"')}"`;
 
   try {
-    const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'xterm-256color' } });
-    const output = (stdout + (stderr ? `\n${stderr}` : '')).trim();
+    const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'dumb' }, timeout: 25000 });
+    const output = stripAnsiCodes((stdout + (stderr ? `\n${stderr}` : '')).trim());
     return output;
   } catch (err: any) {
     const rawErr = (err.stdout || '') + (err.stderr ? `\n${err.stderr}` : '') || err.message;
     if (rawErr.includes('Command failed:')) {
       const parts = rawErr.split('\n');
-      return parts.slice(1).join('\n').trim() || rawErr;
+      return stripAnsiCodes(parts.slice(1).join('\n').trim() || rawErr);
     }
-    return rawErr;
+    return stripAnsiCodes(rawErr);
+  } finally {
+    if (cleanup) cleanup();
   }
 }
 

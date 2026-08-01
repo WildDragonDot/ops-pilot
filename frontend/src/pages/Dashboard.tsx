@@ -599,16 +599,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (env.dynamicNodes.length === 0) {
       nodeDataMap = {
         empty_host: {
-          name: 'Host Server Attached',
-          type: 'Empty Server',
-          port: '22',
+          name: `SSH Server: ${project?.serverHost || 'ubuntu@54.237.198.207'}`,
+          type: `Connected via ${project?.serverUser || 'ubuntu'}@${project?.serverHost || 'server'}`,
+          port: `${project?.serverPort || 22}`,
           status: 'RUNNING',
           latency: 'N/A',
           cpu: 'Idle',
           memory: 'Idle',
           uptime: 'Live',
           logs: [
-            '[INFO] SSH Server Attached (Run Test Connection to verify authentication)',
+            `[INFO] SSH Connection Active: ${project?.serverUser || 'ubuntu'}@${project?.serverHost || 'server'}:${project?.serverPort || 22}`,
             '[WARN] No Docker containers found on host',
             '[ACTION] Awaiting deployment...'
           ]

@@ -70,7 +70,7 @@ async function startServer() {
   app.use('/api', apiRouter);
 
   // ─── Health check ─────────────────────────────────────────────────────────────
-  app.get('/health', (_req, res) => {
+  const healthHandler = (_req: express.Request, res: express.Response) => {
     res.json({
       status: 'OK',
       service: 'D-OpsPilot AI Backend',
@@ -79,7 +79,10 @@ async function startServer() {
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString()
     });
-  });
+  };
+
+  app.get('/health', healthHandler);
+  app.get('/api/health', healthHandler);
 
   // ─── 404 — must come after all routes ────────────────────────────────────────
   app.use(notFound);

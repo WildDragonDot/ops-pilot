@@ -26,6 +26,7 @@ out/
 *.db
 *.db-journal
 backend/prisma/dev.db
+backend/data/
 
 # Logs and temporary files
 *.log
