@@ -971,26 +971,37 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
         fi
-        if command -v pm2 &> /dev/null; then
-          echo "Launching application process with PM2..."
-          pm2 restart ${shellQuote(repoName)} 2>&1 || pm2 start index.js --name ${shellQuote(repoName)} 2>&1 || pm2 start server.js --name ${shellQuote(repoName)} 2>&1 || pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1 || true
-          pm2 save 2>&1 || true
-        elif command -v node &> /dev/null; then
-          echo "Launching via Node.js server entrypoint..."
-          if [ -f "server.js" ]; then
-            nohup node server.js > app.log 2>&1 &
-          elif [ -f "index.js" ]; then
-            nohup node index.js > app.log 2>&1 &
-          elif [ -f "app.js" ]; then
-            nohup node app.js > app.log 2>&1 &
-          elif [ -f "src/server.js" ]; then
-            nohup node src/server.js > app.log 2>&1 &
-          elif [ -f "src/index.js" ]; then
-            nohup node src/index.js > app.log 2>&1 &
-          else
-            nohup npm start > app.log 2>&1 &
-          fi
+        # Auto-provision PM2 process manager & TS engine if missing
+        if ! command -v pm2 &> /dev/null; then
+          echo "[AI Toolchain] Auto-installing PM2 process manager & TSX engine..."
+          npm install -g pm2 tsx 2>&1 || true
+          sudo -n ln -sf "\$HOME/.node22/bin/pm2" /usr/bin/pm2 2>/dev/null || true
+          sudo -n ln -sf "\$HOME/.node22/bin/tsx" /usr/bin/tsx 2>/dev/null || true
         fi
+
+        echo "Launching application process with PM2..."
+        pm2 restart ${shellQuote(repoName)} 2>&1 || (
+          if [ -f "src/index.ts" ]; then
+            pm2 start "npx tsx src/index.ts" --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "src/main.ts" ]; then
+            pm2 start "npx tsx src/main.ts" --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "src/app.ts" ]; then
+            pm2 start "npx tsx src/app.ts" --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "index.js" ]; then
+            pm2 start index.js --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "server.js" ]; then
+            pm2 start server.js --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "app.js" ]; then
+            pm2 start app.js --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "src/index.js" ]; then
+            pm2 start src/index.js --name ${shellQuote(repoName)} 2>&1
+          elif [ -f "src/server.js" ]; then
+            pm2 start src/server.js --name ${shellQuote(repoName)} 2>&1
+          else
+            pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1 || pm2 start npm --name ${shellQuote(repoName)} -- run dev 2>&1
+          fi
+        ) || true
+        pm2 save 2>&1 || true
       elif [ -f "requirements.txt" ] || [ -f "main.py" ] || [ -f "app.py" ]; then
         echo "Python application detected. Launching process..."
         if [ -f "requirements.txt" ]; then
