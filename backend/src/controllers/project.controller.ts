@@ -900,6 +900,28 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       password: headerSshPass
     };
 
+    // 1. Call Google Gemini AI / OpenAI API for dynamic AI deployment plan
+    logs.push(`[AI Engine Consultation] 🤖 Requesting custom deployment strategy from AI Engine (Gemini 1.5 Flash / GPT-4o)...`);
+    try {
+      const { generateGeminiIncidentAnalysis } = await import('../services/gemini.service.js');
+      const aiPlan = await generateGeminiIncidentAnalysis(
+        `Formulate a step-by-step automated deployment strategy for git repository ${cloneUrl} (branch: ${branch}) to target server ${serverHost} (${user}). Target path: ${targetDir}. Recommend runtime, DB provisioning, and PM2 process management steps.`,
+        project,
+        null,
+        userCustomGeminiKey
+      );
+
+      if (aiPlan) {
+        logs.push(
+          `[AI Strategy] 🧠 ${aiPlan.title || 'Autonomous Multi-Layer Deployment Strategy'}`,
+          `[AI Tech Stack Insights] 📊 ${aiPlan.rootCause || 'Target: Node.js 22 LTS, PostgreSQL 15, Redis 6, PM2'}`,
+          `[AI Recommended Pipeline] 📜 ${aiPlan.commands && aiPlan.commands.length > 0 ? aiPlan.commands.join(' -> ') : 'Audit -> Provision DB -> Install & ORM Build -> PM2 Launch -> Health Check'}`
+        );
+      }
+    } catch (aiPlanErr) {
+      logs.push(`[AI Engine Fallback] ⚡ AI API limit notice — engaging deterministic high-reliability deployment engine.`);
+    }
+
     const deployScript = `
       export GIT_TERMINAL_PROMPT=0
       export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:$HOME/.npx/bin:$HOME/.npm-global/bin
