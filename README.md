@@ -6,7 +6,7 @@
 [![Build: Passing](https://img.shields.io/badge/Build-Passing-emerald.svg)]()
 [![Security: WebCrypto--AES--256](https://img.shields.io/badge/Security-Zero--Knowledge--WebCrypto-purple.svg)]()
 [![AI Engine: Gemini--3.6--Flash--&--GPT--4o](https://img.shields.io/badge/AI--Engine-Gemini--3.6--Flash--%26--GPT--4o-amber.svg)]()
-[![Target Host: 54.237.198.207](https://img.shields.io/badge/Target--Host-54.237.198.207-blue.svg)](https://dopspilot.chandandev.online)
+[![Target Host: Production Server](https://img.shields.io/badge/Target--Host-dopspilot.chandandev.online-blue.svg)](https://dopspilot.chandandev.online)
 
 D-OpsPilot AI is an enterprise-grade, evidence-driven autonomous DevOps & SRE AI Agent. It bridges production operations with intelligence — inspecting live microservice container logs, diagnosing complex root-cause outages, correlating recent git commits with failures, executing zero-downtime deployments, and automating server health verification with human-in-the-loop safety guardrails.
 
@@ -35,7 +35,7 @@ graph TD
         Backend -->|Strict Guardrails| Policy[🛡️ Forbidden Commands Security Filter]
     end
     
-    subgraph Target Production Infrastructure: 54.237.198.207
+    subgraph Target Production Infrastructure: dopspilot.chandandev.online
         Backend -->|Encrypted SSH2 Tunnel| Host[🐧 Ubuntu 26.04 AWS Server]
         Host --> Docker[🐳 Docker Microservices Engine]
         Docker --> PG[(PostgreSQL Database)]
@@ -226,14 +226,14 @@ cd frontend && npx tsc --noEmit
 
 ## 🌐 Production Server Deployment
 
-Deploy changes to production server `ubuntu@54.237.198.207`:
+Deploy changes to production server `ubuntu@<YOUR_SERVER_IP>`:
 
 ```bash
 ./deploy-to-server.sh
 ```
 
 Deployment Script Steps:
-1. Verifies SSH connectivity to `ubuntu@54.237.198.207`.
+1. Verifies SSH connectivity to target production server.
 2. Syncs backend and frontend source files via SCP.
 3. Compiles backend TypeScript (`tsc`) and restarts PM2 (`opspilot-backend`).
 4. Builds Vite production bundle (`vite build`) and reloads Nginx proxy.
@@ -265,16 +265,16 @@ Live Application URL: **`https://dopspilot.chandandev.online`**
 
 ```bash
 # View backend application logs on production server
-ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'pm2 logs opspilot-backend'
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@<YOUR_SERVER_IP> 'pm2 logs opspilot-backend'
 
 # Restart backend service
-ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'pm2 restart opspilot-backend'
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@<YOUR_SERVER_IP> 'pm2 restart opspilot-backend'
 
 # View Nginx access & error logs
-ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'sudo tail -f /var/log/nginx/error.log'
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@<YOUR_SERVER_IP> 'sudo tail -f /var/log/nginx/error.log'
 
 # Reload Nginx server configuration
-ssh -i ~/.ssh/id_rsa_no_pass ubuntu@54.237.198.207 'sudo systemctl reload nginx'
+ssh -i ~/.ssh/id_rsa_no_pass ubuntu@<YOUR_SERVER_IP> 'sudo systemctl reload nginx'
 ```
 
 ---
