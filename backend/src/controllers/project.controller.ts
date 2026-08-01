@@ -945,33 +945,27 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       elif [ -f "package.json" ]; then
         echo "Node.js application detected. Auditing runtime environment..."
         export npm_config_engine_strict=false
-        export npm_config_ignore_scripts=true
 
-        # Clean stale prisma modules that lock preinstall scripts
+        # Clean stale prisma modules
         rm -rf node_modules/prisma node_modules/.prisma 2>/dev/null || true
 
-        # Auto-provision Node 20 LTS via NVM if target system Node < 20
-        export NVM_DIR="\$HOME/.nvm"
-        [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" 2>/dev/null || true
-
-        NODE_VER=\$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ -z "\$NODE_VER" ] || [ "\$NODE_VER" -lt 20 ]; then
-          echo "[AI Auto-Upgrade] Target Node.js (v\${NODE_VER:-none}) is below v20 required by Prisma/ORM."
-          echo "[AI Auto-Upgrade] Provisioning Node 20 LTS environment..."
-          if [ ! -d "\$NVM_DIR" ]; then
-            curl -sO https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh && bash install.sh 2>&1 || true
-            rm -f install.sh 2>/dev/null || true
-            [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" 2>/dev/null || true
+        # Standalone Node 20 LTS auto-provisioner (user-space, zero-sudo)
+        SYS_NODE_VER=\$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ -z "\$SYS_NODE_VER" ] || [ "\$SYS_NODE_VER" -lt 20 ]; then
+          if [ ! -x "\$HOME/.node20/bin/node" ]; then
+            echo "[AI Auto-Upgrade] System Node.js is v\${SYS_NODE_VER:-none}. Provisioning Node.js 20 LTS runtime..."
+            mkdir -p "\$HOME/.node20"
+            curl -fsSL https://nodejs.org/dist/v20.11.1/node-v20.11.1-linux-x64.tar.gz | tar -xz -C "\$HOME/.node20" --strip-components=1 2>&1 || true
           fi
-          if command -v nvm &> /dev/null; then
-            nvm install 20 2>&1 || true
-            nvm use 20 2>&1 || true
+          if [ -x "\$HOME/.node20/bin/node" ]; then
+            export PATH="\$HOME/.node20/bin:\$PATH"
+            echo "[AI Auto-Upgrade Verified] Active Node.js: \$(node -v)"
           fi
         fi
 
         if command -v npm &> /dev/null; then
           echo "Running dependency installation..."
-          npm install --ignore-scripts --no-engine-strict 2>&1 || npm install --ignore-scripts 2>&1 || npm install 2>&1 || true
+          npm install 2>&1 || npm install --ignore-scripts 2>&1 || true
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
         fi
@@ -1080,7 +1074,8 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
       const healScript = `
         cd ${shellQuote(targetDir)} 2>/dev/null || true
-        export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+        [ -x "\$HOME/.node20/bin/node" ] && export PATH="\$HOME/.node20/bin:\$PATH"
+        export PATH=\$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
         
         # Clean any git locks if present
         rm -f .git/index.lock 2>/dev/null || true
