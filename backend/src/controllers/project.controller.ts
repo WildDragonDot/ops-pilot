@@ -1025,23 +1025,40 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
     if (hasError) {
       logs.push(
-        `[AI Self-Healing Engine] 🤖 AI Agent (Gemini / GPT-4o) detected a deployment issue. Analyzing server error logs...`
+        `[Google Gemini AI Engine] 🤖 Analyzing terminal deployment logs via Gemini AI (Gemini 1.5 Flash)...`
       );
+
+      try {
+        const { generateGeminiIncidentAnalysis } = await import('../services/gemini.service.js');
+        const geminiAnalysis = await generateGeminiIncidentAnalysis(
+          `Analyze this deployment failure log on server ${serverHost} and recommend automated remediation:\n\n${remoteOut.substring(0, 3000)}`,
+          project,
+          null,
+          userCustomGeminiKey
+        );
+
+        if (geminiAnalysis) {
+          logs.push(
+            `[Google Gemini Diagnosis] 🧠 ${geminiAnalysis.title || 'Deployment Exception Analysis'}`,
+            `[Gemini Root Cause] ${geminiAnalysis.rootCause}`,
+            `[Gemini Recovery Plan] 💡 Risk Level: ${geminiAnalysis.riskLevel} | Recommended Actions: ${geminiAnalysis.commands.join('; ') || 'Apply fallback flags'}`
+          );
+        }
+      } catch (geminiErr) {
+        // Fallback silently if Gemini API key not present or rate limited
+      }
 
       try {
         const { summarizeLogsWithAI } = await import('../services/openai.service.js');
         const aiAnalysis = await summarizeLogsWithAI(remoteOut, userCustomKey, userCustomGeminiKey);
         if (aiAnalysis) {
           logs.push(
-            `[AI Agent Log Summary] 📊 ${aiAnalysis.summary}`,
-            `[AI Agent Recommendation] 💡 ${aiAnalysis.recommendation}`
+            `[AI Agent Summary] 📊 ${aiAnalysis.summary}`,
+            `[AI Recommendation] 💡 ${aiAnalysis.recommendation}`
           );
-          if (aiAnalysis.errors && aiAnalysis.errors.length > 0) {
-            logs.push(`[AI Detected Error Cause] ⚠️ ${aiAnalysis.errors[0]}`);
-          }
         }
       } catch (aiErr) {
-        // Fallback silently to deterministic self-healing
+        // Fallback silently
       }
 
       logs.push(`[AI Self-Healing Engine] 🔧 Executing autonomous server repair & process recovery...`);
