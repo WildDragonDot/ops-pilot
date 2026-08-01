@@ -842,6 +842,8 @@ export async function checkDeploymentGap(req: AuthenticatedRequest, res: Respons
 
 export async function executeAIDeployment(req: AuthenticatedRequest, res: Response) {
   const { projectId, targetPath: requestedTargetPath, selectedPath } = req.body;
+  const userCustomKey = getHeaderString(req?.headers ? req.headers['x-openai-key'] : undefined);
+  const userCustomGeminiKey = getHeaderString(req?.headers ? req.headers['x-gemini-key'] : undefined);
   const orgId = req.user?.organizationId;
   const project = projectId
     ? await prisma.project.findFirst({
@@ -1021,9 +1023,26 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
     if (hasError) {
       logs.push(
-        `[AI Self-Healing Engine] 🤖 AI Agent detected a deployment issue. Analyzing server error logs...`,
-        `[AI Self-Healing Engine] 🔧 Executing autonomous server repair & process recovery...`
+        `[AI Self-Healing Engine] 🤖 AI Agent (Gemini / GPT-4o) detected a deployment issue. Analyzing server error logs...`
       );
+
+      try {
+        const { summarizeLogsWithAI } = await import('../services/openai.service.js');
+        const aiAnalysis = await summarizeLogsWithAI(remoteOut, userCustomKey, userCustomGeminiKey);
+        if (aiAnalysis) {
+          logs.push(
+            `[AI Agent Log Summary] 📊 ${aiAnalysis.summary}`,
+            `[AI Agent Recommendation] 💡 ${aiAnalysis.recommendation}`
+          );
+          if (aiAnalysis.errors && aiAnalysis.errors.length > 0) {
+            logs.push(`[AI Detected Error Cause] ⚠️ ${aiAnalysis.errors[0]}`);
+          }
+        }
+      } catch (aiErr) {
+        // Fallback silently to deterministic self-healing
+      }
+
+      logs.push(`[AI Self-Healing Engine] 🔧 Executing autonomous server repair & process recovery...`);
 
       const healScript = `
         cd ${shellQuote(targetDir)} 2>/dev/null || true
