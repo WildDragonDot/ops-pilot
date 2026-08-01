@@ -273,10 +273,10 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
           </div>
 
           {/* Overall Health Score Ring Card */}
-          <div className="flex items-center justify-between sm:justify-end gap-5 bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="text-left sm:text-right">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:justify-end gap-3 sm:gap-5 bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between sm:block text-left sm:text-right">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Security Health Index</span>
-              <div className="flex items-baseline gap-1 mt-0.5">
+              <div className="flex items-baseline gap-1 mt-0.5 font-mono">
                 <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{currentScore}</span>
                 <span className="text-xs font-medium text-slate-500">/ 100</span>
                 <span className="ml-1.5 text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
@@ -285,11 +285,11 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 dark:border-slate-800">
               {Boolean(project?.gitUrl?.trim()) && Boolean(project?.serverHost?.trim()) && (
                 <button
                   onClick={() => setShowDeployServerModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-md shadow-xs transition cursor-pointer"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold rounded-md shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <Rocket className="w-3.5 h-3.5" />
                   <span>Deploy Over Server</span>
@@ -298,10 +298,10 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
               <button
                 onClick={onScanRepo}
                 disabled={isScanning}
-                className="flex items-center gap-2 px-4 py-2 bg-[#1f883d] hover:bg-[#1a7f37] disabled:opacity-50 text-white text-xs font-semibold rounded-md shadow-xs transition cursor-pointer"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#1f883d] hover:bg-[#1a7f37] disabled:opacity-50 text-white text-xs font-semibold rounded-md shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-                <span>{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
+                <span className="whitespace-nowrap">{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
               </button>
             </div>
           </div>
