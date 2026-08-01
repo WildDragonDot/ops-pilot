@@ -21,11 +21,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const sanitizeUser = (u: User | null): User | null => {
+  if (!u) return null;
+  if (!u.organizationName || u.organizationName === 'Acme Operations Corp' || u.organizationName === 'acme-corp') {
+    return { ...u, organizationName: 'OpsPilot Production Org' };
+  }
+  return u;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(localStorage.getItem('opspilot_token'));
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('opspilot_user');
-    return saved ? JSON.parse(saved) : null;
+    return saved ? sanitizeUser(JSON.parse(saved)) : null;
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -47,8 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           const data = await res.json();
           if (data.user) {
-            setUser(data.user);
-            localStorage.setItem('opspilot_user', JSON.stringify(data.user));
+            const clean = sanitizeUser(data.user)!;
+            setUser(clean);
+            localStorage.setItem('opspilot_user', JSON.stringify(clean));
           } else {
             logout();
           }
@@ -63,10 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [token]);
 
   const login = (newToken: string, newUser: User) => {
+    const clean = sanitizeUser(newUser)!;
     setToken(newToken);
-    setUser(newUser);
+    setUser(clean);
     localStorage.setItem('opspilot_token', newToken);
-    localStorage.setItem('opspilot_user', JSON.stringify(newUser));
+    localStorage.setItem('opspilot_user', JSON.stringify(clean));
   };
 
   const logout = () => {
