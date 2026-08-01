@@ -968,6 +968,10 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         if command -v npm &> /dev/null; then
           echo "Running dependency installation..."
           npm install 2>&1 || npm install --ignore-scripts 2>&1 || true
+          if [ -d "prisma" ] || [ -f "prisma/schema.prisma" ]; then
+            echo "[AI Toolchain] Generating Prisma Client ORM bindings..."
+            npx prisma generate 2>&1 || true
+          fi
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
         fi
