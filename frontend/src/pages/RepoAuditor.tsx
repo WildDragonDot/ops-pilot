@@ -56,6 +56,14 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
   });
   const [isApplyingPatch, setIsApplyingPatch] = useState<boolean>(false);
   const [isCommitting, setIsCommitting] = useState<boolean>(false);
+  const [hasPendingCommit, setHasPendingCommit] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('opspilot_has_pending_commit');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
   const [patchSuccessMessage, setPatchSuccessMessage] = useState<string | null>(null);
 
   const [showDeployServerModal, setShowDeployServerModal] = useState<boolean>(false);
@@ -202,24 +210,26 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     const newResolvedList = Array.from(new Set([...appliedPatchIds, ...keysToStore]));
     setAppliedPatchIds(newResolvedList);
     localStorage.setItem('opspilot_resolved_patches', JSON.stringify(newResolvedList));
+    setHasPendingCommit(true);
+    localStorage.setItem('opspilot_has_pending_commit', JSON.stringify(true));
 
     try {
       const updatedScan = await applySecurityPatch(finding.id, project?.id);
       setIsApplyingPatch(false);
 
-      const msg = `✓ Security fix applied to ${finding.filePath || 'source file'} & committed to Git! Risk moved to Resolved tab.`;
+      const msg = `✓ Security fix applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab. Click 'Commit & Push AI Changes' above to push to GitHub.`;
       setPatchSuccessMessage(msg);
       addNotification({
         type: 'success',
-        title: 'Security Patch Applied & Committed',
-        message: `Vulnerability in ${finding.filePath || 'source file'} resolved and committed to repository.`
+        title: 'Security Patch Applied',
+        message: `Vulnerability in ${finding.filePath || 'source file'} resolved.`
       });
 
       if (onPatchApplied) onPatchApplied(updatedScan);
     } catch (err: any) {
       setIsApplyingPatch(false);
 
-      const msg = `✓ Security patch applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab.`;
+      const msg = `✓ Security patch applied to ${finding.filePath || 'source file'}! Risk moved to Resolved tab. Click 'Commit & Push AI Changes' above to push to GitHub.`;
       setPatchSuccessMessage(msg);
       addNotification({
         type: 'success',
@@ -234,6 +244,9 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     try {
       const res = await commitAndPushAIChanges(project?.id);
       if (res?.success) {
+        setHasPendingCommit(false);
+        localStorage.setItem('opspilot_has_pending_commit', JSON.stringify(false));
+
         if (res.alreadyClean) {
           addNotification({
             type: 'info',
@@ -353,19 +366,21 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                 <span>{isScanning ? 'Scanning...' : 'Run AI Audit'}</span>
               </button>
 
-              <button
-                onClick={handleCommitAndPush}
-                disabled={isCommitting}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
-                title="Commit and Push all AI code fixes to remote GitHub branch"
-              >
-                {isCommitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <UploadCloud className="w-3.5 h-3.5" />
-                )}
-                <span>{isCommitting ? 'Pushing...' : 'Commit & Push AI Changes'}</span>
-              </button>
+              {hasPendingCommit && (
+                <button
+                  onClick={handleCommitAndPush}
+                  disabled={isCommitting}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap animate-fadeIn"
+                  title="Commit and Push all AI code fixes to remote GitHub branch"
+                >
+                  {isCommitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <UploadCloud className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isCommitting ? 'Pushing...' : 'Commit & Push AI Changes'}</span>
+                </button>
+              )}
 
               {Boolean(project?.gitUrl?.trim()) && Boolean(project?.serverHost?.trim()) && (
                 <button
