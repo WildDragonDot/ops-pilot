@@ -18,7 +18,8 @@ import {
   Check,
   Radio,
   Layers,
-  Globe
+  Globe,
+  Smartphone
 } from 'lucide-react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, githubProvider } from '../config/firebase';
@@ -224,9 +225,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
           className="lg:col-span-7 space-y-7"
         >
           
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold font-mono shadow-xs">
-            <Zap className="w-3.5 h-3.5 text-blue-400" />
-            <span>Autonomous Production Failure Copilot v2.5</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold font-mono shadow-xs">
+              <Zap className="w-3.5 h-3.5 text-blue-400" />
+              <span>Autonomous Production Failure Copilot v2.5</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold font-mono shadow-xs">
+              <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Mobile Audit Ready — No Laptop Needed</span>
+            </div>
           </div>
 
           <div className="space-y-3.5">
@@ -234,14 +241,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
               Autonomous <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">DevOps AI Copilot</span> & GitHub Auditor
             </h1>
             <p className="text-sm sm:text-base text-slate-400 max-w-xl leading-relaxed font-normal">
-              Audit repository security vulnerabilities, detect server container outages via SSH, and execute automated code patches directly on source disk files in seconds.
+              Audit repository security vulnerabilities, detect server container outages via SSH, execute automated code patches, and manage production from any mobile device without needing a laptop.
             </p>
           </div>
 
           {/* Feature Highlights Grid with Framer Hover */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1">
             {[
               { icon: GitBranch, title: 'GitHub Auditor', desc: 'AST static scan & auto PR security code fixes', color: 'blue' },
+              { icon: Smartphone, title: 'Mobile Audit', desc: 'Audit server & git from mobile without a laptop', color: 'cyan' },
               { icon: Terminal, title: 'SSH Terminal', desc: 'Real SSH server container restart & log tracing', color: 'indigo' },
               { icon: ShieldCheck, title: 'Zero-DB Storage', desc: 'SSH keys stay 100% encrypted in client vault', color: 'emerald' }
             ].map((f, idx) => {
