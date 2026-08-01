@@ -35,6 +35,8 @@ echo ""
 
 # Copy backend source
 echo "📦 Step 3/7: Syncing backend source files..."
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_PATH/backend/package.json" "$SERVER:$REMOTE_PATH/backend/"
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_PATH/backend/tsconfig.json" "$SERVER:$REMOTE_PATH/backend/"
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -r "$LOCAL_PATH/backend/src" "$SERVER:$REMOTE_PATH/backend/"
 echo "✅ Backend source synced"
 echo ""
@@ -48,13 +50,15 @@ echo ""
 # Build and restart backend
 echo "⚙️  Step 5/7: Building backend & restarting PM2..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SERVER" << 'BACKEND_DEPLOY'
-cd ~/ops-pilot/backend
+cd /home/ubuntu/ops-pilot/backend
 echo "📥 Installing backend dependencies..."
 npm install --production=false
-echo "🔨 Building TypeScript..."
-npm run build
-echo "🔄 Restarting PM2 process..."
-pm2 restart opspilot-backend --update-env || pm2 start dist/index.js --name opspilot-backend
+echo "🔨 Cleaning old build & compiling TypeScript..."
+rm -rf dist
+npx tsc
+echo "🔄 Resetting & Restarting PM2 process..."
+pm2 delete opspilot-backend 2>/dev/null || true
+pm2 start dist/index.js --name opspilot-backend
 pm2 save
 echo "✅ Backend deployment complete"
 BACKEND_DEPLOY
