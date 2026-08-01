@@ -262,6 +262,15 @@ export async function applySecurityPatch(findingId: string, projectId?: string):
   return data.scan;
 }
 
+export async function commitAndPushAIChanges(projectId?: string, customCommitMessage?: string): Promise<{ success: boolean; message: string; alreadyClean?: boolean }> {
+  const data = await apiFetch<any>(`${API_BASE}/repositories/commit-push`, {
+    method: 'POST',
+    headers: await getAuthHeaders(projectId),
+    body: JSON.stringify({ projectId, customCommitMessage })
+  });
+  return data;
+}
+
 export async function fetchIncidents(projectId?: string): Promise<Incident[]> {
   const url = projectId ? `${API_BASE}/incidents?projectId=${encodeURIComponent(projectId)}` : `${API_BASE}/incidents`;
   const data = await apiFetch<any>(url, { headers: await getAuthHeaders() });

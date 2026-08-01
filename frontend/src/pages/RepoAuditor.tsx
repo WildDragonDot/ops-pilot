@@ -17,11 +17,12 @@ import {
   Rocket,
   Folder,
   Loader2,
-  XCircle
+  XCircle,
+  UploadCloud
 } from 'lucide-react';
 import { Project, Scan, Finding } from '../types';
 import { DiffViewer } from '../components/DiffViewer';
-import { applySecurityPatch, triggerAIDeployment, scanServerDirectoriesApi } from '../services/api';
+import { applySecurityPatch, triggerAIDeployment, scanServerDirectoriesApi, commitAndPushAIChanges } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { RepoAuditorSkeleton } from '../components/SkeletonLoader';
 
@@ -54,6 +55,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     }
   });
   const [isApplyingPatch, setIsApplyingPatch] = useState<boolean>(false);
+  const [isCommitting, setIsCommitting] = useState<boolean>(false);
   const [patchSuccessMessage, setPatchSuccessMessage] = useState<string | null>(null);
 
   const [showDeployServerModal, setShowDeployServerModal] = useState<boolean>(false);
@@ -227,6 +229,43 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     }
   };
 
+  const handleCommitAndPush = async () => {
+    setIsCommitting(true);
+    try {
+      const res = await commitAndPushAIChanges(project?.id);
+      if (res?.success) {
+        if (res.alreadyClean) {
+          addNotification({
+            type: 'info',
+            title: 'Repository Clean',
+            message: res.message || 'No uncommitted AI changes detected in workspace.'
+          });
+        } else {
+          addNotification({
+            type: 'success',
+            title: 'Git Commit & Push Successful',
+            message: res.message || 'AI code changes committed & pushed to remote GitHub repository!'
+          });
+          setPatchSuccessMessage(`✓ All AI changes committed & pushed to GitHub branch ${project?.gitBranch || 'main'}!`);
+        }
+      } else {
+        addNotification({
+          type: 'danger',
+          title: 'Git Push Failed',
+          message: res?.message || 'Failed to commit and push AI changes'
+        });
+      }
+    } catch (err: any) {
+      addNotification({
+        type: 'danger',
+        title: 'Commit Error',
+        message: err?.message || 'Failed to commit and push changes.'
+      });
+    } finally {
+      setIsCommitting(false);
+    }
+  };
+
   const currentScore = countAll === 0 ? 100 : countAll === 1 ? 89 : (scan?.overallScore ?? 78);
   const currentSecurityScore = countAll === 0 ? 100 : countAll === 1 ? 86 : (scan?.securityScore ?? 72);
   const currentQualityScore = countAll === 0 ? 100 : countAll === 1 ? 92 : (scan?.qualityScore || 85);
@@ -295,6 +334,19 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
             </div>
 
             <div className="flex items-center gap-2 justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 dark:border-slate-800">
+              <button
+                onClick={handleCommitAndPush}
+                disabled={isCommitting}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-md shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
+                title="Commit and Push all AI code fixes to remote GitHub branch"
+              >
+                {isCommitting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <UploadCloud className="w-3.5 h-3.5" />
+                )}
+                <span>{isCommitting ? 'Pushing...' : 'Commit & Push AI Changes'}</span>
+              </button>
               {Boolean(project?.gitUrl?.trim()) && Boolean(project?.serverHost?.trim()) && (
                 <button
                   onClick={() => setShowDeployServerModal(true)}
@@ -503,32 +555,44 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                     <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">{selectedFinding.title}</h2>
                   </div>
 
-                  <button
-                    onClick={() => handleApplyPatch(selectedFinding)}
-                    disabled={isApplyingPatch || isFindingResolved(selectedFinding)}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap shrink-0 disabled:opacity-80 ${
-                      isFindingResolved(selectedFinding)
-                        ? 'bg-emerald-600 text-white cursor-default'
-                        : 'bg-[#1f883d] hover:bg-[#1a7f37] text-white active:scale-[0.98]'
-                    }`}
-                  >
-                    {isApplyingPatch ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Applying Patch...</span>
-                      </>
-                    ) : isFindingResolved(selectedFinding) ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                        <span>✓ Patch Applied & Resolved</span>
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-3.5 h-3.5 fill-emerald-300 text-emerald-300" />
-                        <span>Apply Security Patch</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleApplyPatch(selectedFinding)}
+                      disabled={isApplyingPatch || isFindingResolved(selectedFinding)}
+                      className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap shrink-0 disabled:opacity-80 ${
+                        isFindingResolved(selectedFinding)
+                          ? 'bg-emerald-600 text-white cursor-default'
+                          : 'bg-[#1f883d] hover:bg-[#1a7f37] text-white active:scale-[0.98]'
+                      }`}
+                    >
+                      {isApplyingPatch ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Applying Patch...</span>
+                        </>
+                      ) : isFindingResolved(selectedFinding) ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                          <span>✓ Patch Applied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3.5 h-3.5 fill-emerald-300 text-emerald-300" />
+                          <span>Apply Security Patch</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={handleCommitAndPush}
+                      disabled={isCommitting}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
+                      title="Commit and Push all AI code fixes to GitHub"
+                    >
+                      {isCommitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                      <span>{isCommitting ? 'Pushing...' : 'Commit & Push Code'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Patch Success Notification Banner */}

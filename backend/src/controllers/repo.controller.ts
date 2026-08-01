@@ -142,3 +142,108 @@ export async function applyPatch(req: AuthenticatedRequest, res: Response) {
     res.status(400).json({ error: err.message });
   }
 }
+
+export async function commitAndPushChanges(req: AuthenticatedRequest, res: Response) {
+  const user = req.user;
+  const { projectId, customCommitMessage } = req.body || {};
+  const commitMsg = customCommitMessage || 'fix(ai): commit and push AI applied security & bug fixes';
+
+  try {
+    let repoPath = process.cwd();
+    let gitUrl = '';
+    let targetBranch = 'main';
+    let gitToken = '';
+
+    if (projectId) {
+      const project = await prisma.project.findUnique({ where: { id: String(projectId) } });
+      if (project) {
+        gitUrl = project.gitUrl || '';
+        targetBranch = (project as any).gitBranch || 'main';
+        gitToken = (project as any).gitToken || '';
+
+        const { cloneOrSyncRepository } = await import('../services/repo-clone.service.js');
+        const cloneResult = await cloneOrSyncRepository(
+          project.id,
+          gitUrl,
+          targetBranch,
+          gitToken || undefined
+        ).catch(() => null);
+        if (cloneResult?.repoPath) {
+          repoPath = cloneResult.repoPath;
+        }
+      }
+    }
+
+    const { execFileSync } = await import('child_process');
+    const statusOutput = execFileSync('git', ['status', '--porcelain'], { cwd: repoPath, encoding: 'utf-8' });
+
+    if (!statusOutput.trim()) {
+      return res.json({
+        success: true,
+        message: 'No uncommitted AI changes detected. Repository working tree is clean.',
+        alreadyClean: true
+      });
+    }
+
+    // Stage all modified/new files
+    execFileSync('git', ['add', '.'], { cwd: repoPath });
+
+    // Commit changes with fallback author
+    execFileSync(
+      'git',
+      ['-c', 'user.name=OpsPilot AI Agent', '-c', 'user.email=ai-agent@opspilot.local', 'commit', '-m', commitMsg],
+      { cwd: repoPath }
+    );
+
+    // Push changes
+    let pushToken = gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+    let pushUrl = gitUrl;
+    if (pushUrl && pushToken && pushUrl.startsWith('https://')) {
+      pushUrl = `https://${pushToken}@${pushUrl.replace(/^https:\/\//, '')}`;
+    }
+
+    if (pushUrl) {
+      execFileSync('git', ['push', pushUrl, targetBranch], { cwd: repoPath });
+    } else {
+      execFileSync('git', ['push', 'origin', targetBranch], { cwd: repoPath });
+    }
+
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'COMMITTED_AND_PUSHED_AI_CHANGES',
+        category: 'CODE_PATCH',
+        target: projectId ? `Project #${projectId}` : 'Global Repository',
+        ipAddress: getIp(req),
+        status: 'SUCCESS',
+        details: `AI code changes committed ("${commitMsg}") and pushed to branch ${targetBranch} by ${user.email}`
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `AI code changes committed & successfully pushed to branch ${targetBranch}!`,
+      commitMessage: commitMsg
+    });
+  } catch (err: any) {
+    if (user) {
+      await writeAuditLog({
+        orgId: user.organizationId,
+        userId: user.userId,
+        userEmail: user.email,
+        userName: user.email,
+        action: 'COMMITTED_AND_PUSHED_AI_CHANGES',
+        category: 'CODE_PATCH',
+        target: projectId ? `Project #${projectId}` : 'Global Repository',
+        ipAddress: getIp(req),
+        status: 'FAILED',
+        details: `Git commit/push failed: ${err.message}`
+      });
+    }
+    res.status(500).json({ error: err.message || 'Failed to commit and push AI changes' });
+  }
+}
+

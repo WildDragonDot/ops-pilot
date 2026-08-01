@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { register, login, firebaseAuth, getMe } from '../controllers/auth.controller.js';
 import { getProject, getProjects, createProject, updateProject, executeServerCommand, testProjectConnection, deleteProject, getProjectHealth, getServerLogs, injectFailure, resetEnv, suggestAICommand, scanServerDirectories, inspectTargetFolder, analyzeLogsWithAIController, checkDeploymentGap, executeAIDeployment } from '../controllers/project.controller.js';
-import { getRepository, triggerScan, getScanById, applyPatch } from '../controllers/repo.controller.js';
+import { getRepository, triggerScan, getScanById, applyPatch, commitAndPushChanges } from '../controllers/repo.controller.js';
 import { createIncident, getIncidents, getIncident, streamIncident, getReport } from '../controllers/incident.controller.js';
 import { approveFix, rejectFix } from '../controllers/approval.controller.js';
 import { getAuditLogs } from '../controllers/audit.controller.js';
@@ -59,6 +59,7 @@ router.get('/repositories', requireAuth, asyncHandler(getRepository));
 router.post('/repositories/scan', requireAuth, asyncHandler(triggerScan));
 router.get('/repositories/scans/:id', requireAuth, asyncHandler(getScanById));
 router.post('/repositories/findings/:findingId/patch', requireAuth, requireApprover, asyncHandler(applyPatch)); // APPROVER+
+router.post('/repositories/commit-push', requireAuth, asyncHandler(commitAndPushChanges));
 
 // ─── Protected Incident Commander Routes ─────────────────────────────────────
 router.post('/incidents', requireAuth, asyncHandler(createIncident));

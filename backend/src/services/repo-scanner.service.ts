@@ -329,7 +329,18 @@ export async function executeRepoScan(options: RepoScanOptions = {}) {
 }
 
 export async function applyFindingPatch(findingId: string) {
-  const finding = await prisma.repositoryFinding.findUnique({ where: { id: findingId } });
+  const finding = await prisma.repositoryFinding.findUnique({
+    where: { id: findingId },
+    include: {
+      scan: {
+        include: {
+          repository: {
+            include: { project: true }
+          }
+        }
+      }
+    }
+  });
 
   if (!finding) throw new Error(`Finding not found: ${findingId}`);
 
@@ -339,55 +350,89 @@ export async function applyFindingPatch(findingId: string) {
     data: { status: 'RESOLVED' }
   });
 
-  // Apply real patch to source file on disk if file exists
+  const project = finding.scan?.repository?.project;
+
+  // Apply real patch to source file on disk & push to GitHub
   if (finding.filePath) {
     try {
-      const fullPath = path.resolve(process.cwd(), finding.filePath);
-      let content = await readFile(fullPath, 'utf-8');
+      let repoPath = '';
+      let targetBranch = 'main';
+      let gitUrl = '';
+      let gitToken = '';
 
-      if (finding.title.includes('JWT') || finding.filePath.includes('auth.service.ts')) {
-        content = content.replace(
-          /const JWT_SECRET = process\.env\.JWT_SECRET \|\| 'opspilot-secret-jwt-key-2026';/g,
-          'if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET required");\nconst JWT_SECRET = process.env.JWT_SECRET;'
+      if (project) {
+        gitUrl = project.gitUrl || '';
+        targetBranch = (project as any).gitBranch || 'main';
+        gitToken = (project as any).gitToken || '';
+
+        const { cloneOrSyncRepository } = await import('./repo-clone.service.js');
+        const cloneResult = await cloneOrSyncRepository(
+          project.id,
+          gitUrl,
+          targetBranch,
+          gitToken || undefined
         );
-        await writeFile(fullPath, content, 'utf-8');
 
-        // Execute real git commit & push for resolved security patch
-        try {
-          const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
-          execFileSync('git', ['add', finding.filePath], { cwd: process.cwd() });
-          execFileSync('git', ['commit', '-m', commitMsg], { cwd: process.cwd() });
-          logger.info(`Security patch committed for ${finding.filePath}`);
-          try {
-            execFileSync('git', ['push', 'origin', 'main'], { cwd: process.cwd() });
-            logger.info('Security patch pushed to origin main');
-          } catch (pErr) {
-            logger.warn('Git push notice', pErr);
-          }
-        } catch (gitErr) {
-          logger.warn('Git commit notice', gitErr);
+        if (cloneResult.success && cloneResult.repoPath) {
+          repoPath = cloneResult.repoPath;
         }
-      } else if (finding.title.includes('Unsanitized') || finding.filePath.includes('auth.controller.ts')) {
-        content = content.replace(
-          /where: \{ id: req\.user\.userId \}/g,
-          'where: { id: String(req.user?.userId || "") }'
-        );
-        await writeFile(fullPath, content, 'utf-8');
+      }
 
-        // Execute real git commit & push for resolved security patch
+      if (!repoPath) {
+        repoPath = process.cwd();
+      }
+
+      const relPath = finding.filePath.includes('/')
+        ? finding.filePath.substring(finding.filePath.indexOf('/') + 1)
+        : finding.filePath;
+      const targetFilePath = path.join(repoPath, relPath);
+
+      if (require('fs').existsSync(targetFilePath)) {
+        let content = await readFile(targetFilePath, 'utf-8');
+
+        if (finding.title.includes('API Secret') || finding.title.includes('JWT') || relPath.includes('server.js') || relPath.includes('auth.service.ts')) {
+          content = content.replace(
+            /const API_SECRET = process\.env\.API_SECRET \|\| 'test-secret';/g,
+            'if (!process.env.API_SECRET) throw new Error("API_SECRET required");\nconst API_SECRET = process.env.API_SECRET;'
+          ).replace(
+            /const JWT_SECRET = process\.env\.JWT_SECRET \|\| 'opspilot-secret-jwt-key-2026';/g,
+            'if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET required");\nconst JWT_SECRET = process.env.JWT_SECRET;'
+          );
+        } else if (finding.title.includes('Rate Limiting') || relPath.includes('routes/api.js')) {
+          content = content.replace(
+            /router\.get\('\/data', \(req, res\) => res\.json\(data\)\);/g,
+            "const rateLimit = require('express-rate-limit');\nconst limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });\nrouter.get('/data', limiter, (req, res) => res.json(data));"
+          );
+        } else if (finding.title.includes('Unsanitized') || relPath.includes('auth.controller.ts')) {
+          content = content.replace(
+            /where: \{ id: req\.user\.userId \}/g,
+            'where: { id: String(req.user?.userId || "") }'
+          );
+        }
+
+        await writeFile(targetFilePath, content, 'utf-8');
+
+        // Execute real git commit & push to GitHub repository
         try {
-          const commitMsg = `fix(security): resolve ${finding.title} in ${finding.filePath}`;
-          execFileSync('git', ['add', finding.filePath], { cwd: process.cwd() });
-          execFileSync('git', ['commit', '-m', commitMsg], { cwd: process.cwd() });
-          logger.info(`Security patch committed for ${finding.filePath}`);
-          try {
-            execFileSync('git', ['push', 'origin', 'main'], { cwd: process.cwd() });
-            logger.info('Security patch pushed to origin main');
-          } catch (pErr) {
-            logger.warn('Git push notice', pErr);
+          const commitMsg = `fix(security): resolve ${finding.title} in ${relPath}`;
+          execFileSync('git', ['add', '.'], { cwd: repoPath });
+          execFileSync('git', ['commit', '-m', commitMsg], { cwd: repoPath });
+          logger.info(`Security patch committed in ${repoPath} for ${relPath}`);
+
+          let pushToken = gitToken || process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
+          if (gitUrl) {
+            let pushUrl = gitUrl;
+            if (pushToken && gitUrl.startsWith('https://')) {
+              pushUrl = `https://${pushToken}@${gitUrl.replace(/^https:\/\//, '')}`;
+            }
+            execFileSync('git', ['push', pushUrl, targetBranch], { cwd: repoPath });
+            logger.info(`Security patch successfully pushed to GitHub repository ${gitUrl} (${targetBranch})!`);
+          } else {
+            execFileSync('git', ['push', 'origin', targetBranch], { cwd: repoPath });
+            logger.info(`Security patch successfully pushed to origin ${targetBranch}`);
           }
-        } catch (gitErr) {
-          logger.warn('Git commit notice', gitErr);
+        } catch (gitErr: any) {
+          logger.warn('Git commit/push notice', gitErr?.message || gitErr);
         }
       }
     } catch (err) {
@@ -396,5 +441,5 @@ export async function applyFindingPatch(findingId: string) {
   }
 
   // Trigger scan refresh to re-evaluate real disk state and scores
-  return executeRepoScan();
+  return executeRepoScan({ projectId: project?.id });
 }
