@@ -93,7 +93,7 @@ export async function loginUser(email: string, password: string) {
       provider: user.provider || 'email',
       avatarUrl: user.avatarUrl,
       organizationId: user.organizationId,
-      organizationName: user.organization.name
+      organizationName: user.organization?.name || 'OpsPilot Workspace'
     }
   };
 }
@@ -115,7 +115,7 @@ export async function authenticateFirebaseUser(
     include: { organization: true }
   });
 
-  let org = user ? user.organization : await prisma.organization.findFirst();
+  let org = user?.organization ? user.organization : await prisma.organization.findFirst();
   if (!org) {
     org = await prisma.organization.create({
       data: {
@@ -138,21 +138,22 @@ export async function authenticateFirebaseUser(
       },
       include: { organization: true }
     });
-  } else if (!user.firebaseUid || user.provider !== provider) {
+  } else if (!user.firebaseUid || user.provider !== provider || user.organizationId !== org.id) {
     user = await prisma.user.update({
       where: { id: user.id },
       data: {
         firebaseUid,
         provider,
         avatarUrl: avatarUrl || user.avatarUrl,
-        name: user.name || name
+        name: user.name || name,
+        organizationId: user.organizationId || org.id
       },
       include: { organization: true }
     });
   }
 
   const token = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role, organizationId: user.organizationId },
+    { userId: user.id, email: user.email, role: user.role, organizationId: user.organizationId || org.id },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -166,8 +167,8 @@ export async function authenticateFirebaseUser(
       role: user.role,
       provider: user.provider || provider,
       avatarUrl: user.avatarUrl,
-      organizationId: user.organizationId,
-      organizationName: org.name
+      organizationId: user.organizationId || org.id,
+      organizationName: user.organization?.name || org.name || 'OpsPilot Workspace'
     }
   };
 }
