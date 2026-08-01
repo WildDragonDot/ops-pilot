@@ -1035,34 +1035,34 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         fi
 
         echo "Clearing lingering process locks & freeing port 3000..."
-        fuser -k -9 3000/tcp 2>/dev/null || true
-        pkill -9 -f "tsx src/index.ts" 2>/dev/null || true
-        pkill -9 -f "${shellQuote(repoName)}" 2>/dev/null || true
-        sleep 1
+        pm2 delete ${shellQuote(repoName)} 2>/dev/null || true
+        (sudo -n fuser -k -9 3000/tcp 2>/dev/null || fuser -k -9 3000/tcp 2>/dev/null || true)
+        (pkill -9 -f "tsx" 2>/dev/null || true)
+        sleep 2
 
         echo "Launching application process with PM2..."
-        pm2 delete ${shellQuote(repoName)} 2>/dev/null || true
         export PATH="$HOME/.node22/bin:$PATH"
+        PM2_FLAGS="--name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000"
         if [ -f "src/index.ts" ]; then
-          pm2 start "npx tsx src/index.ts" --name ${shellQuote(repoName)} 2>&1
+          pm2 start "npx tsx src/index.ts" $PM2_FLAGS 2>&1
         elif [ -f "src/main.ts" ]; then
-          pm2 start "npx tsx src/main.ts" --name ${shellQuote(repoName)} 2>&1
+          pm2 start "npx tsx src/main.ts" $PM2_FLAGS 2>&1
         elif [ -f "src/app.ts" ]; then
-          pm2 start "npx tsx src/app.ts" --name ${shellQuote(repoName)} 2>&1
+          pm2 start "npx tsx src/app.ts" $PM2_FLAGS 2>&1
         elif [ -f "index.js" ]; then
-          pm2 start index.js --name ${shellQuote(repoName)} 2>&1
+          pm2 start index.js $PM2_FLAGS 2>&1
         elif [ -f "server.js" ]; then
-          pm2 start server.js --name ${shellQuote(repoName)} 2>&1
+          pm2 start server.js $PM2_FLAGS 2>&1
         elif [ -f "app.js" ]; then
-          pm2 start app.js --name ${shellQuote(repoName)} 2>&1
+          pm2 start app.js $PM2_FLAGS 2>&1
         elif [ -f "src/index.js" ]; then
-          pm2 start src/index.js --name ${shellQuote(repoName)} 2>&1
+          pm2 start src/index.js $PM2_FLAGS 2>&1
         elif [ -f "src/server.js" ]; then
-          pm2 start src/server.js --name ${shellQuote(repoName)} 2>&1
+          pm2 start src/server.js $PM2_FLAGS 2>&1
         elif grep -q '"dev":' package.json 2>/dev/null; then
-          pm2 start npm --name ${shellQuote(repoName)} -- run dev 2>&1
+          pm2 start npm $PM2_FLAGS -- run dev 2>&1
         else
-          pm2 start npm --name ${shellQuote(repoName)} -- start 2>&1
+          pm2 start npm $PM2_FLAGS -- start 2>&1
         fi
         pm2 save 2>&1 || true
       elif [ -f "requirements.txt" ] || [ -f "main.py" ] || [ -f "app.py" ]; then
