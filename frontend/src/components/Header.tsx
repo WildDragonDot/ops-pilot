@@ -163,23 +163,23 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="h-16 header-bg backdrop-blur-xl border-b px-3 sm:px-5 lg:px-6 flex items-center justify-between sticky top-0 z-40 gap-3">
+      <header className="h-14 sm:h-16 header-bg backdrop-blur-xl border-b px-2 sm:px-5 lg:px-6 flex items-center justify-between sticky top-0 z-40 gap-1.5 sm:gap-3">
         
         {/* Left Section: Mobile Menu & Search Bar */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 max-w-xl min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             onClick={onToggleMobileSidebar}
             aria-label="Toggle Mobile Navigation Menu"
-            className="lg:hidden p-2 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title shrink-0 cursor-pointer"
+            className="lg:hidden p-1.5 sm:p-2 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title shrink-0 cursor-pointer"
           >
-            <Menu className="w-5 h-5 text-blue-500" />
+            <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
           </button>
 
           {/* Compact Mobile Search Icon */}
           <button 
             onClick={() => setCmdPaletteOpen(true)}
             aria-label="Open Command Palette Search"
-            className="flex sm:hidden p-2 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title cursor-pointer shrink-0"
+            className="flex sm:hidden p-1.5 rounded-lg card-bg-subtle border theme-border text-subtitle hover:text-title cursor-pointer shrink-0"
             title="Search commands (⌘K)"
           >
             <Search className="w-4 h-4 text-blue-500" />
@@ -188,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Desktop & Tablet Search Bar */}
           <div 
             onClick={() => setCmdPaletteOpen(true)}
-            className="hidden sm:flex items-center gap-2.5 bg-white/75 dark:bg-slate-950/75 px-3.5 py-2 rounded-lg border theme-border text-xs w-full hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shadow-xs group"
+            className="hidden sm:flex items-center gap-2.5 bg-white/75 dark:bg-slate-950/75 px-3.5 py-2 rounded-lg border theme-border text-xs w-64 md:w-80 lg:w-96 hover:border-blue-500/50 transition cursor-pointer whitespace-nowrap shadow-xs group"
           >
             <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
             <span className="flex-1 text-slate-600 dark:text-slate-400 font-mono text-xs truncate">
@@ -199,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Section: Target Path Selector, Status Pills & Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0 ml-auto min-w-0">
           
           {/* Target Path Dropdown Selector in Header (Shown ONLY when remote SSH host is active) */}
           {Boolean(project?.serverHost?.trim()) && (
@@ -264,7 +264,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
           
           {/* Host Info Pill (only when SSH server is set) */}
-          {mode !== 'GITHUB_ONLY' && (
+          {mode !== 'SERVER_ONLY' && (
             <div className="hidden 2xl:flex items-center gap-2 px-3 py-2 rounded-lg card-bg-subtle border theme-border text-xs text-subtitle font-mono whitespace-nowrap shrink-0">
               <Server className="w-3.5 h-3.5 text-blue-500 shrink-0" />
               <span>Host: <b className="text-title font-bold">{project?.serverHost || 'Local Sandbox'}</b></span>
@@ -275,13 +275,13 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative shrink-0">
             <button
               onClick={() => setShowStatusPopover(!showStatusPopover)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono border shadow-xs cursor-pointer transition hover:scale-[1.02] whitespace-nowrap shrink-0 max-w-[44vw] sm:max-w-none ${statusColor}`}
+              className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs font-mono border shadow-xs cursor-pointer transition hover:scale-[1.02] whitespace-nowrap shrink-0 max-w-[34vw] sm:max-w-none ${statusColor}`}
             >
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-700 dark:bg-emerald-400"></span>
               </span>
-              <span className="font-mono font-extrabold uppercase text-[11px] leading-none truncate">{status}</span>
+              <span className="font-mono font-extrabold uppercase text-[10px] sm:text-[11px] leading-none truncate max-w-[20vw] sm:max-w-none">{status}</span>
             </button>
 
             {/* Health Breakdown Popover */}
@@ -338,10 +338,11 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onScanRepo}
               disabled={isScanning}
-              className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition whitespace-nowrap shrink-0 cursor-pointer"
+              title="Scan Repository Codebase"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md glow-blue transition whitespace-nowrap shrink-0 cursor-pointer"
             >
               <GitBranch className={`w-3.5 h-3.5 shrink-0 ${isScanning ? 'animate-spin' : ''}`} />
-              <span className="inline-block whitespace-nowrap">{isScanning ? 'Scanning...' : 'Scan Repo'}</span>
+              <span className="hidden sm:inline-block whitespace-nowrap">{isScanning ? 'Scanning...' : 'Scan Repo'}</span>
             </button>
           )}
 
@@ -350,7 +351,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onOpenShortcuts}
             title="Keyboard Shortcuts (?)"
             aria-label="Open keyboard shortcuts guide"
-            className="w-9 h-9 flex items-center justify-center text-subtitle hover:text-blue-500 card-bg-subtle rounded-xl border theme-border transition shrink-0 cursor-pointer"
+            className="hidden sm:flex w-8 h-8 sm:w-9 sm:h-9 items-center justify-center text-subtitle hover:text-blue-500 card-bg-subtle rounded-xl border theme-border transition shrink-0 cursor-pointer"
           >
             <Keyboard className="w-4 h-4" />
           </button>
@@ -359,7 +360,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={toggleTheme}
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
             aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Theme`}
-            className="w-9 h-9 flex items-center justify-center text-subtitle hover:text-amber-500 card-bg-subtle rounded-xl border theme-border transition shrink-0 cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-subtitle hover:text-amber-500 card-bg-subtle rounded-xl border theme-border transition shrink-0 cursor-pointer"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
           </button>
