@@ -162,7 +162,7 @@ export async function testProjectConnection(req: Request, res: Response) {
     githubToken: headerGitToken
   });
 
-  const discoveryResult = serverHost ? await discoverServerTechStack(sshCreds) : null;
+  const discoveryResult = (serverHost && sshResult.success) ? await discoverServerTechStack(sshCreds) : null;
 
   const isSuccess = (serverHost ? sshResult.success : true) && (gitUrl ? gitResult.connected : true);
 

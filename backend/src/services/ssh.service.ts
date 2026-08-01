@@ -161,8 +161,8 @@ export async function testSSHConnection(creds: SSHCredentials): Promise<{ succes
       batchOpt = '';
     }
 
-    const command = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o ConnectTimeout=8 ${keyFlag} -p ${port} ${user}@${host} "echo Connection_OK"`;
-    const { stdout } = await execAsync(command, { timeout: 12000 });
+    const command = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${keyFlag} -p ${port} ${user}@${host} "echo Connection_OK"`;
+    const { stdout } = await execAsync(command, { timeout: 7000 });
 
     if (stdout.includes('Connection_OK')) {
       return { success: true, message: `Successfully authenticated SSH session with ${user}@${host}:${port}`, output: stdout };
