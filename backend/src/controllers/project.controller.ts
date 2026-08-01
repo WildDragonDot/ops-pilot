@@ -1006,6 +1006,12 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
           sudo -n ln -sf "\$HOME/.node22/bin/tsx" /usr/bin/tsx 2>/dev/null || true
         fi
 
+        echo "Clearing lingering process locks & freeing port 3000..."
+        fuser -k -9 3000/tcp 2>/dev/null || true
+        pkill -9 -f "tsx src/index.ts" 2>/dev/null || true
+        pkill -9 -f "${shellQuote(repoName)}" 2>/dev/null || true
+        sleep 1
+
         echo "Launching application process with PM2..."
         pm2 delete ${shellQuote(repoName)} 2>/dev/null || true
         if [ -f "src/index.ts" ]; then
