@@ -555,44 +555,32 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                     <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-snug">{selectedFinding.title}</h2>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleApplyPatch(selectedFinding)}
-                      disabled={isApplyingPatch || isFindingResolved(selectedFinding)}
-                      className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap shrink-0 disabled:opacity-80 ${
-                        isFindingResolved(selectedFinding)
-                          ? 'bg-emerald-600 text-white cursor-default'
-                          : 'bg-[#1f883d] hover:bg-[#1a7f37] text-white active:scale-[0.98]'
-                      }`}
-                    >
-                      {isApplyingPatch ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Applying Patch...</span>
-                        </>
-                      ) : isFindingResolved(selectedFinding) ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                          <span>✓ Patch Applied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-3.5 h-3.5 fill-emerald-300 text-emerald-300" />
-                          <span>Apply Security Patch</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={handleCommitAndPush}
-                      disabled={isCommitting}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
-                      title="Commit and Push all AI code fixes to GitHub"
-                    >
-                      {isCommitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
-                      <span>{isCommitting ? 'Pushing...' : 'Commit & Push Code'}</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleApplyPatch(selectedFinding)}
+                    disabled={isApplyingPatch || isFindingResolved(selectedFinding)}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg shadow-xs transition-all whitespace-nowrap shrink-0 disabled:opacity-80 ${
+                      isFindingResolved(selectedFinding)
+                        ? 'bg-emerald-600 text-white cursor-default'
+                        : 'bg-[#1f883d] hover:bg-[#1a7f37] text-white active:scale-[0.98]'
+                    }`}
+                  >
+                    {isApplyingPatch ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Applying Patch...</span>
+                      </>
+                    ) : isFindingResolved(selectedFinding) ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                        <span>✓ Patch Applied & Resolved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5 fill-emerald-300 text-emerald-300" />
+                        <span>Apply Security Patch</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 {/* Patch Success Notification Banner */}
