@@ -947,15 +947,30 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         export npm_config_engine_strict=false
         export npm_config_ignore_scripts=true
 
-        NODE_VER=$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ -n "$NODE_VER" ] && [ "$NODE_VER" -lt 20 ]; then
-          echo "[AI Auto-Upgrade] Target Node.js (v$NODE_VER) detected. Bypassing engine locks & upgrading..."
-          (curl -sL https://rpm.nodesource.com/setup_20.x | sudo -n bash - && sudo -n yum install -y nodejs) 2>&1 || \
-          (curl -sL https://deb.nodesource.com/setup_20.x | sudo -n bash - && sudo -n apt-get install -y nodejs) 2>&1 || true
+        # Clean stale prisma modules that lock preinstall scripts
+        rm -rf node_modules/prisma node_modules/.prisma 2>/dev/null || true
+
+        # Auto-provision Node 20 LTS via NVM if target system Node < 20
+        export NVM_DIR="\$HOME/.nvm"
+        [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" 2>/dev/null || true
+
+        NODE_VER=\$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ -z "\$NODE_VER" ] || [ "\$NODE_VER" -lt 20 ]; then
+          echo "[AI Auto-Upgrade] Target Node.js (v\${NODE_VER:-none}) is below v20 required by Prisma/ORM."
+          echo "[AI Auto-Upgrade] Provisioning Node 20 LTS environment..."
+          if [ ! -d "\$NVM_DIR" ]; then
+            curl -sO https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh && bash install.sh 2>&1 || true
+            rm -f install.sh 2>/dev/null || true
+            [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh" 2>/dev/null || true
+          fi
+          if command -v nvm &> /dev/null; then
+            nvm install 20 2>&1 || true
+            nvm use 20 2>&1 || true
+          fi
         fi
 
         if command -v npm &> /dev/null; then
-          echo "Running dependency installation with engine bypass..."
+          echo "Running dependency installation..."
           npm install --ignore-scripts --no-engine-strict 2>&1 || npm install --ignore-scripts 2>&1 || npm install 2>&1 || true
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
