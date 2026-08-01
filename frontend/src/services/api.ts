@@ -523,9 +523,11 @@ export async function triggerAIDeployment(projectId?: string, targetPath?: strin
   serverHost: string;
   logs: string[];
 }> {
+  // Deployment can take 3-5 min on fresh server (Node 22 download + npm install + Prisma)
+  // Timeout set to 6 minutes (360s) to avoid premature completion
   return apiFetch(`${API_BASE}/projects/ai-deploy`, {
     method: 'POST',
     headers: await getAuthHeaders(projectId),
     body: JSON.stringify({ projectId, targetPath })
-  });
+  }, 360_000);
 }

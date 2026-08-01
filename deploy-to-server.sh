@@ -56,8 +56,11 @@ npm install --production=false
 echo "🔨 Cleaning old build & compiling TypeScript..."
 rm -rf dist
 npx tsc
-echo "🔄 Resetting & Restarting PM2 process..."
+echo "🔄 Freeing port 5080 & restarting PM2 process..."
 pm2 delete opspilot-backend 2>/dev/null || true
+fuser -k -9 5080/tcp 2>/dev/null || true
+pkill -9 -f "node dist/index.js" 2>/dev/null || true
+sleep 1
 pm2 start dist/index.js --name opspilot-backend
 pm2 save
 echo "✅ Backend deployment complete"

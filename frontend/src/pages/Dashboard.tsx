@@ -204,11 +204,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   }, [project?.id, project?.gitUrl, project?.serverHost]);
 
   const [deployCompleted, setDeployCompleted] = useState<boolean>(false);
+  const [deployFailed, setDeployFailed] = useState<boolean>(false);
 
   const handleRunAIDeployment = async (customPath?: string) => {
     const pathToUse = customPath || deployServerPath || activeTargetPath || defaultTargetPath;
     setIsDeploying(true);
     setDeployCompleted(false);
+    setDeployFailed(false);
     setShowDeployServerModal(false);
     setShowDeployLogsModal(true);
     
@@ -246,9 +248,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       } else if (res && res.message) {
         setDeployLogs(prev => [...prev, `✅ ${res.message}`]);
       }
-      setDeployCompleted(true);
-      if (res?.deployedCommit) {
-        setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
+      if (res && res.success === true) {
+        setDeployCompleted(true);
+        setDeployFailed(false);
+        if (res?.deployedCommit) {
+          setDeployGap(prev => prev ? { ...prev, hasGap: false, serverCommit: res.deployedCommit } : null);
+        }
+      } else {
+        setDeployFailed(true);
+        setDeployCompleted(false);
       }
     } catch (e: any) {
       clearInterval(interval);
@@ -256,9 +264,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (serverLogs.length > 0) {
         setDeployLogs(serverLogs);
       } else {
-        setDeployLogs(prev => [...prev, `[SSH Terminal Error] ❌ ${e.message || 'Remote deployment execution error'}`]);
+        setDeployLogs(prev => [...prev, `❌ [SSH Connection Failed] ${e.message || 'Remote deployment execution error'}`]);
       }
-      setDeployCompleted(true);
+      setDeployFailed(true);
     } finally {
       clearInterval(interval);
       setIsDeploying(false);
@@ -702,6 +710,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {deployCompleted && (
                 <div className="text-emerald-400 font-bold flex items-center gap-1.5 pb-1 border-b border-slate-800">
                   <span>✅ AI AUTONOMOUS DEPLOYMENT COMPLETED & VERIFIED</span>
+                </div>
+              )}
+              {deployFailed && (
+                <div className="text-red-400 font-bold flex items-center gap-1.5 pb-1 border-b border-red-900">
+                  <span>❌ DEPLOYMENT FAILED — SSH CONNECTION ERROR. Check credentials & server access.</span>
                 </div>
               )}
               {deployLogs.map((line, idx) => (
@@ -1593,7 +1606,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       )}
                     </div>
                     <h3 className="text-base font-bold text-slate-100 flex items-center gap-2 pt-1">
-                      <Rocket className="w-4 h-4 text-blue-400" />
+                      {isDeploying
+                        ? <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                        : deployCompleted
+                        ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        : deployFailed
+                        ? <XCircle className="w-4 h-4 text-red-400" />
+                        : <Rocket className="w-4 h-4 text-blue-400" />
+                      }
                       <span>Autonomous AI Deployment Console</span>
                     </h3>
                   </div>
@@ -1718,7 +1738,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
                   <span className="text-[11px] text-slate-400 font-mono">
-                    {isDeploying ? '☕ Sit back and relax — D-OpsPilot AI is executing remote SSH deployment for you...' : '✓ Execution sequence completed'}
+                    {isDeploying
+                      ? '☕ Sit back and relax — D-OpsPilot AI is executing remote SSH deployment for you...'
+                      : deployFailed
+                      ? '✗ Deployment failed — SSH error. Check logs above.'
+                      : deployCompleted
+                      ? '✓ Execution sequence completed successfully'
+                      : '✓ Execution sequence completed'
+                    }
                   </span>
                   <div className="flex items-center gap-2">
                     <button

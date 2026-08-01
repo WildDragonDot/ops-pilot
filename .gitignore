@@ -47,3 +47,9 @@ desktop.ini
 .idea/
 .vscode/
 *.iml
+
+# Local scripts & runtime downloads
+clear-server.sh
+deploy-to-server.sh
+.node22/
+*$HOME*

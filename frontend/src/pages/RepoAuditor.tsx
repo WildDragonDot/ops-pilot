@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Rocket,
   Folder,
-  Loader2
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import { Project, Scan, Finding } from '../types';
 import { DiffViewer } from '../components/DiffViewer';
@@ -61,6 +62,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
   const [isDeploying, setIsDeploying] = useState<boolean>(false);
   const [deployLogs, setDeployLogs] = useState<string[]>([]);
   const [deployCompleted, setDeployCompleted] = useState<boolean>(false);
+  const [deployFailed, setDeployFailed] = useState<boolean>(false);
 
   const isLocalPath = (p?: string | null) => !p || p.startsWith('/Users/') || p.includes('Desktop') || p.startsWith('C:');
   const user = project?.serverUser || 'root';
@@ -102,6 +104,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
     const pathToUse = customPath || deployServerPath || initialTargetPath;
     setIsDeploying(true);
     setDeployCompleted(false);
+    setDeployFailed(false);
     setShowDeployServerModal(false);
     setShowDeployLogsModal(true);
     
@@ -136,16 +139,22 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
       } else if (res && res.message) {
         setDeployLogs(prev => [...prev, `✅ ${res.message}`]);
       }
-      setDeployCompleted(true);
+      if (res && res.success === true) {
+        setDeployCompleted(true);
+        setDeployFailed(false);
+      } else {
+        setDeployFailed(true);
+        setDeployCompleted(false);
+      }
     } catch (e: any) {
       clearInterval(interval);
       const serverLogs = e?.logs || e?.response?.data?.logs || e?.data?.logs;
       if (serverLogs && serverLogs.length > 0) {
         setDeployLogs(serverLogs);
       } else {
-        setDeployLogs(prev => [...prev, `[SSH Terminal Error] ❌ ${e.message || 'Remote deployment execution error'}`]);
+        setDeployLogs(prev => [...prev, `❌ [SSH Connection Failed] ${e.message || 'Remote deployment execution error'}`]);
       }
-      setDeployCompleted(true);
+      setDeployFailed(true);
     } finally {
       setIsDeploying(false);
     }
@@ -683,8 +692,23 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
           <div className="w-full max-w-3xl p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 bg-white dark:bg-[#0b101d] text-slate-900 dark:text-white">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500">
-                  {isDeploying ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                <div className={`p-2 rounded-xl border ${
+                    isDeploying
+                      ? 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                      : deployCompleted
+                      ? 'bg-emerald-500/10 border-emerald-500/20'
+                      : deployFailed
+                      ? 'bg-red-500/10 border-red-500/20'
+                      : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                  }`}>
+                  {isDeploying
+                    ? <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    : deployCompleted
+                    ? <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    : deployFailed
+                    ? <XCircle className="w-5 h-5 text-red-500" />
+                    : <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                  }
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white font-display">AI Remote Server Deployment Console</h3>
@@ -706,6 +730,12 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
                   <span>AI REMOTE SERVER DEPLOYMENT COMPLETED & VERIFIED</span>
                 </div>
               )}
+              {deployFailed && (
+                <div className="text-red-400 font-bold flex items-center gap-1.5 pb-2 border-b border-red-900">
+                  <span className="text-red-400">✗</span>
+                  <span>❌ DEPLOYMENT FAILED — SERVER HEALTH CHECK FAILED. Check logs above.</span>
+                </div>
+              )}
               {deployLogs.map((line, idx) => (
                 <div key={idx} className="flex items-start gap-2">
                   <span className="text-emerald-400 font-bold shrink-0 mt-0.5">➔</span>
@@ -716,7 +746,7 @@ export const RepoAuditor: React.FC<RepoAuditorProps> = ({
 
             <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-3">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                {isDeploying ? 'Executing remote SSH deployment on server...' : '✓ Deployment sequence completed'}
+                {isDeploying ? 'Executing remote SSH deployment on server...' : deployFailed ? '✗ Deployment failed — check error logs above' : '✓ Deployment sequence completed'}
               </span>
               <button
                 onClick={() => setShowDeployLogsModal(false)}

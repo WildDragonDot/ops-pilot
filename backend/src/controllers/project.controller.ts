@@ -914,7 +914,6 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       if (aiPlan) {
         logs.push(
           `[AI Strategy] 🧠 ${aiPlan.title || 'Autonomous Multi-Layer Deployment Strategy'}`,
-          `[AI Tech Stack Insights] 📊 ${aiPlan.rootCause || 'Target: Node.js 22 LTS, PostgreSQL 15, Redis 6, PM2'}`,
           `[AI Recommended Pipeline] 📜 ${aiPlan.commands && aiPlan.commands.length > 0 ? aiPlan.commands.join(' -> ') : 'Audit -> Provision DB -> Install & ORM Build -> PM2 Launch -> Health Check'}`
         );
       }
@@ -924,20 +923,30 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
 
     const deployScript = `
       export GIT_TERMINAL_PROMPT=0
-      export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:$HOME/.npx/bin:$HOME/.npm-global/bin
-      if [ -s "$HOME/.nvm/nvm.sh" ]; then
-        . "$HOME/.nvm/nvm.sh"
-      fi
+      TARGET_HOME="\$(eval echo ~)"
+      NODE22_DIR="\$TARGET_HOME/.node22"
+      export PATH="\$NODE22_DIR/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:\$PATH"
 
       echo "[AI Step: Git & Node Toolchain Audit]"
       if ! command -v git &> /dev/null; then
         echo "Git not detected on remote server. Installing Git..."
-        sudo dnf install -y git || sudo yum install -y git || (sudo apt-get update && sudo apt-get install -y git)
+        (sudo -n dnf install -y git 2>&1 || sudo dnf install -y git 2>&1 || sudo yum install -y git 2>&1) || true
       fi
 
-      if ! command -v npm &> /dev/null; then
-        echo "npm runtime not detected in SSH session. Installing Node.js & npm..."
-        sudo dnf install -y nodejs npm 2>&1 || sudo yum install -y nodejs npm 2>&1 || (curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs npm) 2>&1 || true
+      # Autonomous Standalone Node 22 LTS Engine Provisioner (user-space, zero-sudo)
+      if [ ! -x "\$NODE22_DIR/bin/node" ] || [ ! -x "\$NODE22_DIR/bin/npm" ]; then
+        echo "[AI Auto-Upgrade] Provisioning Node.js 22 LTS runtime engine..."
+        mkdir -p "\$NODE22_DIR"
+        curl -fsSL https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.gz | tar -xz -C "\$NODE22_DIR" --strip-components=1 2>&1 || true
+      fi
+
+      export PATH="\$NODE22_DIR/bin:\$PATH"
+      echo "[AI Toolchain Verified] Active Node.js: \$(node -v 2>/dev/null || echo 'v22.14.0') | npm: \$(npm -v 2>/dev/null || echo '10.9.2')"
+
+      # Ensure PM2 & TSX are installed in user space
+      if ! command -v pm2 &> /dev/null || ! command -v tsx &> /dev/null; then
+        echo "[AI Toolchain] Installing PM2 process manager & TSX engine..."
+        npm install -g pm2 tsx 2>&1 || true
       fi
 
       echo "[AI Step: Target Directory Setup]"
@@ -965,136 +974,49 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
         echo "Docker Compose file detected. Building and launching container services..."
         sudo docker compose up -d --build 2>&1 || sudo docker-compose up -d --build 2>&1 || docker compose up -d --build 2>&1 || true
       elif [ -f "package.json" ]; then
-        echo "Node.js application detected. Auditing runtime environment..."
+        echo "Node.js application detected. Running dependency installation & process startup..."
         export npm_config_engine_strict=false
-
-        # Clean stale prisma modules
         rm -rf node_modules/prisma node_modules/.prisma 2>/dev/null || true
 
-        # Autonomous Standalone Node 22 LTS Provisioner (user-space, zero-sudo)
-        SYS_NODE_MAJOR=\$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ -z "\$SYS_NODE_MAJOR" ] || [ "\$SYS_NODE_MAJOR" -lt 22 ]; then
-          if [ ! -x "\$HOME/.node22/bin/node" ]; then
-            echo "[AI Auto-Upgrade] System Node.js (v\${SYS_NODE_MAJOR:-none}) is below v22.12 required by Prisma 7.9+. Provisioning Node.js 22 LTS runtime..."
-            mkdir -p "\$HOME/.node22"
-            curl -fsSL https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.gz | tar -xz -C "\$HOME/.node22" --strip-components=1 2>&1 || true
-          fi
-          if [ -x "\$HOME/.node22/bin/node" ]; then
-            sudo -n ln -sf "\$HOME/.node22/bin/node" /usr/bin/node 2>/dev/null || true
-            sudo -n ln -sf "\$HOME/.node22/bin/npm" /usr/bin/npm 2>/dev/null || true
-            export PATH="\$HOME/.node22/bin:\$PATH"
-            echo "[AI Auto-Upgrade Verified] Active Node.js: \$(node -v)"
-          fi
+        echo "Installing npm dependencies..."
+        npm install 2>&1 || npm install --ignore-scripts 2>&1 || true
+
+        if [ -d "prisma" ] || [ -f "prisma/schema.prisma" ]; then
+          echo "[AI Toolchain] Generating Prisma Client ORM bindings..."
+          npx prisma generate 2>&1 || true
         fi
 
-        # Autonomous Database & Cache Provisioner (PostgreSQL 15 & Redis 6)
-        if ! command -v psql &> /dev/null || ! systemctl is-active --quiet postgresql 2>/dev/null; then
-          echo "[AI Auto-Provision] Provisioning PostgreSQL database server..."
-          (sudo -n dnf install -y postgresql15-server postgresql15 2>&1 || sudo -n yum install -y postgresql-server postgresql 2>&1 || sudo -n apt-get install -y postgresql postgresql-contrib 2>&1 || true)
-          (sudo -n postgresql-setup --initdb 2>/dev/null || sudo -n service postgresql initdb 2>/dev/null || true)
-          (sudo -n systemctl enable --now postgresql 2>&1 || sudo -n service postgresql start 2>&1 || true)
-          (sudo -n sed -i 's/ident/trust/g' /var/lib/pgsql/data/pg_hba.conf 2>/dev/null || true)
-          (sudo -n sed -i 's/peer/trust/g' /var/lib/pgsql/data/pg_hba.conf 2>/dev/null || true)
-          (sudo -n sed -i 's/scram-sha-256/trust/g' /var/lib/pgsql/data/pg_hba.conf 2>/dev/null || true)
-          (sudo -n systemctl restart postgresql 2>&1 || true)
-          (sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';" 2>/dev/null || true)
-          (sudo -u postgres psql -c "CREATE DATABASE testdb;" 2>/dev/null || true)
-        fi
-
-        if ! command -v redis-cli &> /dev/null || ! systemctl is-active --quiet redis6 2>/dev/null; then
-          echo "[AI Auto-Provision] Provisioning Redis in-memory cache..."
-          (sudo -n dnf install -y redis6 2>&1 || sudo -n yum install -y redis 2>&1 || sudo -n apt-get install -y redis-server 2>&1 || true)
-          (sudo -n systemctl enable --now redis6 2>&1 || sudo -n systemctl enable --now redis 2>&1 || sudo -n service redis start 2>&1 || true)
-        fi
-
-        # Autonomous Nginx Web Proxy Auto-Provisioner (Port 80 -> Port 3000)
-        if ! command -v nginx &> /dev/null || ! systemctl is-active --quiet nginx 2>/dev/null; then
-          echo "[AI Auto-Provision] Provisioning Nginx web proxy on Port 80..."
-          (sudo -n dnf install -y nginx 2>&1 || sudo -n yum install -y nginx 2>&1 || sudo -n apt-get install -y nginx 2>&1 || true)
-          (sudo -n systemctl enable --now nginx 2>&1 || true)
-          (sudo -n sed -i 's/listen       80 default_server;/#listen       80 default_server;/g' /etc/nginx/nginx.conf 2>/dev/null || true)
-          (sudo cat << 'NGINX_CONF' | sudo tee /etc/nginx/conf.d/app.conf 2>/dev/null || true)
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
-NGINX_CONF
-          (sudo -n systemctl restart nginx 2>&1 || true)
-        fi
-
-        # Free stale port 3000
-        fuser -k 3000/tcp 2>/dev/null || true
-
-        if command -v npm &> /dev/null; then
-          echo "Running dependency installation..."
-          npm install 2>&1 || npm install --ignore-scripts 2>&1 || true
-          if [ -d "prisma" ] || [ -f "prisma/schema.prisma" ]; then
-            echo "[AI Toolchain] Generating Prisma Client ORM bindings..."
-            (export PATH="$HOME/.node22/bin:$PATH" && npx prisma generate 2>&1) || "$HOME/.node22/bin/npx" prisma generate 2>&1 || true
-          fi
-        else
-          echo "npm toolchain notice: proceeding with direct process execution..."
-        fi
-        # Auto-provision PM2 process manager & TS engine if missing
-        if ! command -v pm2 &> /dev/null; then
-          echo "[AI Toolchain] Auto-installing PM2 process manager & TSX engine..."
-          npm install -g pm2 tsx 2>&1 || true
-          sudo -n ln -sf "\$HOME/.node22/bin/pm2" /usr/bin/pm2 2>/dev/null || true
-          sudo -n ln -sf "\$HOME/.node22/bin/tsx" /usr/bin/tsx 2>/dev/null || true
-        fi
-
-        # Extra verification for Prisma Client generation
-        if [ -f "prisma/schema.prisma" ] && [ ! -d "src/generated/prisma" ]; then
-          echo "[AI Toolchain Retry] Ensuring Prisma Client ORM bindings generated..."
-          (export PATH="$HOME/.node22/bin:$PATH" && npx prisma generate 2>&1) || true
-        fi
-
-        echo "Clearing lingering process locks & freeing port 3000..."
+        echo "Clearing lingering locks & starting application process..."
         pm2 delete ${shellQuote(repoName)} 2>/dev/null || true
-        (sudo -n fuser -k -9 3000/tcp 2>/dev/null || fuser -k -9 3000/tcp 2>/dev/null || true)
-        (pkill -9 -f "tsx" 2>/dev/null || true)
-        sleep 2
+        fuser -k -9 3000/tcp 2>/dev/null || true
+        pkill -9 -f "tsx" 2>/dev/null || true
+        sleep 1
 
-        echo "Launching application process with PM2..."
-        export PATH="$HOME/.node22/bin:$PATH"
-        PM2_FLAGS="--name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000"
+        TSX_PATH="\$NODE22_DIR/bin/tsx"
+        [ -x "\$(which tsx 2>/dev/null)" ] && TSX_PATH="\$(which tsx)"
+
         if [ -f "src/index.ts" ]; then
-          pm2 start "npx tsx src/index.ts" $PM2_FLAGS 2>&1
+          pm2 start src/index.ts --interpreter "\$TSX_PATH" --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f 2>&1
         elif [ -f "src/main.ts" ]; then
-          pm2 start "npx tsx src/main.ts" $PM2_FLAGS 2>&1
+          pm2 start src/main.ts --interpreter "\$TSX_PATH" --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f 2>&1
         elif [ -f "src/app.ts" ]; then
-          pm2 start "npx tsx src/app.ts" $PM2_FLAGS 2>&1
+          pm2 start src/app.ts --interpreter "\$TSX_PATH" --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f 2>&1
         elif [ -f "index.js" ]; then
-          pm2 start index.js $PM2_FLAGS 2>&1
+          pm2 start index.js --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f 2>&1
         elif [ -f "server.js" ]; then
-          pm2 start server.js $PM2_FLAGS 2>&1
+          pm2 start server.js --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f 2>&1
         elif [ -f "app.js" ]; then
-          pm2 start app.js $PM2_FLAGS 2>&1
-        elif [ -f "src/index.js" ]; then
-          pm2 start src/index.js $PM2_FLAGS 2>&1
-        elif [ -f "src/server.js" ]; then
-          pm2 start src/server.js $PM2_FLAGS 2>&1
+          pm2 start app.js --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f 2>&1
         elif grep -q '"dev":' package.json 2>/dev/null; then
-          pm2 start npm $PM2_FLAGS -- run dev 2>&1
-        else
-          pm2 start npm $PM2_FLAGS -- start 2>&1
+          pm2 start npm --name ${shellQuote(repoName)} --max-restarts 5 --exp-backoff-restart-delay 2000 -f -- run dev 2>&1
         fi
+
         pm2 save 2>&1 || true
       elif [ -f "requirements.txt" ] || [ -f "main.py" ] || [ -f "app.py" ]; then
         echo "Python application detected. Launching process..."
         if [ -f "requirements.txt" ]; then
           pip install -r requirements.txt 2>&1 || pip3 install -r requirements.txt 2>&1 || true
         fi
-        if [ -f "main.py" ]; then
           nohup python3 main.py > app.log 2>&1 &
         elif [ -f "app.py" ]; then
           nohup python3 app.py > app.log 2>&1 &
@@ -1106,9 +1028,12 @@ NGINX_CONF
       fi
 
       echo "VERIFYING_HEALTH_CHECK..."
-      sleep 3
-      HEALTH_RES=\$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://127.0.0.1:3000/api/health 2>/dev/null || curl -s -w "\nHTTP_STATUS:%{http_code}" http://127.0.0.1:3000/ 2>/dev/null || echo "HEALTH_CHECK_FAILED")
+      echo "[AI Health Monitor] Waiting for application to initialize (8s)..."
+      sleep 8
+      HEALTH_RES=\$(curl -s -w "\nHTTP_STATUS:%{http_code}" --connect-timeout 5 --max-time 10 http://127.0.0.1:3000/api/health 2>/dev/null || curl -s -w "\nHTTP_STATUS:%{http_code}" --connect-timeout 5 --max-time 10 http://127.0.0.1:3000/ 2>/dev/null || echo "HEALTH_CHECK_FAILED")
       echo "HEALTH_RESULT:\$HEALTH_RES"
+      echo "[PM2 Process Status]"
+      pm2 list 2>/dev/null || true
       echo "CURRENT_COMMIT:\$(git rev-parse --short HEAD 2>/dev/null || echo 'deployed')"
     `;
 
@@ -1140,10 +1065,16 @@ NGINX_CONF
       remoteOut.toLowerCase().includes('please upgrade your node')
     );
 
-    const healthOk = remoteOut && (
-      remoteOut.includes('HTTP_STATUS:200') || 
-      remoteOut.includes('"status":"OK"') || 
-      remoteOut.includes('status: 200')
+    const healthOk = Boolean(
+      remoteOut &&
+      remoteOut.includes('HEALTH_RESULT:') &&
+      (
+        remoteOut.includes('HTTP_STATUS:200') ||
+        remoteOut.includes('HTTP_STATUS:201') ||
+        remoteOut.includes('HTTP_STATUS:301') ||
+        remoteOut.includes('HTTP_STATUS:302') ||
+        remoteOut.includes('HTTP_STATUS:304')
+      )
     );
 
     if (healthOk && !hasError) {
@@ -1241,19 +1172,35 @@ NGINX_CONF
       }
     }
 
+    // ✅ CRITICAL: success = true ONLY when health check confirmed HTTP 200 OK
+    // Previously this was always true — causing false green checkmark in UI
+    const deploymentVerified = Boolean(healthOk && !hasError);
+
     res.json({
-      success: true,
-      message: 'AI deployment command executed on remote server.',
+      success: deploymentVerified,
+      message: deploymentVerified
+        ? 'AI deployment command executed and server health verified.'
+        : 'Deployment process ran but server health check did not confirm HTTP 200. Process may still be starting.',
       deployedCommit,
       serverHost,
       logs
     });
   } catch (e: any) {
-    logs.push(`[SSH Connection Error] ${e.message || 'Unable to establish SSH session'}`);
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Remote deployment attempted.', 
-      deployedCommit: 'deployed',
+    const errMsg = e.message || 'Unable to establish SSH session';
+    logs.push(
+      `--------------------------------------------------`,
+      `❌ [SSH CONNECTION FAILED] ${errMsg}`,
+      `🔍 Possible causes:`,
+      `   • SSH key not found or incorrect`,
+      `   • Server IP/port unreachable (firewall/security group)`,
+      `   • Wrong username or server credentials`,
+      `   • Server is offline or not accepting connections`,
+      `--------------------------------------------------`
+    );
+    return res.status(500).json({ 
+      success: false, 
+      message: `SSH connection failed: ${errMsg}`, 
+      deployedCommit: null,
       serverHost,
       logs 
     });

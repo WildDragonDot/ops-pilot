@@ -230,7 +230,9 @@ export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): 
     batchOpt = '';
   }
 
-  const sshCmd = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o LogLevel=ERROR ${keyFlag} -p ${port} ${user}@${host} "export TERM=dumb; ${safeCmd.replace(/"/g, '\\"')}"`;
+  const scriptToExec = `export TERM=dumb;\n${safeCmd}`;
+  const base64Cmd = Buffer.from(scriptToExec).toString('base64');
+  const sshCmd = `${authPrefix}ssh ${batchOpt} -o StrictHostKeyChecking=no -o LogLevel=ERROR ${keyFlag} -p ${port} ${user}@${host} "echo ${base64Cmd} | base64 -d | bash"`;
 
   try {
     const { stdout, stderr } = await execAsync(sshCmd, { env: { ...process.env, TERM: 'dumb' }, timeout: 180_000 });
