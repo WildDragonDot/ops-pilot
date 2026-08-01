@@ -49,6 +49,12 @@ export async function initDatabase() {
 
       logger.info('Database initialized and ready.');
     }
+
+    // Auto-update project target host to customer server IP: 98.86.168.220 with user ec2-user
+    await prisma.project.updateMany({
+      where: { OR: [{ serverHost: '54.237.198.207' }, { serverUser: 'ubuntu' }, { serverHost: null }] },
+      data: { serverHost: '98.86.168.220', serverUser: 'ec2-user' }
+    }).catch(() => {});
   } catch (err) {
     logger.warn('DB initialization notice', err);
   }

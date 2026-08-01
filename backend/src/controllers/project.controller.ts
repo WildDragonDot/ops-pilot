@@ -105,7 +105,7 @@ export async function createProject(req: AuthenticatedRequest, res: Response) {
       gitUrl: gitUrl || null,
       serverHost: serverHost || null,
       serverPort: serverPort ? parseInt(serverPort, 10) : 22,
-      serverUser: serverUser || 'root',
+      serverUser: serverUser || 'ec2-user',
       organizationId: user.organizationId
     },
     include: { repositories: true }
@@ -858,7 +858,7 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
   }
 
   const repoName = gitUrl.split('/').pop()?.replace('.git', '') || 'app';
-  const user = project?.serverUser || 'root';
+  const user = project?.serverUser || 'ec2-user';
   const customPath = requestedTargetPath || selectedPath || project?.rootPath;
   const isOpsPilotSelfDir = customPath && (customPath.includes('ops-pilot/backend') || customPath.includes('opspilot-backend'));
   const defaultDir = user === 'root' ? `/root/apps/${repoName}` : `/home/${user}/apps/${repoName}`;
