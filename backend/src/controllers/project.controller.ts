@@ -1033,6 +1033,14 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       }
     }
 
+    logs.push(
+      `--------------------------------------------------`,
+      `✅ [Deployment Verified & Active]`,
+      `🌐 Live Backend Base URL: http://${serverHost}:3000`,
+      `🔍 Health Endpoint: http://${serverHost}:3000/api/health`,
+      `--------------------------------------------------`
+    );
+
     // AI Self-Healing & Error Remediation Trigger
     const hasError = remoteOut && (
       remoteOut.toLowerCase().includes('syntax error') ||
