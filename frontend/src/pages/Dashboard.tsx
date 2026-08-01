@@ -608,7 +608,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           memory: 'Idle',
           uptime: 'Live',
           logs: [
-            '[INFO] SSH Connection successful',
+            '[INFO] SSH Server Attached (Run Test Connection to verify authentication)',
             '[WARN] No Docker containers found on host',
             '[ACTION] Awaiting deployment...'
           ]

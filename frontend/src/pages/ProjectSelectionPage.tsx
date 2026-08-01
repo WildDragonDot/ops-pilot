@@ -239,7 +239,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                       </span>
-                      <span>{p.serverHost && p.gitUrl ? 'HYBRID CONNECTED' : p.serverHost ? 'SSH SERVER CONNECTED' : p.gitUrl ? 'GITHUB AST MODE' : 'LOCAL ENGINE ONLINE'}</span>
+                      <span>{p.serverHost && p.gitUrl ? 'HYBRID MODE' : p.serverHost ? 'SSH HOST CONFIGURED' : p.gitUrl ? 'GITHUB AST MODE' : 'LOCAL ENGINE ONLINE'}</span>
                     </div>
                     <span className="text-[9px] opacity-80">{p.serverHost ? `PORT ${p.serverPort || 22}` : p.gitUrl ? 'REPO' : 'SANDBOX'}</span>
                   </div>

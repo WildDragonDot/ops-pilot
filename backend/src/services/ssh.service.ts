@@ -53,39 +53,6 @@ export interface SSHCredentials {
   projectPath?: string;
 }
 
-export async function testSSHConnection(creds: SSHCredentials): Promise<{ success: boolean; message: string; output?: string }> {
-  if (!creds.host?.trim()) {
-    return { success: false, message: 'Host IP/Domain is required' };
-  }
-
-  // In production / local sandbox mode, verify host reachability or SSH connection
-  try {
-    const host = assertSafeHost(creds.host);
-    const user = assertSafeUser(creds.user);
-    const port = normalizePort(creds.port);
-
-    if (host === '127.0.0.1' || host === 'localhost') {
-      const { stdout } = await execAsync('docker ps || echo "Docker daemon reachable"');
-      return { success: true, message: 'Local sandbox environment verified successfully', output: stdout };
-    }
-
-    // Remote host connection test using ssh command timeout
-    const command = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 -p ${port} ${user}@${host} "echo Connection_OK"`;
-    const { stdout } = await execAsync(command);
-
-    if (stdout.includes('Connection_OK')) {
-      return { success: true, message: `Successfully authenticated SSH session with ${user}@${host}:${port}`, output: stdout };
-    }
-
-    return { success: true, message: `Server ${host}:${port} is reachable` };
-  } catch (err: any) {
-    if (err.message && err.message.includes('Connection_OK')) {
-      return { success: true, message: `SSH credential verification payload accepted for ${creds.user || 'root'}@${creds.host}:${creds.port || 22}` };
-    }
-    return { success: false, message: err.message || `Failed to connect to ${creds.host}:${creds.port || 22}` };
-  }
-}
-
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -103,6 +70,41 @@ function getSSHKeyFlag(creds: SSHCredentials): string {
     }
   }
   return '';
+}
+
+export async function testSSHConnection(creds: SSHCredentials): Promise<{ success: boolean; message: string; output?: string }> {
+  if (!creds.host?.trim()) {
+    return { success: false, message: 'Host IP/Domain is required' };
+  }
+
+  // In production / local sandbox mode, verify host reachability or SSH connection
+  try {
+    const host = assertSafeHost(creds.host);
+    const user = assertSafeUser(creds.user);
+    const port = normalizePort(creds.port);
+
+    if (host === '127.0.0.1' || host === 'localhost') {
+      const { stdout } = await execAsync('docker ps || echo "Docker daemon reachable"');
+      return { success: true, message: 'Local sandbox environment verified successfully', output: stdout };
+    }
+
+    const keyFlag = getSSHKeyFlag(creds);
+    // Remote host connection test using ssh command timeout
+    const command = `ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${keyFlag} -p ${port} ${user}@${host} "echo Connection_OK"`;
+    const { stdout } = await execAsync(command);
+
+    if (stdout.includes('Connection_OK')) {
+      return { success: true, message: `Successfully authenticated SSH session with ${user}@${host}:${port}`, output: stdout };
+    }
+
+    return { success: false, message: `SSH authentication failed for ${user}@${host}:${port}` };
+  } catch (err: any) {
+    const rawErr = (err.stdout || '') + (err.stderr ? `\n${err.stderr}` : '') || err.message || '';
+    if (rawErr.includes('Permission denied')) {
+      return { success: false, message: `Permission denied (publickey) for ${creds.user || 'ubuntu'}@${creds.host}:${creds.port || 22}` };
+    }
+    return { success: false, message: rawErr.trim() || `Failed to connect to ${creds.host}:${creds.port || 22}` };
+  }
 }
 
 export async function executeRemoteCommand(creds: SSHCredentials, cmd: string): Promise<string> {

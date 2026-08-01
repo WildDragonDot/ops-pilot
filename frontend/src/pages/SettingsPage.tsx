@@ -1862,11 +1862,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenSetupModal }) 
                       </span>
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-extrabold border ${
-                          editingProject.serverHost 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                            : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                          testResult?.tested
+                            ? (testResult.sshSuccess 
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20')
+                            : (editingProject.serverHost 
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
+                                : 'bg-blue-500/10 text-blue-400 border-blue-500/20')
                         }`}>
-                          {editingProject.serverHost ? '✓ SSH CONNECTED' : 'ℹ GITHUB AST MODE'}
+                          {testResult?.tested
+                            ? (testResult.sshSuccess ? '✓ SSH CONNECTED' : '❌ SSH AUTH FAILED')
+                            : (editingProject.serverHost ? '⚠️ SSH HOST CONFIGURED (UNVERIFIED)' : 'ℹ GITHUB AST MODE')}
                         </span>
                         <button
                           type="button"
