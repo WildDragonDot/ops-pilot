@@ -60,31 +60,31 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans flex flex-col">
       
       {/* Standalone Landing Top Header */}
-      <header className="h-16 bg-white dark:bg-[#0d1117] border-b border-slate-200 dark:border-slate-800 px-6 sm:px-10 flex items-center justify-between sticky top-0 z-40 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-500 flex items-center justify-center">
+      <header className="h-auto py-3 sm:h-16 bg-white dark:bg-[#0d1117] border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 md:px-10 flex flex-wrap sm:flex-nowrap items-center justify-between sticky top-0 z-40 shadow-xs gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-500 flex items-center justify-center shrink-0">
             <Cpu className="w-5 h-5 animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-slate-100">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-slate-100">
                 D-OpsPilot AI
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
+              <span className="text-[9px] sm:text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
                 DevOps Agent
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[150px] sm:max-w-xs">
               {user ? `${user.organizationName || 'Production Org'} • ${user.name}` : 'Autonomous DevOps AI'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition"
+            className="p-1.5 sm:p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
           </button>
@@ -93,7 +93,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
           {user && (
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Logout</span>
@@ -103,21 +103,21 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
       </header>
 
       {/* Main Page Body Container */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-6 sm:p-8 space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         
         {/* Main Banner */}
-        <div className="bg-white dark:bg-[#0d1117] p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="bg-white dark:bg-[#0d1117] p-4 sm:p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-bold font-mono">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-[11px] sm:text-xs font-bold font-mono">
                 D-OpsPilot AI Workspaces
               </span>
-              <span className="flex items-center gap-1 text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+              <span className="flex items-center gap-1 text-[11px] sm:text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                 <Shield className="w-3.5 h-3.5 text-emerald-500" />
                 Zero-DB Storage Security
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
               Select Work Project & Server Environment
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
@@ -127,7 +127,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
 
           <button
             onClick={onOpenSetupModal}
-            className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-md glow-blue transition shrink-0 cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-md glow-blue transition w-full sm:w-auto shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>+ Setup New Project</span>
@@ -135,7 +135,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
         </div>
 
         {/* Search & Counter Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#0d1117] p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#0d1117] p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input
@@ -147,7 +147,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-mono text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs font-mono text-slate-500 dark:text-slate-400 flex-wrap">
             <span>
               Active Projects:{' '}
               {isLoading ? (
@@ -162,7 +162,7 @@ export const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({
         </div>
 
         {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           
           {/* Setup New Project Card */}
           <div

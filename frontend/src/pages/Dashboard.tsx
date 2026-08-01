@@ -803,7 +803,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <span className="text-xs font-mono text-subtitle font-normal">({project?.name || 'OpsPilot Workspace'})</span>
           </h1>
 
-          <div className="flex items-center gap-1.5 font-mono text-[10px]">
+          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
             {Boolean(project?.serverHost?.trim()) ? (
               <>
                 <span className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold flex items-center gap-1">
