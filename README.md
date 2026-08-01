@@ -6,6 +6,7 @@
 [![Build: Passing](https://img.shields.io/badge/Build-Passing-emerald.svg)]()
 [![Security: WebCrypto--AES--256](https://img.shields.io/badge/Security-Zero--Knowledge--WebCrypto-purple.svg)]()
 [![AI Engine: Gemini--3.6--Flash--&--GPT--4o](https://img.shields.io/badge/AI--Engine-Gemini--3.6--Flash--%26--GPT--4o-amber.svg)]()
+[![Mobile Ready](https://img.shields.io/badge/Mobile-Fully%20Responsive-green.svg)]()
 [![Target Host: Production Server](https://img.shields.io/badge/Target--Host-dopspilot.chandandev.online-blue.svg)](https://dopspilot.chandandev.online)
 
 D-OpsPilot AI is an enterprise-grade, evidence-driven autonomous DevOps & SRE AI Agent. It bridges production operations with intelligence — inspecting live microservice container logs, diagnosing complex root-cause outages, correlating recent git commits with failures, executing zero-downtime deployments, and automating server health verification with human-in-the-loop safety guardrails.
@@ -124,6 +125,17 @@ graph TD
 ### 📝 10. AI Post-Mortem Incident Reports Generator
 - **Automated Root-Cause Reports**: Generates structured post-mortem incident reports complete with incident timeline, impact metrics, root cause analysis, and preventive recommendations.
 - **Export & Share**: Shareable incident reports for team post-mortems and compliance documentation.
+
+### 📱 11. Mobile-First Fully Responsive UI — Audit Anywhere, Anytime
+
+> **No laptop? No problem.** D-OpsPilot AI is fully usable from your smartphone or tablet.
+
+- **Full Mobile Support**: The entire dashboard, audit workflows, incident commander, and SSH terminal UI are optimized for iPhone SE (375px) and tablet viewports without any feature loss.
+- **Audit GitHub from Your Phone**: Run a full AI-powered code security scan on any GitHub repository directly from your mobile browser — no laptop needed.
+- **Monitor & Fix Production Servers on Mobile**: Check live server health, stream real-time logs, trigger container restarts, and review AI incident diagnoses — all from your phone.
+- **On-the-Go Incident Response**: Get alerted, diagnose root cause, and approve or reject high-risk AI operations from your mobile device during off-hours without opening a laptop.
+- **Responsive Navigation Drawer**: Tap the hamburger menu on mobile to open the full navigation sidebar as a smooth animated drawer — identical desktop feature parity on small screens.
+- **Touch-Friendly Controls**: All buttons, tabs, and interactive controls are sized and spaced for comfortable touch interaction.
 
 ---
 
