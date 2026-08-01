@@ -35,14 +35,18 @@ echo ""
 
 # Copy backend source
 echo "📦 Step 3/7: Syncing backend source files..."
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SERVER" "rm -rf '$REMOTE_PATH/backend/src' '$REMOTE_PATH/backend/prisma'"
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_PATH/backend/package.json" "$SERVER:$REMOTE_PATH/backend/"
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_PATH/backend/package-lock.json" "$SERVER:$REMOTE_PATH/backend/"
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$LOCAL_PATH/backend/tsconfig.json" "$SERVER:$REMOTE_PATH/backend/"
+scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -r "$LOCAL_PATH/backend/prisma" "$SERVER:$REMOTE_PATH/backend/"
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -r "$LOCAL_PATH/backend/src" "$SERVER:$REMOTE_PATH/backend/"
 echo "✅ Backend source synced"
 echo ""
 
 # Copy frontend source
 echo "📦 Step 4/7: Syncing frontend source files..."
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SERVER" "rm -rf '$REMOTE_PATH/frontend/src'"
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -r "$LOCAL_PATH/frontend/src" "$SERVER:$REMOTE_PATH/frontend/"
 echo "✅ Frontend source synced"
 echo ""
@@ -50,9 +54,13 @@ echo ""
 # Build and restart backend
 echo "⚙️  Step 5/7: Building backend & restarting PM2..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SERVER" << 'BACKEND_DEPLOY'
+set -e
 cd /home/ubuntu/ops-pilot/backend
 echo "📥 Installing backend dependencies..."
 npm install --production=false
+echo "🗄️  Syncing database schema & regenerating Prisma client..."
+npx prisma db push
+npx prisma generate
 echo "🔨 Cleaning old build & compiling TypeScript..."
 rm -rf dist
 npx tsc
@@ -70,6 +78,7 @@ echo ""
 # Build and reload frontend
 echo "⚙️  Step 6/7: Building frontend & reloading Nginx..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$SERVER" << 'FRONTEND_DEPLOY'
+set -e
 cd ~/ops-pilot/frontend
 echo "📥 Installing frontend dependencies..."
 npm install --production=false
