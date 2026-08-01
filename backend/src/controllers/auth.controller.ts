@@ -5,9 +5,9 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { writeAuditLog } from '../services/audit-log.service.js';
 
 function getIp(req: Request): string {
-  const fwd = req.headers['x-forwarded-for'];
+  const fwd = req?.headers ? req.headers['x-forwarded-for'] : undefined;
   const first = Array.isArray(fwd) ? fwd[0] : fwd;
-  return (first?.split(',')[0]?.trim() || String(req.ip || '') || 'unknown').replace('::ffff:', '');
+  return (first?.split(',')[0]?.trim() || String(req?.ip || '') || 'unknown').replace('::ffff:', '');
 }
 
 export async function register(req: Request, res: Response) {
