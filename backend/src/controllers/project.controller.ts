@@ -943,10 +943,8 @@ export async function executeAIDeployment(req: AuthenticatedRequest, res: Respon
       elif [ -f "package.json" ]; then
         echo "Node.js application detected. Running dependency & process startup..."
         if command -v npm &> /dev/null; then
-          npm install --production 2>&1 || npm install 2>&1 || (
-            echo "[AI Smart Engine] Retrying npm install with --ignore-scripts to bypass Node.js preinstall version checks..." &&
-            npm install --ignore-scripts 2>&1
-          ) || true
+          echo "Running smart dependency installation (bypassing pre-install engine checks)..."
+          npm install --ignore-scripts 2>&1 || npm install --production 2>&1 || npm install 2>&1 || true
         else
           echo "npm toolchain notice: proceeding with direct process execution..."
         fi
